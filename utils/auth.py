@@ -321,8 +321,33 @@ def check_export_quota(session_id: str) -> tuple[bool, int]:
     return used < DAILY_FREE_QUOTA, used
 
 
-def consume_export_quota(session_id: str) -> None:
+def check_daily_export_quota(session_id: str = "") -> tuple[bool, int]:
+    """
+    Alias untuk check_export_quota — kompatibel dengan export.py.
+    Jika session_id kosong, ambil dari st.session_state.
+    """
+    if not session_id:
+        import streamlit as _st
+        session_id = _st.session_state.get("_session_id", "default")
+    return check_export_quota(session_id)
+
+
+def get_quota_remaining(session_id: str = "") -> int:
+    """
+    Return sisa kuota export harian. Digunakan di export.py untuk tampilan UI.
+    """
+    if not session_id:
+        import streamlit as _st
+        session_id = _st.session_state.get("_session_id", "default")
+    _, used = check_export_quota(session_id)
+    return max(0, DAILY_FREE_QUOTA - used)
+
+
+def consume_export_quota(session_id: str = "") -> None:
     """Kurangi kuota export gratis harian."""
+    if not session_id:
+        import streamlit as _st
+        session_id = _st.session_state.get("_session_id", "default")
     cache = _load_quota_cache()
     today = date.today().isoformat()
     key = f"{session_id}:{today}"
