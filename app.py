@@ -1,7 +1,7 @@
 """
 Ruang Statistika — Automated Research & Stats Reporting
 Oleh: Yogo Aryo Jatmiko | yogoaj.github.io
-Versi: 4.5 Pro — Supabase Auth (Sign In / Sign Up / Google / Forgot Password)
+Versi: 4.5 Pro — Supabase Auth (Sign In / Sign Up / Forgot Password)
 
 Entry point: routing menu, sidebar, shared CSS & state.
 Setiap modul di modules/ bertanggung jawab atas halaman-nya sendiri.
@@ -13,10 +13,9 @@ import streamlit.components.v1 as components
 
 warnings.filterwarnings("ignore")
 
-# ── Supabase: restore session & handle Google OAuth callback ─────────────────
+# ── Supabase: restore session ────────────────────────────────────────────────
 # Dipanggil SEBELUM apapun di-render, termasuk sidebar
-from utils.supabase_auth import restore_supabase_session, handle_google_oauth_callback
-handle_google_oauth_callback()  # tangkap token dari Google redirect
+from utils.supabase_auth import restore_supabase_session
 restore_supabase_session()      # restore session jika token masih valid
 
 # ── Page config (harus paling pertama) ───────────────────────────────────────
@@ -318,7 +317,7 @@ with st.sidebar:
         </div>
         <div style='font-size:0.72rem;color:#5f8ab5;letter-spacing:0.08em;
                     text-transform:uppercase;margin-top:5px;'>
-            v4.3 — AI-Powered Assistant
+            v4.5 — AI-Powered Assistant
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -609,7 +608,7 @@ with st.sidebar:
     <div style='font-size:0.72rem; color:#3a6080; text-align:center; line-height:1.6;'>
         <a href='https://yogoaj.github.io' target='_blank' style='color:#378add;'>
             Ruang Statistika</a><br/>
-        © 2026 Ruang Statistika v4.3
+        © 2026 Ruang Statistika v4.5
     </div>
     """, unsafe_allow_html=True)
 
@@ -769,7 +768,7 @@ if menu == "Beranda":
         </div></div>
         """, unsafe_allow_html=True)
 
-        # ── Tab selector ──────────────────────────────────────────────────────
+        # ── Tab selector (layout baris vertikal, 2 kolom) ────────────────────
         _tabs_def = [
             ("masuk",   "🔑  Masuk"),
             ("daftar",  "✏️  Daftar"),
@@ -777,8 +776,17 @@ if menu == "Beranda":
             ("pro",     "⭐  Kode Pro"),
             ("gratis",  "🆓  Lanjut Gratis"),
         ]
-        _tcols = st.columns(len(_tabs_def))
-        for _col, (_tkey, _tlabel) in zip(_tcols, _tabs_def):
+        st.markdown("""
+        <style>
+        /* Styling tab nav 2-kolom agar rapi */
+        div[data-testid="stHorizontalBlock"] > div {
+            gap: 6px !important;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+        _tc1, _tc2 = st.columns(2)
+        _tab_cols = [_tc1, _tc2, _tc1, _tc2, _tc1]
+        for _col, (_tkey, _tlabel) in zip(_tab_cols, _tabs_def):
             with _col:
                 _is_active = (tab == _tkey)
                 if st.button(
@@ -825,34 +833,6 @@ if menu == "Beranda":
                     else:
                         st.session_state["_auth_msg_error"] = _msg
                         st.rerun()
-
-            # ── Tombol Google OAuth ───────────────────────────────────────────
-            st.markdown(
-                "<div style='text-align:center;margin:10px 0 4px;"
-                "font-size:0.78rem;color:#8aabcc;'>— atau —</div>",
-                unsafe_allow_html=True)
-
-            if st.button(
-                "🌐  Masuk dengan Google",
-                key="btn_google_signin",
-                use_container_width=True,
-            ):
-                from utils.supabase_auth import get_supabase_google_oauth_url
-                # Ambil URL app saat ini sebagai redirect
-                _app_url = st.query_params.get("_app_url", "")
-                if not _app_url:
-                    # Fallback: minta user input URL-nya sekali
-                    _app_url = st.secrets.get("app_url", "http://localhost:8501")
-                _ok_g, _url_or_err = get_supabase_google_oauth_url(_app_url)
-                if _ok_g:
-                    st.markdown(
-                        f"<meta http-equiv='refresh' content='0; url={_url_or_err}'>",
-                        unsafe_allow_html=True,
-                    )
-                    st.markdown(
-                        f"[Klik di sini jika tidak redirect otomatis]({_url_or_err})")
-                else:
-                    st.error(_url_or_err)
 
             st.markdown(
                 "<p style='text-align:center;font-size:0.75rem;color:#8aabcc;"
@@ -905,26 +885,6 @@ if menu == "Beranda":
                             st.session_state["_auth_msg_error"] = _msg
                             st.rerun()
 
-            # Google signup
-            st.markdown(
-                "<div style='text-align:center;margin:10px 0 4px;"
-                "font-size:0.78rem;color:#8aabcc;'>— atau daftar dengan —</div>",
-                unsafe_allow_html=True)
-            if st.button(
-                "🌐  Daftar dengan Google",
-                key="btn_google_signup",
-                use_container_width=True,
-            ):
-                from utils.supabase_auth import get_supabase_google_oauth_url
-                _app_url = st.secrets.get("app_url", "http://localhost:8501")
-                _ok_g, _url_or_err = get_supabase_google_oauth_url(_app_url)
-                if _ok_g:
-                    st.markdown(
-                        f"<meta http-equiv='refresh' content='0; url={_url_or_err}'>",
-                        unsafe_allow_html=True,
-                    )
-                else:
-                    st.error(_url_or_err)
 
         elif tab == "lupa":
             # ── Forgot Password ───────────────────────────────────────────────
@@ -973,7 +933,6 @@ if menu == "Beranda":
                     "Aktifkan Pro →", use_container_width=True, type="primary")
                 if _sub_pro:
                     from utils.auth import validate_license
-                    from utils.supabase_auth import save_supabase_session
                     _k = _key_inp.strip()
                     if not _k:
                         st.error("Masukkan license key terlebih dahulu.")
@@ -1273,7 +1232,7 @@ elif menu == "Laporan":
 
 st.markdown("""
 <div class="rs-footer">
-    📊 <b>Ruang Statistika</b> v4.3 — AI-Powered Assistant<br/>
+    📊 <b>Ruang Statistika</b> v4.5 — AI-Powered Assistant<br/>
     <a href='https://yogoaj.github.io' target='_blank'>Ruang Statistika</a> ·
     © 2026 Ruang Statistika · Powered by Python, Streamlit & Claude AI
 </div>
