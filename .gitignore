@@ -1,0 +1,12 @@
+# Secrets — JANGAN pernah diupload!
+.streamlit/secrets.toml
+users.yaml
+.env
+PANDUAN_MASTER.md
+
+# Runtime files
+.quota_cache.json
+*.pyc
+__pycache__/
+*.egg-info/
+.DS_Store
