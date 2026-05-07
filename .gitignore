@@ -3,6 +3,7 @@
 users.yaml
 .env
 PANDUAN_MASTER.md
+generate_hash.py
 
 # Runtime files
 .quota_cache.json
