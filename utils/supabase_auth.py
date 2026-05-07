@@ -3,7 +3,6 @@ utils/supabase_auth.py — Ruang Statistika v4.5
 Sistem autentikasi via Supabase:
   - Sign In (email + password)
   - Sign Up (registrasi mandiri)
-  - Sign In with Google (OAuth)
   - Forgot Password (kirim email reset)
   - Sign Out
   - Restore session dari st.session_state
@@ -12,7 +11,6 @@ Cara pakai di app.py:
     from utils.supabase_auth import (
         supabase_sign_in, supabase_sign_up,
         supabase_sign_out, supabase_forgot_password,
-        get_supabase_google_oauth_url,
         restore_supabase_session, get_current_user,
         save_supabase_session,
     )
@@ -263,68 +261,6 @@ def supabase_forgot_password(email: str, redirect_url: str = "") -> tuple[bool, 
                 "📧 Jika email terdaftar, link reset password akan dikirim."
             )
         return False, f"❌ Gagal mengirim email: {msg}"
-
-
-# ══════════════════════════════════════════════════════════════════════════════
-# GOOGLE OAUTH
-# ══════════════════════════════════════════════════════════════════════════════
-
-def get_supabase_google_oauth_url(redirect_url: str) -> tuple[bool, str]:
-    """
-    Buat URL untuk redirect ke login Google.
-    redirect_url: URL callback setelah login Google selesai (URL app kamu).
-    Return: (berhasil: bool, url_atau_pesan_error: str)
-    """
-    sb = get_supabase()
-    if not sb:
-        return False, "Koneksi ke Supabase gagal."
-
-    try:
-        resp = sb.auth.sign_in_with_oauth({
-            "provider": "google",
-            "options": {
-                "redirect_to": redirect_url,
-            },
-        })
-        if resp and resp.url:
-            return True, resp.url
-        return False, "Gagal mendapatkan URL Google OAuth."
-    except Exception as e:
-        return False, f"❌ Google OAuth gagal: {e}"
-
-
-def handle_google_oauth_callback() -> bool:
-    """
-    Tangani callback dari Google OAuth.
-    Dipanggil di awal app.py untuk mendeteksi jika user baru kembali dari Google.
-
-    Streamlit tidak bisa langsung handle OAuth redirect (karena bukan web server
-    biasa), jadi kita gunakan query params untuk membawa token.
-
-    Return True jika berhasil login via Google callback.
-    """
-    params = st.query_params
-    access_token  = params.get("access_token")
-    refresh_token = params.get("refresh_token", "")
-
-    if not access_token:
-        return False
-
-    sb = get_supabase()
-    if not sb:
-        return False
-
-    try:
-        resp = sb.auth.set_session(access_token, refresh_token)
-        if resp and resp.user:
-            save_supabase_session(resp.user, resp.session)
-            # Bersihkan query params dari URL
-            st.query_params.clear()
-            return True
-    except Exception:
-        pass
-
-    return False
 
 
 # ══════════════════════════════════════════════════════════════════════════════
