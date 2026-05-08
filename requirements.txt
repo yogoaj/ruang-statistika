@@ -1,14 +1,19 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# Ruang Statistika v4.3 — Dependencies
+# Ruang Statistika v4.5 — Dependencies
 # ─────────────────────────────────────────────────────────────────────────────
 # Install : pip install -r requirements.txt
 # Python  : >= 3.10
-# Update  : v4.3 — login/personalisasi, modul baru (EDA, CFA, Klaster,
-#            Power Analysis, Reliabilitas ICC, Scraping, Uji Non-Parametrik)
+# Update  : v4.5 — Supabase Auth (Sign In / Sign Up / Forgot Password),
+#            modal login 5 tab, session restore otomatis
 # ─────────────────────────────────────────────────────────────────────────────
 
 # ── Core UI ──────────────────────────────────────────────────────────────────
 streamlit>=1.35.0
+
+# ── Autentikasi ───────────────────────────────────────────────────────────────
+supabase>=2.0.0              # WAJIB: Supabase Auth (Sign In / Sign Up / Reset)
+bcrypt>=4.0.0                # Fallback auth lokal (Kode Pro manual)
+pyyaml>=6.0                  # Baca users.yaml jika fallback
 
 # ── Data & Numerik ───────────────────────────────────────────────────────────
 pandas>=2.0.0
@@ -19,6 +24,7 @@ pyreadstat>=1.2.0            # Upload SPSS (.sav) dan Stata (.dta)
 scipy>=1.11.0
 statsmodels>=0.14.0          # OLS, RLM, WLS, Logit, Durbin-Watson, VIF, dsb.
 scikit-learn>=1.4.0          # EFA (FactorAnalysis), KMeans, Silhouette, StandardScaler
+pingouin>=0.5.4              # ANOVA, ICC, effect size
 
 # ── Visualisasi ──────────────────────────────────────────────────────────────
 plotly==5.19.0
@@ -27,6 +33,7 @@ kaleido==0.2.1               # WAJIB: konversi Plotly → PNG untuk embed di Wor
 # ── Export Dokumen ───────────────────────────────────────────────────────────
 python-docx>=1.1.0           # Generate laporan .docx
 openpyxl>=3.1.0              # Export tabel ke .xlsx & baca file Excel
+tabulate>=0.9.0              # Markdown table rendering di generate_markdown_report
 
 # ── SEM / CFA ────────────────────────────────────────────────────────────────
 semopy>=2.3.0                # Structural Equation Modeling & Confirmatory Factor Analysis
@@ -37,44 +44,23 @@ lxml>=5.1.0                  # Parser HTML/XML cepat untuk BeautifulSoup
 
 # ── Utilitas ─────────────────────────────────────────────────────────────────
 requests>=2.31.0             # HTTP calls ke AI provider (Anthropic, Groq, dsb.)
-                             # dan web scraping
-tabulate>=0.9.0              # Markdown table rendering di generate_markdown_report
+httpx>=0.27.0                # Async HTTP — dipakai validate_license Supabase fallback
 
-#
-bcrypt>=4.0.0
-pyyaml>=6.0
-streamlit
-supabase>=2.0.0
-bcrypt>=4.0.0
-pyyaml>=6.0
-pandas>=2.0
-numpy
-scipy>=1.11
-statsmodels>=0.14
-scikit-learn>=1.4
-python-docx>=1.1.0
-openpyxl
-pyreadstat
-beautifulsoup4>=4.12.0
-lxml>=5.1.0
-semopy>=2.3.0
-plotly==5.19.0
-kaleido==0.2.1
-#─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────
 # CATATAN INSTALASI
 # ─────────────────────────────────────────────────────────────────────────────
 #
 # Instalasi minimal (tanpa SEM & Scraping):
-#   pip install streamlit pandas numpy scipy statsmodels scikit-learn \
-#               plotly kaleido python-docx openpyxl requests tabulate \
-#               pyreadstat openpyxl
+#   pip install streamlit supabase bcrypt pyyaml pandas numpy scipy \
+#               statsmodels scikit-learn plotly kaleido python-docx \
+#               openpyxl requests httpx tabulate pyreadstat
 #
 # Instalasi lengkap:
 #   pip install -r requirements.txt
 #
 # Jika kaleido gagal di Linux/server:
 #   pip install kaleido==0.2.1
-#   atau gunakan: pip install kaleido --pre
+#   atau: pip install kaleido --pre
 #
 # Jika semopy gagal install (opsional):
 #   Modul SEM & CFA tidak akan berfungsi, modul lain tetap berjalan normal.
