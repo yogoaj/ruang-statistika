@@ -473,7 +473,22 @@ def _tab_pairplot(df: pd.DataFrame):
     # ── Tabel korelasi ringkas ───────────────────────────────────────────────
     with st.expander("📋 Tabel Korelasi Pearson"):
         corr = sub[selected].corr().round(3)
-        st.dataframe(corr.style.background_gradient(cmap="Blues", vmin=-1, vmax=1),
+
+        def _color_corr(val):
+            try:
+                v = float(val)
+                intensity = abs(v)
+                if v > 0:
+                    r, g, b = int(255 - intensity * 80), int(255 - intensity * 60), 255
+                elif v < 0:
+                    r, g, b = 255, int(255 - intensity * 60), int(255 - intensity * 80)
+                else:
+                    r, g, b = 255, 255, 255
+                return f"background-color: rgb({r},{g},{b})"
+            except Exception:
+                return ""
+
+        st.dataframe(corr.style.map(_color_corr),
                      use_container_width=True)
 
 
@@ -667,7 +682,17 @@ def _tab_kategorik(df: pd.DataFrame):
 
         with st.expander("📋 Tabel Proporsi"):
             prop_ct = ct.div(ct.sum().sum()).mul(100).round(2)
-            st.dataframe(prop_ct.style.background_gradient(cmap="Blues"),
+
+            def _color_prop(val):
+                try:
+                    v = float(val)
+                    intensity = min(v / 100, 1.0)
+                    b = int(255 - intensity * 120)
+                    return f"background-color: rgb({b + 40},{b + 60},{255})"
+                except Exception:
+                    return ""
+
+            st.dataframe(prop_ct.style.map(_color_prop),
                          use_container_width=True)
 
 
