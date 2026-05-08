@@ -1,6 +1,6 @@
 # Ruang Statistika v4.5 — Modular Architecture
 
-> AI-Powered Research & Stats Reporting | [yogoaj.github.io](https://yogoaj.github.io)
+> AI-Powered Research & Stats Reporting | [ruang-statistika.streamlit.app](https://ruang-statistika.streamlit.app/)
 
 ---
 
