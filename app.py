@@ -841,6 +841,29 @@ if menu == "Beranda":
             border-bottom-color: #185FA5 !important;
         }
 
+        /* Link lupa password — kecil rata kanan */
+        .signin-link-btn-right {
+            text-align: right;
+            margin-top: -2px;
+            margin-bottom: 6px;
+        }
+        .signin-link-btn-right .stButton > button {
+            background: transparent !important;
+            border: none !important;
+            color: #185FA5 !important;
+            font-size: 0.74rem !important;
+            font-weight: 500 !important;
+            padding: 0 !important;
+            height: auto !important;
+            min-height: 0 !important;
+            width: auto !important;
+            float: right;
+        }
+        .signin-link-btn-right .stButton > button:hover {
+            background: transparent !important;
+            text-decoration: underline !important;
+        }
+
         /* Link-style buttons (footer & activate) */
         .signin-link-btn .stButton > button {
             background: transparent !important;
@@ -1026,13 +1049,6 @@ if menu == "Beranda":
                 _email_inp = st.text_input("Email", placeholder="email@domain.com")
                 _pw_inp    = st.text_input("Password", placeholder="Password kamu…",
                                            type="password")
-                # Link lupa password — HTML saja (non-interaktif, trigger st.button di bawah)
-                st.markdown(
-                    '<div class="forgot-link" id="lupa-trigger">'
-                    '<span style="color:#185FA5;cursor:pointer;" '
-                    'onclick="window.parent.document.getElementById(\'btn_ke_lupa\').click()">'
-                    'Lupa password?</span></div>',
-                    unsafe_allow_html=True)
                 if st.form_submit_button("Masuk →", use_container_width=True, type="primary"):
                     from utils.supabase_auth import supabase_sign_in
                     _ok, _msg = supabase_sign_in(_email_inp.strip(), _pw_inp)
@@ -1043,10 +1059,10 @@ if menu == "Beranda":
                         st.session_state["_auth_msg_error"] = _msg
                         st.rerun()
 
-            # Tombol tersembunyi untuk pindah ke tab lupa (dipanggil via JS di atas)
-            st.markdown('<div style="display:none;" id="btn_ke_lupa_wrap">', unsafe_allow_html=True)
-            if st.button("lupa password?", key="btn_ke_lupa"):
-                st.session_state.modal_tab = "lupa password?"
+            # Link lupa password — di luar form, tampil sebagai link teks kecil rata kanan
+            st.markdown('<div class="signin-link-btn-right">', unsafe_allow_html=True)
+            if st.button("Lupa password?", key="btn_ke_lupa", use_container_width=False):
+                st.session_state.modal_tab = "lupa"
                 st.rerun()
             st.markdown('</div>', unsafe_allow_html=True)
 
@@ -1164,7 +1180,7 @@ if menu == "Beranda":
 
         elif tab == "pro":
             with st.form("form_pro", clear_on_submit=False):
-                _key_inp  = st.text_input("License Key", placeholder="PRO-STAT-XXXX",
+                _key_inp  = st.text_input("License Key", placeholder="XXXX-XXXX-XXXX",
                                           type="password")
                 _pro_name = st.text_input("Nama Anda (untuk laporan)",
                                           placeholder="Nama peneliti…")
