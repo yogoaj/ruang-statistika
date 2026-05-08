@@ -144,7 +144,7 @@ def _tab_ringkasan(df: pd.DataFrame):
 
     st.markdown("**📋 Profil Kolom:**")
     st.dataframe(
-        profile_df.style.applymap(_highlight_missing, subset=["Missing"]),
+        profile_df.style.map(_highlight_missing, subset=["Missing"]),
         use_container_width=True, hide_index=True,
     )
 
