@@ -878,9 +878,21 @@ if menu == "Beranda":
                             _reg_name.strip(),
                         )
                         if _ok:
-                            st.session_state["_auth_msg_success"] = _msg
-                            st.session_state["modal_tab"] = "masuk"
-                            st.rerun()
+                            # Cek apakah Supabase langsung login (konfirmasi email dinonaktifkan)
+                            # atau perlu konfirmasi email dulu
+                            if st.session_state.get("user_logged_in"):
+                                # Langsung masuk — konfirmasi email dinonaktifkan di Supabase
+                                st.rerun()
+                            else:
+                                # Konfirmasi email diaktifkan — arahkan ke tab masuk + info jelas
+                                st.session_state["_auth_msg_success"] = (
+                                    "✅ Pendaftaran berhasil! "
+                                    f"Kami telah mengirim email konfirmasi ke **{_reg_email.strip()}**. "
+                                    "Silakan cek inbox (atau folder Spam) dan klik link konfirmasi, "
+                                    "lalu kembali ke sini untuk **Masuk**."
+                                )
+                                st.session_state["modal_tab"] = "masuk"
+                                st.rerun()
                         else:
                             st.session_state["_auth_msg_error"] = _msg
                             st.rerun()
