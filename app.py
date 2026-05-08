@@ -19,11 +19,12 @@ from utils.supabase_auth import restore_supabase_session
 restore_supabase_session()      # restore session jika token masih valid
 
 # ── Page config (harus paling pertama) ───────────────────────────────────────
+_is_logged_in = st.session_state.get("user_logged_in", False)
 st.set_page_config(
     page_title="Ruang Statistika",
     page_icon="📊",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="expanded" if _is_logged_in else "collapsed",
 )
 
 # ── Global CSS ────────────────────────────────────────────────────────────────
@@ -32,6 +33,12 @@ st.markdown("""
 @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap');
 
 html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; }
+
+/* Sembunyikan tombol toggle sidebar saat belum login */
+body:not(.rs-logged-in) [data-testid="collapsedControl"],
+body:not(.rs-logged-in) [data-testid="stSidebarCollapsedControl"] {
+    display: none !important;
+}
 
 [data-testid="stSidebar"] {
     background: #0c2340;
@@ -328,18 +335,43 @@ with st.sidebar:
     if "user_logged_in" not in st.session_state:
         st.session_state.user_logged_in = False
 
-    # Sidebar hanya tampilkan nama + tombol keluar (jika sudah login)
+    # Inject body class untuk kontrol CSS sidebar toggle
     if st.session_state.user_logged_in:
-        _display_name = st.session_state.user_name
         st.markdown(
-            f"<div style='text-align:center;padding:6px 0;background:rgba(24,95,165,0.25);"
-            f"border-radius:8px;margin-bottom:4px;'>"
-            f"<span style='font-size:0.78rem;color:#85b7eb;'>Selamat datang,</span><br/>"
-            f"<span style='font-size:0.95rem;color:#ffffff;font-weight:600;'>"
-            f"👤 {_display_name}</span></div>",
+            "<script>document.body.classList.add('rs-logged-in');</script>",
             unsafe_allow_html=True,
         )
-        if st.button("Keluar", key="btn_logout", use_container_width=True):
+
+    # Sidebar hanya tampilkan nama + tombol keluar (jika sudah login)
+    if st.session_state.user_logged_in:
+        _display_name = st.session_state.user_name or "Pengguna"
+        _is_pro_user  = st.session_state.get("_user_data", {}).get("role") == "pro"
+        _tier_badge   = (
+            "<span style='background:linear-gradient(90deg,#185FA5,#0c2340);"
+            "color:#fff;font-size:0.65rem;font-weight:600;letter-spacing:0.04em;"
+            "padding:2px 8px;border-radius:10px;margin-left:6px;'>PRO</span>"
+            if _is_pro_user else
+            "<span style='background:rgba(255,255,255,0.12);color:#85b7eb;"
+            "font-size:0.65rem;padding:2px 8px;border-radius:10px;margin-left:6px;'>"
+            "GRATIS</span>"
+        )
+        st.markdown(
+            f"<div style='padding:8px 10px;background:rgba(24,95,165,0.20);"
+            f"border-radius:8px;margin-bottom:4px;display:flex;align-items:center;gap:8px;'>"
+            f"<div style='width:30px;height:30px;border-radius:50%;background:#185FA5;"
+            f"display:flex;align-items:center;justify-content:center;"
+            f"font-size:0.72rem;color:#fff;font-weight:600;flex-shrink:0;'>"
+            f"{(_display_name[:2].upper()) if _display_name else 'U'}</div>"
+            f"<div style='min-width:0;'>"
+            f"<div style='font-size:0.85rem;color:#ffffff;font-weight:600;"
+            f"white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'>"
+            f"{_display_name}{_tier_badge}</div>"
+            f"<div style='font-size:0.7rem;color:#4a7aaa;margin-top:1px;'>"
+            f"{st.session_state.get('_user_data', {}).get('email', '') or 'Mode Gratis'}"
+            f"</div></div></div>",
+            unsafe_allow_html=True,
+        )
+        if st.button("⬡  Keluar", key="btn_logout", use_container_width=True):
             from utils.supabase_auth import supabase_sign_out
             supabase_sign_out()
             st.rerun()
@@ -678,190 +710,381 @@ if menu != st.session_state.previous_menu:
 # ══════════════════════════════════════════════════════════════════════════════
 
 if menu == "Beranda":
-    # ── Welcome Modal — muncul jika belum login ────────────────────────────
+    # ── Auth screen — muncul jika belum login ─────────────────────────────
     if not st.session_state.user_logged_in:
 
+        # ── Tab state — murni session_state, tanpa query_params ────────────
         if "modal_tab" not in st.session_state:
             st.session_state.modal_tab = "masuk"
-
         tab = st.session_state.modal_tab
 
-        # ── Backdrop + dekorasi visual (non-interactive) via CSS ─────────────
+        # ── CSS: halaman login — bersih, sidebar tersembunyi ────────────────
         st.markdown("""
         <style>
-        /* Backdrop gelap menutupi konten beranda */
-        section[data-testid="stMain"] > div {
-            position: relative;
+        .rs-footer { display: none; }
+        header[data-testid="stHeader"] { display: none; }
+
+        /* Sembunyikan sidebar & tombol toggle-nya sepenuhnya */
+        [data-testid="stSidebar"],
+        [data-testid="collapsedControl"],
+        [data-testid="stSidebarCollapsedControl"] {
+            display: none !important;
         }
-        section[data-testid="stMain"]::before {
+
+        /* Background terang — nada seperti email konfirmasi */
+        [data-testid="stAppViewContainer"],
+        [data-testid="stApp"] {
+            background: #eef4fb !important;
+        }
+
+        /* Pusatkan kartu — pertahankan max-width sempit */
+        section[data-testid="stMain"] .block-container {
+            padding-top: 5vh !important;
+            max-width: 440px !important;
+            margin: 0 auto !important;
+            padding-left: 1rem !important;
+            padding-right: 1rem !important;
+            padding-bottom: 3rem !important;
+        }
+
+        /* ── Kartu utama — dengan header gradient di atas ── */
+        .signin-card {
+            background: #ffffff;
+            border-radius: 18px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(12,35,64,0.13), 0 2px 8px rgba(12,35,64,0.07);
+            width: 100%;
+            max-width: 420px;
+            margin-bottom: 0;
+        }
+
+        /* ── Header kartu bergradient (seperti email konfirmasi) ── */
+        .signin-card-header {
+            background: linear-gradient(135deg, #0c2340 0%, #185FA5 65%, #1e73c8 100%);
+            padding: 2rem 2rem 1.8rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .signin-card-header::before {
             content: '';
-            position: fixed;
-            inset: 0;
-            background: rgba(8, 20, 40, 0.75);
-            backdrop-filter: blur(5px);
-            z-index: 100;
+            position: absolute;
+            right: -50px; top: -50px;
+            width: 180px; height: 180px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.06);
             pointer-events: none;
         }
-        /* Angkat container modal di atas backdrop */
-        section[data-testid="stMain"] .block-container {
-            position: relative;
-            z-index: 200;
+        .signin-card-header::after {
+            content: '';
+            position: absolute;
+            left: -30px; bottom: -50px;
+            width: 140px; height: 140px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.04);
+            pointer-events: none;
         }
-        /* Sembunyikan footer saat modal aktif */
-        .rs-footer { display: none; }
-        /* Sembunyikan sidebar toggle agar tidak mengganggu */
-        button[data-testid="collapsedControl"] { z-index: 50 !important; }
-
-        /* ── Kartu modal ── */
-        .modal-outer {
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            padding-top: 6vh;
-            min-height: 80vh;
+        .signin-header-logo {
+            position: relative; z-index: 1;
+            margin-bottom: 12px;
         }
-        .modal-card {
-            background: #ffffff;
-            border-radius: 20px;
-            padding: 2.4rem 2.6rem 2rem;
-            width: 100%;
-            max-width: 430px;
-            box-shadow: 0 32px 80px rgba(0,0,0,0.45), 0 4px 16px rgba(0,0,0,0.15);
-            animation: modalIn 0.3s cubic-bezier(.22,.68,0,1.2);
+        .signin-header-logo img {
+            width: 60px; height: 60px;
+            object-fit: contain;
+            filter: drop-shadow(0 3px 10px rgba(0,0,0,0.25));
         }
-        @keyframes modalIn {
-            from { opacity:0; transform: scale(0.93) translateY(16px); }
-            to   { opacity:1; transform: scale(1)    translateY(0); }
-        }
-        .modal-logo {
-            text-align: center; margin-bottom: 1.5rem;
-        }
-        .modal-logo img {
-            width: 60px; margin-bottom: 10px;
-        }
-        .modal-logo h2 {
+        .signin-header-title {
             font-family: 'DM Serif Display', serif;
-            font-size: 1.5rem; color: #0c2340; margin: 0 0 4px;
+            font-size: 1.55rem; font-weight: 400;
+            color: #ffffff; letter-spacing: -0.2px;
+            position: relative; z-index: 1;
+            margin: 0 0 5px;
         }
-        .modal-logo p { font-size: 0.8rem; color: #5f8ab5; margin: 0; }
+        .signin-header-sub {
+            font-size: 0.78rem; color: #85b7eb;
+            position: relative; z-index: 1;
+        }
 
-        /* Perkecil padding block-container saat modal aktif */
-        section[data-testid="stMain"] .block-container {
-            padding-top: 1rem !important;
-            padding-bottom: 1rem !important;
-            max-width: 520px !important;
-            margin: 0 auto !important;
+        /* ── Body dalam kartu ── */
+        .signin-body {
+            padding: 1.6rem 2rem 1.4rem;
         }
-        /* Sembunyikan header Streamlit default */
-        header[data-testid="stHeader"] { z-index: 50 !important; }
+
+        /* Tab strip — tombol Streamlit disamarkan jadi tab */
+        .signin-tab-row {
+            display: flex;
+            border-bottom: 1px solid #e2ecf5;
+            margin-bottom: 1.3rem;
+            gap: 0;
+        }
+        .signin-tab-row .stButton { flex: 1; }
+        .signin-tab-row .stButton > button {
+            background: transparent !important;
+            border: none !important;
+            border-bottom: 2.5px solid transparent !important;
+            border-radius: 0 !important;
+            color: #8aabcc !important;
+            font-size: 0.85rem !important;
+            font-weight: 500 !important;
+            padding: 8px 4px !important;
+            width: 100% !important;
+            margin-bottom: -1px !important;
+            transition: color 0.15s, border-color 0.15s !important;
+        }
+        .signin-tab-row .stButton > button:hover {
+            color: #0c2340 !important;
+            background: transparent !important;
+        }
+        .signin-tab-active .stButton > button {
+            color: #0c2340 !important;
+            font-weight: 700 !important;
+            border-bottom-color: #185FA5 !important;
+        }
+
+        /* Link-style buttons (footer & activate) */
+        .signin-link-btn .stButton > button {
+            background: transparent !important;
+            border: none !important;
+            color: #185FA5 !important;
+            font-size: 0.74rem !important;
+            font-weight: 600 !important;
+            padding: 2px 6px !important;
+            height: auto !important;
+            min-height: 0 !important;
+        }
+        .signin-link-btn .stButton > button:hover {
+            background: transparent !important;
+            text-decoration: underline !important;
+        }
+        .signin-link-btn-muted .stButton > button {
+            color: #7aa8cc !important;
+            font-weight: 400 !important;
+            font-size: 0.72rem !important;
+        }
+
+        /* Logo + judul (fallback lama, tidak dipakai lagi) */
+        .signin-logo { text-align: center; margin-bottom: 1.6rem; }
+        .signin-logo-icon {
+            width: 48px; height: 48px; border-radius: 12px;
+            background: #0c2340;
+            display: inline-flex; align-items: center; justify-content: center;
+            margin-bottom: 12px;
+        }
+        .signin-logo-icon img { width: 30px; filter: brightness(1.2); }
+        .signin-logo h2 {
+            font-family: 'DM Serif Display', serif;
+            font-size: 1.45rem; color: #0c2340; margin: 0 0 5px;
+        }
+        .signin-logo p { font-size: 0.78rem; color: #8aabcc; margin: 0; }
+
+        /* Tab strip — hanya Masuk & Daftar */
+        .signin-tabs {
+            display: flex;
+            border-bottom: 1px solid #e8edf2;
+            margin-bottom: 1.4rem;
+        }
+        .signin-tab {
+            flex: 1; text-align: center; padding: 8px 4px;
+            font-size: 0.85rem; font-weight: 500; color: #8aabcc;
+            text-decoration: none;
+            border-bottom: 2px solid transparent; margin-bottom: -1px;
+            transition: color 0.15s, border-color 0.15s;
+        }
+        .signin-tab:hover { color: #0c2340; }
+        .signin-tab.active {
+            color: #0c2340; font-weight: 700;
+            border-bottom-color: #185FA5;
+        }
+
+        /* Input fields */
+        section[data-testid="stMain"] .stTextInput label {
+            font-size: 0.78rem !important; font-weight: 600 !important;
+            color: #3d5a73 !important; margin-bottom: 4px !important;
+        }
+        section[data-testid="stMain"] .stTextInput input {
+            border: 1.5px solid #d0e4f2 !important;
+            border-radius: 8px !important; padding: 10px 12px !important;
+            font-size: 0.88rem !important; background: #f7faff !important;
+            transition: border-color 0.15s, box-shadow 0.15s !important;
+        }
+        section[data-testid="stMain"] .stTextInput input:focus {
+            border-color: #185FA5 !important;
+            background: #ffffff !important;
+            box-shadow: 0 0 0 3px rgba(24,95,165,0.10) !important;
+        }
+
+        /* Submit button (form) */
+        section[data-testid="stMain"] .stForm [data-testid="stFormSubmitButton"] > button {
+            background: linear-gradient(135deg, #0c2340 0%, #185FA5 100%) !important;
+            color: #ffffff !important;
+            border: none !important; border-radius: 9px !important;
+            padding: 12px !important; font-size: 0.9rem !important;
+            font-weight: 600 !important; width: 100% !important;
+            transition: opacity 0.15s, box-shadow 0.15s !important;
+            box-shadow: 0 4px 14px rgba(24,95,165,0.30) !important;
+        }
+        section[data-testid="stMain"] .stForm [data-testid="stFormSubmitButton"] > button:hover {
+            opacity: 0.92 !important;
+            box-shadow: 0 6px 18px rgba(24,95,165,0.38) !important;
+        }
+
+        /* CTA Coba Gratis — tombol Streamlit biasa di luar form */
+        section[data-testid="stMain"] .stButton > button {
+            background: #f0f6ff !important;
+            border: 1.5px solid #c0d9f0 !important;
+            border-radius: 9px !important; color: #185FA5 !important;
+            font-size: 0.85rem !important; font-weight: 600 !important;
+            padding: 9px !important; width: 100% !important;
+            transition: background 0.15s, border-color 0.15s !important;
+        }
+        section[data-testid="stMain"] .stButton > button:hover {
+            background: #deeef9 !important; border-color: #185FA5 !important;
+        }
+
+        /* Lupa password — link kecil */
+        .forgot-link {
+            text-align: right; margin: -6px 0 12px;
+            font-size: 0.74rem;
+        }
+        .forgot-link a { color: #185FA5; text-decoration: none; }
+        .forgot-link a:hover { text-decoration: underline; }
+
+        /* Divider teks */
+        .signin-divider {
+            text-align: center; font-size: 0.74rem; color: #b5c8d8;
+            margin: 10px 0 8px; position: relative;
+        }
+        .signin-divider::before, .signin-divider::after {
+            content: ''; position: absolute; top: 50%;
+            width: 40%; height: 1px; background: #e2ecf5;
+        }
+        .signin-divider::before { left: 0; }
+        .signin-divider::after  { right: 0; }
+
+        /* Footer links bawah kartu */
+        .signin-footer {
+            text-align: center; margin-top: 1rem;
+            font-size: 0.74rem; color: #8aabcc;
+        }
+        .signin-footer a { color: #185FA5; font-weight: 600; text-decoration: none; }
+        .signin-footer a:hover { text-decoration: underline; }
+
+        /* Footer di bawah kartu */
+        .signin-page-footer {
+            text-align: center; margin-top: 1.4rem;
+            font-size: 0.72rem; color: #9ab5cc; line-height: 1.7;
+        }
+        .signin-page-footer a { color: #185FA5; text-decoration: none; font-weight: 500; }
+
+        /* Link aktivasi Pro */
+        .activate-link {
+            text-align: center; margin-top: 8px;
+            font-size: 0.72rem; color: #a0bcd8;
+        }
+        .activate-link a { color: #7aa8cc; text-decoration: none; }
+        .activate-link a:hover { text-decoration: underline; }
         </style>
         """, unsafe_allow_html=True)
 
-        # ── Logo + judul modal ───────────────────────────────────────────────
+        # ── Header kartu: gradient biru (nada email konfirmasi) ─────────────
         st.markdown("""
-        <div class="modal-outer"><div class="modal-card">
-        <div class="modal-logo">
-          <img src="https://i.imgur.com/tESt5qg.png" alt="logo">
-          <h2>Ruang Statistika</h2>
-          <p>AI-Powered Research &amp; Stats Reporting</p>
+        <div class="signin-card">
+          <div class="signin-card-header">
+            <div class="signin-header-logo">
+              <img src="https://i.imgur.com/tESt5qg.png" alt="logo Ruang Statistika">
+            </div>
+            <div class="signin-header-title">Ruang Statistika</div>
+            <div class="signin-header-sub">AI-Powered Research &amp; Stats Reporting</div>
+          </div>
         </div>
-        </div></div>
         """, unsafe_allow_html=True)
 
-        # ── Tab selector (layout baris vertikal, 2 kolom) ────────────────────
-        _tabs_def = [
-            ("masuk",   "🔑  Masuk"),
-            ("daftar",  "✏️  Daftar"),
-            ("lupa",    "📧  Lupa Password"),
-            ("pro",     "⭐  Kode Pro"),
-            ("gratis",  "🆓  Lanjut Gratis"),
-        ]
-        st.markdown("""
-        <style>
-        /* Styling tab nav 2-kolom agar rapi */
-        div[data-testid="stHorizontalBlock"] > div {
-            gap: 6px !important;
-        }
-        </style>
-        """, unsafe_allow_html=True)
-        _tc1, _tc2 = st.columns(2)
-        _tab_cols = [_tc1, _tc2, _tc1, _tc2, _tc1]
-        for _col, (_tkey, _tlabel) in zip(_tab_cols, _tabs_def):
-            with _col:
-                _is_active = (tab == _tkey)
-                if st.button(
-                    _tlabel,
-                    key=f"mtab_{_tkey}",
-                    use_container_width=True,
-                    type="primary" if _is_active else "secondary",
-                ):
+        # ── Tab strip — st.button (tetap di halaman sama) ─────────────────
+        st.markdown('<div class="signin-tab-row">', unsafe_allow_html=True)
+        _tcols = st.columns(2)
+        _tab_labels = {"masuk": "Masuk", "daftar": "Daftar"}
+        for _i, (_tkey, _tlabel) in enumerate(_tab_labels.items()):
+            _cls = "signin-tab-active" if tab == _tkey else ""
+            with _tcols[_i]:
+                st.markdown(f'<div class="{_cls}">', unsafe_allow_html=True)
+                if st.button(_tlabel, key=f"tab_btn_{_tkey}", use_container_width=True):
                     st.session_state.modal_tab = _tkey
                     st.rerun()
+                st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
-        st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
-
-        # ── Tampilkan pesan status lintas-tab ────────────────────────────────
+        # ── Pesan status ────────────────────────────────────────────────────
         if st.session_state.get("_auth_msg_error"):
             st.error(st.session_state.pop("_auth_msg_error"))
         if st.session_state.get("_auth_msg_success"):
             st.success(st.session_state.pop("_auth_msg_success"))
 
-        # ── Konten per tab ───────────────────────────────────────────────────
+        # ── Form per tab ─────────────────────────────────────────────────────
 
         if tab == "masuk":
-            # ── Sign In ───────────────────────────────────────────────────────
-            st.markdown(
-                "<p style='font-size:0.88rem;color:#0c2340;font-weight:500;"
-                "margin-bottom:4px;'>Masuk ke akun Anda</p>",
-                unsafe_allow_html=True)
-
             with st.form("form_masuk", clear_on_submit=False):
-                _email_inp = st.text_input(
-                    "Email", placeholder="email@domain.com",
-                    label_visibility="visible")
-                _pw_inp = st.text_input(
-                    "Password", placeholder="Password kamu…",
-                    type="password", label_visibility="visible")
-                _sub_masuk = st.form_submit_button(
-                    "Masuk →", use_container_width=True, type="primary")
-                if _sub_masuk:
+                _email_inp = st.text_input("Email", placeholder="email@domain.com")
+                _pw_inp    = st.text_input("Password", placeholder="Password kamu…",
+                                           type="password")
+                # Link lupa password — HTML saja (non-interaktif, trigger st.button di bawah)
+                st.markdown(
+                    '<div class="forgot-link" id="lupa-trigger">'
+                    '<span style="color:#185FA5;cursor:pointer;" '
+                    'onclick="window.parent.document.getElementById(\'btn_ke_lupa\').click()">'
+                    'Lupa password?</span></div>',
+                    unsafe_allow_html=True)
+                if st.form_submit_button("Masuk →", use_container_width=True, type="primary"):
                     from utils.supabase_auth import supabase_sign_in
-                    _ok, _msg = supabase_sign_in(
-                        _email_inp.strip(), _pw_inp)
+                    _ok, _msg = supabase_sign_in(_email_inp.strip(), _pw_inp)
                     if _ok:
+                        st.query_params.clear()
                         st.rerun()
                     else:
                         st.session_state["_auth_msg_error"] = _msg
                         st.rerun()
 
-            st.markdown(
-                "<p style='text-align:center;font-size:0.75rem;color:#8aabcc;"
-                "margin-top:10px;'>Belum punya akun? Klik tab <b>Daftar</b> di atas.</p>",
-                unsafe_allow_html=True)
+            # Tombol tersembunyi untuk pindah ke tab lupa (dipanggil via JS di atas)
+            st.markdown('<div style="display:none;" id="btn_ke_lupa_wrap">', unsafe_allow_html=True)
+            if st.button("lupa password?", key="btn_ke_lupa"):
+                st.session_state.modal_tab = "lupa password?"
+                st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
+
+            # Divider + CTA Coba Gratis
+            st.markdown('<div class="signin-divider">atau</div>', unsafe_allow_html=True)
+            if st.button("✨  Coba Gratis — tanpa akun", key="btn_coba_gratis_masuk",
+                         use_container_width=True):
+                st.session_state.user_name      = ""
+                st.session_state.user_logged_in = True
+                st.query_params.clear()
+                st.rerun()
+
+            # Footer navigasi — st.button link-style
+            st.markdown('<div class="signin-footer">Belum punya akun?</div>', unsafe_allow_html=True)
+            _fc1, _fc2 = st.columns([1, 1])
+            with _fc1:
+                st.markdown('<div class="signin-link-btn">', unsafe_allow_html=True)
+                if st.button("Daftar gratis", key="go_daftar_from_masuk", use_container_width=True):
+                    st.session_state.modal_tab = "daftar"
+                    st.rerun()
+                st.markdown('</div>', unsafe_allow_html=True)
+            with _fc2:
+                st.markdown('<div class="signin-link-btn signin-link-btn-muted">', unsafe_allow_html=True)
+                if st.button("Aktivasi Pro →", key="go_pro_from_masuk", use_container_width=True):
+                    st.session_state.modal_tab = "pro"
+                    st.rerun()
+                st.markdown('</div>', unsafe_allow_html=True)
 
         elif tab == "daftar":
-            # ── Sign Up ───────────────────────────────────────────────────────
-            st.markdown(
-                "<p style='font-size:0.88rem;color:#0c2340;font-weight:500;"
-                "margin-bottom:4px;'>Buat akun baru</p>",
-                unsafe_allow_html=True)
-
             with st.form("form_daftar", clear_on_submit=False):
-                _reg_name  = st.text_input(
-                    "Nama Lengkap", placeholder="Nama kamu…",
-                    label_visibility="visible")
-                _reg_email = st.text_input(
-                    "Email", placeholder="email@domain.com",
-                    label_visibility="visible")
-                _reg_pw  = st.text_input(
-                    "Password", placeholder="Minimal 6 karakter…",
-                    type="password", label_visibility="visible")
-                _reg_pw2 = st.text_input(
-                    "Konfirmasi Password", placeholder="Ulangi password…",
-                    type="password", label_visibility="visible")
-                _sub_daftar = st.form_submit_button(
-                    "Daftar Sekarang →", use_container_width=True, type="primary")
-                if _sub_daftar:
+                _reg_name  = st.text_input("Nama Lengkap", placeholder="Nama kamu…")
+                _reg_email = st.text_input("Email", placeholder="email@domain.com")
+                _reg_pw    = st.text_input("Password", placeholder="Minimal 6 karakter…",
+                                           type="password")
+                _reg_pw2   = st.text_input("Konfirmasi Password",
+                                           placeholder="Ulangi password…", type="password")
+                if st.form_submit_button("Daftar Sekarang →", use_container_width=True,
+                                         type="primary"):
                     if not _reg_name.strip():
                         st.error("Nama lengkap tidak boleh kosong.")
                     elif not _reg_email.strip():
@@ -873,77 +1096,80 @@ if menu == "Beranda":
                     else:
                         from utils.supabase_auth import supabase_sign_up
                         _ok, _msg = supabase_sign_up(
-                            _reg_email.strip(),
-                            _reg_pw,
-                            _reg_name.strip(),
-                        )
+                            _reg_email.strip(), _reg_pw, _reg_name.strip())
                         if _ok:
-                            # Cek apakah Supabase langsung login (konfirmasi email dinonaktifkan)
-                            # atau perlu konfirmasi email dulu
                             if st.session_state.get("user_logged_in"):
-                                # Langsung masuk — konfirmasi email dinonaktifkan di Supabase
+                                st.query_params.clear()
                                 st.rerun()
                             else:
-                                # Konfirmasi email diaktifkan — arahkan ke tab masuk + info jelas
                                 st.session_state["_auth_msg_success"] = (
-                                    "✅ Pendaftaran berhasil! "
-                                    f"Kami telah mengirim email konfirmasi ke **{_reg_email.strip()}**. "
-                                    "Silakan cek inbox (atau folder Spam) dan klik link konfirmasi, "
-                                    "lalu kembali ke sini untuk **Masuk**."
+                                    "✅ Cek inbox "
+                                    f"**{_reg_email.strip()}** untuk konfirmasi, "
+                                    "lalu kembali untuk **Masuk**."
                                 )
-                                st.session_state["modal_tab"] = "masuk"
+                                st.session_state.modal_tab = "masuk"
                                 st.rerun()
                         else:
                             st.session_state["_auth_msg_error"] = _msg
                             st.rerun()
 
+            # Divider + CTA Coba Gratis
+            st.markdown('<div class="signin-divider">atau</div>', unsafe_allow_html=True)
+            if st.button("✨  Coba Gratis — tanpa akun", key="btn_coba_gratis_daftar",
+                         use_container_width=True):
+                st.session_state.user_name      = ""
+                st.session_state.user_logged_in = True
+                st.query_params.clear()
+                st.rerun()
+
+            st.markdown('<div class="signin-footer">Sudah punya akun?</div>', unsafe_allow_html=True)
+            _dc1, _dc2 = st.columns([1, 1])
+            with _dc1:
+                st.markdown('<div class="signin-link-btn">', unsafe_allow_html=True)
+                if st.button("Masuk", key="go_masuk_from_daftar", use_container_width=True):
+                    st.session_state.modal_tab = "masuk"
+                    st.rerun()
+                st.markdown('</div>', unsafe_allow_html=True)
+            with _dc2:
+                st.markdown('<div class="signin-link-btn signin-link-btn-muted">', unsafe_allow_html=True)
+                if st.button("Aktivasi Pro →", key="go_pro_from_daftar", use_container_width=True):
+                    st.session_state.modal_tab = "pro"
+                    st.rerun()
+                st.markdown('</div>', unsafe_allow_html=True)
+
+        # ── Tab lupa, pro, gratis: navigasi via session_state ────────────────
 
         elif tab == "lupa":
-            # ── Forgot Password ───────────────────────────────────────────────
             st.markdown(
-                "<p style='font-size:0.88rem;color:#0c2340;font-weight:500;"
-                "margin-bottom:4px;'>Reset password via email</p>",
-                unsafe_allow_html=True)
-            st.markdown(
-                "<p style='font-size:0.82rem;color:#5f8ab5;margin-bottom:12px;'>"
-                "Masukkan email yang kamu pakai saat daftar. Kami akan kirimkan "
-                "link untuk membuat password baru.</p>",
+                "<p style='font-size:0.82rem;color:#5f8ab5;margin:0 0 12px;'>"
+                "Masukkan email saat daftar, kami kirimkan link reset.</p>",
                 unsafe_allow_html=True)
             with st.form("form_lupa", clear_on_submit=True):
-                _lupa_email = st.text_input(
-                    "Email", placeholder="email@domain.com",
-                    label_visibility="visible")
-                _sub_lupa = st.form_submit_button(
-                    "Kirim Link Reset →", use_container_width=True, type="primary")
-                if _sub_lupa:
+                _lupa_email = st.text_input("Email", placeholder="email@domain.com")
+                if st.form_submit_button("Kirim Link Reset →", use_container_width=True,
+                                         type="primary"):
                     if not _lupa_email.strip():
                         st.error("Masukkan email kamu.")
                     else:
                         from utils.supabase_auth import supabase_forgot_password
                         _app_url = st.secrets.get("app_url", "http://localhost:8501")
-                        _ok, _msg = supabase_forgot_password(
-                            _lupa_email.strip(), _app_url)
-                        if _ok:
-                            st.session_state["_auth_msg_success"] = _msg
-                        else:
-                            st.session_state["_auth_msg_error"] = _msg
+                        _ok, _msg = supabase_forgot_password(_lupa_email.strip(), _app_url)
+                        st.session_state["_auth_msg_success" if _ok else "_auth_msg_error"] = _msg
                         st.rerun()
+            st.markdown('<div class="signin-link-btn">', unsafe_allow_html=True)
+            if st.button("← Kembali ke Masuk", key="go_masuk_from_lupa", use_container_width=True):
+                st.session_state.modal_tab = "masuk"
+                st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
 
         elif tab == "pro":
-            # ── Kode Pro ─────────────────────────────────────────────────────
-            st.markdown(
-                "<p style='font-size:0.88rem;color:#0c2340;font-weight:500;"
-                "margin-bottom:4px;'>Aktifkan fitur Pro dengan License Key</p>",
-                unsafe_allow_html=True)
             with st.form("form_pro", clear_on_submit=False):
-                _key_inp  = st.text_input(
-                    "License Key", placeholder="PRO-STAT-XXXX",
-                    label_visibility="collapsed", type="password")
-                _pro_name = st.text_input(
-                    "Nama Anda (untuk laporan)", placeholder="Nama peneliti…")
-                _sub_pro  = st.form_submit_button(
-                    "Aktifkan Pro →", use_container_width=True, type="primary")
-                if _sub_pro:
+                _key_inp  = st.text_input("License Key", placeholder="PRO-STAT-XXXX",
+                                          type="password")
+                _pro_name = st.text_input("Nama Anda (untuk laporan)",
+                                          placeholder="Nama peneliti…")
+                if st.form_submit_button("Aktifkan Pro →", use_container_width=True,
+                                         type="primary"):
                     from utils.auth import validate_license
                     _k = _key_inp.strip()
                     if not _k:
@@ -961,37 +1187,60 @@ if menu == "Beranda":
                                 "email": "", "role": "pro",
                                 "license_key": _k, "active": True,
                             }
+                            st.query_params.clear()
                             st.rerun()
                         else:
                             st.error("❌ License key tidak valid atau sudah expired.")
             st.markdown(
-                "<p style='text-align:center;font-size:0.76rem;color:#8aabcc;"
-                "margin-top:6px;'>Dapatkan key di "
-                "<a href='https://yogoaj.github.io' target='_blank' "
-                "style='color:#185FA5;'>yogoaj.github.io</a></p>",
+                '<div class="signin-footer">Dapatkan key di '
+                '<a href="https://yogoaj.github.io" target="_blank">yogoaj.github.io</a>'
+                '</div>',
                 unsafe_allow_html=True)
+            st.markdown('<div class="signin-link-btn" style="margin-top:6px;">', unsafe_allow_html=True)
+            if st.button("← Kembali ke Masuk", key="go_masuk_from_pro", use_container_width=True):
+                st.session_state.modal_tab = "masuk"
+                st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
 
         elif tab == "gratis":
-            # ── Lanjut Gratis ────────────────────────────────────────────────
             st.markdown("""
-            <div style='background:#f0f6ff;border:1px solid #d0e4f7;border-radius:12px;
-                        padding:14px 16px;margin-bottom:14px;font-size:0.85rem;
-                        color:#0c2340;line-height:1.7;'>
-              <b>Mode Gratis</b> — semua modul analisis dasar tersedia.<br/>
-              📄 Generate Laporan: <b>1 kali per hari</b><br/>
-              🔒 Fitur Pro (AI naratif, SEM, EFA, laporan tak terbatas) → butuh akun
+            <div style='background:#f0f7ff;border:1px solid #cce3f8;border-radius:10px;
+                        padding:12px 14px;margin-bottom:14px;font-size:0.83rem;
+                        color:#0c2340;line-height:1.75;'>
+              ✅ Semua modul analisis dasar tersedia<br/>
+              📄 Generate Laporan: <b>1×/hari</b><br/>
+              🔒 Fitur Pro → butuh lisensi
             </div>
             """, unsafe_allow_html=True)
             with st.form("form_gratis", clear_on_submit=False):
-                _free_name = st.text_input(
-                    "Nama Anda (opsional)",
-                    placeholder="Nama peneliti untuk laporan (boleh kosong)…")
-                _sub_free = st.form_submit_button(
-                    "Lanjutkan Gratis →", use_container_width=True, type="primary")
-                if _sub_free:
+                _free_name = st.text_input("Nama Anda (opsional)",
+                                           placeholder="Untuk laporan — boleh kosong")
+                if st.form_submit_button("Lanjutkan Gratis →", use_container_width=True,
+                                         type="primary"):
                     st.session_state.user_name      = _free_name.strip()
                     st.session_state.user_logged_in = True
+                    st.query_params.clear()
                     st.rerun()
+            _gc1, _gc2 = st.columns([1, 1])
+            with _gc1:
+                st.markdown('<div class="signin-link-btn">', unsafe_allow_html=True)
+                if st.button("Daftar gratis", key="go_daftar_from_gratis", use_container_width=True):
+                    st.session_state.modal_tab = "daftar"
+                    st.rerun()
+                st.markdown('</div>', unsafe_allow_html=True)
+            with _gc2:
+                st.markdown('<div class="signin-link-btn signin-link-btn-muted">', unsafe_allow_html=True)
+                if st.button("Aktivasi Pro", key="go_pro_from_gratis", use_container_width=True):
+                    st.session_state.modal_tab = "pro"
+                    st.rerun()
+                st.markdown('</div>', unsafe_allow_html=True)
+
+        st.markdown("""
+        <div class="signin-page-footer">
+            © 2026 Ruang Statistika v4.5 ·
+            <a href="https://yogoaj.github.io" target="_blank">yogoaj.github.io</a>
+        </div>
+        """, unsafe_allow_html=True)
 
         st.stop()
 
