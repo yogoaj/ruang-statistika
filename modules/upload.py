@@ -352,9 +352,10 @@ def render(ctx: dict):
             )
 
         if st.button("✅ Simpan & Gunakan Data Ini", type="primary"):
-            st.session_state.df_clean = df_clean
-            st.session_state.report = report
-            st.session_state.selected_cols = report["numeric_cols"][:10]
+            # Pakai display_df & display_report agar hasil encoding ikut tersimpan
+            st.session_state.df_clean = display_df
+            st.session_state.report = display_report
+            st.session_state.selected_cols = display_report["numeric_cols"][:10]
             st.session_state.ai_cache = {}
             st.success("✅ Data siap dianalisis! Lanjutkan ke modul berikutnya.")
 
@@ -364,8 +365,8 @@ def render(ctx: dict):
             st.markdown("**🎯 Pilih Kolom untuk Analisis:**")
             selected = st.multiselect(
                 "Kolom numerik yang akan dianalisis",
-                options=report["numeric_cols"],
-                default=[c for c in ss_get("selected_cols", []) if c in report["numeric_cols"]],
+                options=display_report["numeric_cols"],
+                default=[c for c in ss_get("selected_cols", []) if c in display_report["numeric_cols"]],
             )
             st.session_state.selected_cols = selected
 
