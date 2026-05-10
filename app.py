@@ -390,7 +390,10 @@ with st.sidebar:
     st.markdown("---")
 
     # ── AI Provider ──────────────────────────────────────────────────────────
-    from utils.ai_helpers import ALL_PROVIDERS, PROVIDER_KEY_INFO
+    from utils.ai_helpers import (
+        ALL_PROVIDERS, PROVIDER_KEY_INFO,
+        FREE_PROVIDER_KEYS, TRIAL_PROVIDER_KEYS,
+    )
 
     st.markdown(
         "<p style='font-size:0.75rem;color:#5f8ab5;letter-spacing:0.06em;"
@@ -398,49 +401,69 @@ with st.sidebar:
         unsafe_allow_html=True,
     )
 
+    # ── Bangun dropdown dengan separator ──────────────────────────────────────
+    # Kelompok berdasarkan prefix provider
+    _separator_before = {
+        "🌊 Mistral AI — Nemo":   "── 🟡 Trial Gratis ────────────",
+        "🤖 Claude — Sonnet 4":   "── 💳 Berbayar ─────────────────",
+    }
+
     provider_display = []
     for p in ALL_PROVIDERS:
-        if p == "Groq — Llama 3.3 70B":
-            provider_display.append("── Gratis: Groq ──────────────")
-        elif p == "HuggingFace — Mistral 7B":
-            provider_display.append("── Gratis: HuggingFace ────────")
+        if p in _separator_before:
+            provider_display.append(_separator_before[p])
         provider_display.append(p)
+    # Tambah separator di awal untuk grup Gratis
+    provider_display.insert(0, "── ✅ Gratis ────────────────────")
 
     ai_provider_raw = st.selectbox(
         "Pilih Provider AI",
         provider_display,
-        help="Groq & HuggingFace tersedia GRATIS",
+        help="Groq, Gemini, OpenRouter & HuggingFace GRATIS · Mistral & Cohere Trial Gratis",
     )
+
+    # Jika user pilih separator (baris pemisah), default ke provider pertama
     ai_provider = (
         ai_provider_raw if not ai_provider_raw.startswith("──")
-        else "Claude (Anthropic)"
+        else ALL_PROVIDERS[0]
     )
 
     key_label, key_url = PROVIDER_KEY_INFO.get(ai_provider, ("API Key", ""))
 
-    is_free_provider = "Groq" in ai_provider or "HuggingFace" in ai_provider
-    if is_free_provider:
+    # ── Badge status provider ─────────────────────────────────────────────────
+    _prov_keyword = next(
+        (k for k in FREE_PROVIDER_KEYS if k in ai_provider), None
+    )
+    _trial_keyword = next(
+        (k for k in TRIAL_PROVIDER_KEYS if k in ai_provider), None
+    )
+
+    if _prov_keyword:
         st.markdown(
-            "<span style='background:#eaf3de;color:#3b6d11;padding:2px 8px;"
+            "<span style='background:#eaf3de;color:#3b6d11;padding:2px 10px;"
             "border-radius:10px;font-size:0.72rem;font-weight:600;'>✅ GRATIS</span>",
+            unsafe_allow_html=True,
+        )
+    elif _trial_keyword:
+        st.markdown(
+            "<span style='background:#fff8e1;color:#b45309;padding:2px 10px;"
+            "border-radius:10px;font-size:0.72rem;font-weight:600;'>🟡 TRIAL GRATIS</span>",
             unsafe_allow_html=True,
         )
 
     anthropic_api_key = st.text_input(
         key_label, type="password",
-        help=f"Dapatkan API Key di: {key_url}",
+        help=f"Daftar/login di: https://{key_url}" if key_url else "",
     )
     ai_enabled = bool(anthropic_api_key)
 
     if ai_enabled:
-        provider_short = (
-            ai_provider.split("—")[0].strip() if "—" in ai_provider
-            else ai_provider.split("(")[0].strip()
-        )
+        # Ambil nama singkat provider untuk pesan sukses
+        provider_short = ai_provider.split("—")[1].strip() if "—" in ai_provider else ai_provider
         st.success(f"🤖 {provider_short} Aktif")
     else:
         if key_url:
-            st.caption(f"Daftar/login di [{key_url}]({'https://' + key_url})")
+            st.caption(f"Daftar di [{key_url}](https://{key_url})")
 
     # ── Grouped Navigation ────────────────────────────────────────────────────
     st.markdown("---")
@@ -1304,7 +1327,7 @@ if menu == "Beranda":
     c1, c2, c3, c4 = st.columns(4)
     metrics = [
         ("Modul Analisis", "30+", "Statistik lengkap"),
-        ("AI Interpreter", "✨",  "Claude / GPT / Gemini"),
+        ("AI Interpreter", "8×",  "Groq·Gemini·OpenRouter·HF·Mistral·Cohere·Claude·GPT"),
         ("Chat Analyst",   "💬",  "Tanya jawab data"),
         ("Export Laporan", "📄",  "Word / Markdown"),
     ]
