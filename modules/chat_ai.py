@@ -27,7 +27,16 @@ def render(ctx: dict):
 
     if not ai_enabled:
         st.error("🔒 Fitur ini memerlukan **API Key**. Masukkan di sidebar untuk mengaktifkan Chat AI.")
-        st.info("Dapatkan API Key di [console.anthropic.com](https://console.anthropic.com)")
+        from utils.ai_helpers import FREE_PROVIDER_KEYS, TRIAL_PROVIDER_KEYS
+        st.info(
+            "**Provider GRATIS yang bisa kamu pakai:** \n"
+            "- ⚡ **Groq** → [console.groq.com](https://console.groq.com)\n"
+            "- ✨ **Gemini** → [aistudio.google.com](https://aistudio.google.com)\n"
+            "- 🌐 **OpenRouter** → [openrouter.ai](https://openrouter.ai)\n"
+            "- 🤗 **HuggingFace** → [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens)\n\n"
+            "**Trial Gratis:** 🌊 Mistral ([console.mistral.ai](https://console.mistral.ai)) · "
+            "🔗 Cohere ([dashboard.cohere.com](https://dashboard.cohere.com))"
+        )
         st.stop()
 
     df = require_data()
