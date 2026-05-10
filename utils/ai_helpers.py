@@ -1,8 +1,25 @@
 """
-utils/ai_helpers.py — AI API integration (Claude, GPT, Gemini, Groq, HuggingFace)
-Ruang Statistika v4.0
+utils/ai_helpers.py — AI API integration (8 Provider)
+Ruang Statistika v4.5
 
-Perbaikan v4.1:
+Provider yang didukung:
+  ✅ Gratis  : Groq (Llama 3.3 70B, Mixtral 8x7B, Gemma2 9B)
+  ✅ Gratis  : Gemini 2.0 Flash (Google)
+  ✅ Gratis  : OpenRouter — model :free (Llama, Gemma, DeepSeek)
+  ✅ Gratis  : HuggingFace (Qwen 2.5 72B, Phi-3.5)
+  ✅ Trial   : Mistral AI (Nemo, Mixtral 8x7B)
+  ✅ Trial   : Cohere (Command-R, Command-R+)
+  💳 Berbayar: Claude / Anthropic (Sonnet 4, Haiku)
+  💳 Berbayar: ChatGPT / OpenAI (GPT-4o, GPT-4o-mini)
+
+Changelog v4.5:
+- Tambah OpenRouter, Mistral AI, Cohere sebagai provider baru
+- Update HuggingFace: Qwen 2.5 72B & Phi-3.5 (model lebih kuat)
+- Update Gemini ke gemini-2.0-flash
+- Update Claude ke claude-sonnet-4-20250514
+- FREE_PROVIDER_KEYS: set untuk deteksi badge Gratis/Trial di app.py
+
+Changelog v4.1:
 - Tambah ai_generate_model_equation() untuk hasilkan persamaan model dari setiap analisis
 - Tambah ai_interpret_regresi(), ai_interpret_ols(), ai_interpret_anova(),
   ai_interpret_mediasi(), ai_interpret_moderasi(), ai_interpret_sem()
@@ -62,50 +79,92 @@ ACADEMIC_SYSTEM_PROMPT = (
 # Konstanta model per provider
 # ─────────────────────────────────────────────────────────────────────────────
 
-CLAUDE_MODEL = "claude-sonnet-4-20250514"
-OPENAI_MODEL = "gpt-4o"
-GEMINI_MODEL = "gemini-2.5-flash"
+CLAUDE_MODEL    = "claude-sonnet-4-20250514"
+CLAUDE_HAIKU    = "claude-haiku-4-5-20251001"
+OPENAI_MODEL    = "gpt-4o"
+OPENAI_MINI     = "gpt-4o-mini"
+GEMINI_MODEL    = "gemini-2.0-flash"
 
 GROQ_MODELS = {
-    "Groq — Llama 3.3 70B":  "llama-3.3-70b-versatile",
-    "Groq — Llama 3.1 8B":   "llama-3.1-8b-instant",
-    "Groq — Mixtral 8x7B":   "mixtral-8x7b-32768",
-    "Groq — Gemma2 9B":      "gemma2-9b-it",
+    "⚡ Groq — Llama 3.3 70B":   "llama-3.3-70b-versatile",
+    "⚡ Groq — Mixtral 8x7B":    "mixtral-8x7b-32768",
+    "⚡ Groq — Gemma2 9B":       "gemma2-9b-it",
 }
 
 HF_MODELS = {
-    "HuggingFace — Mistral 7B":    "mistralai/Mistral-7B-Instruct-v0.3",
-    "HuggingFace — Zephyr 7B":     "HuggingFaceH4/zephyr-7b-beta",
-    "HuggingFace — Phi-3 Mini":    "microsoft/Phi-3-mini-4k-instruct",
-    "HuggingFace — Llama 3.2 3B":  "meta-llama/Llama-3.2-3B-Instruct",
+    "🤗 HuggingFace — Qwen 2.5 72B": "Qwen/Qwen2.5-72B-Instruct",
+    "🤗 HuggingFace — Phi-3.5":      "microsoft/Phi-3.5-mini-instruct",
+}
+
+MISTRAL_MODELS = {
+    "🌊 Mistral AI — Nemo":         "open-mistral-nemo",
+    "🌊 Mistral AI — Mixtral 8x7B": "open-mixtral-8x7b",
+}
+
+COHERE_MODELS = {
+    "🔗 Cohere — Command-R":  "command-r",
+    "🔗 Cohere — Command-R+": "command-r-plus",
+}
+
+OPENROUTER_MODELS = {
+    "🌐 OpenRouter — Llama 4 Scout": "meta-llama/llama-4-scout:free",
+    "🌐 OpenRouter — DeepSeek R1":   "deepseek/deepseek-r1:free",
+    "🌐 OpenRouter — Gemma 3 27B":   "google/gemma-3-27b-it:free",
 }
 
 ALL_PROVIDERS = [
-    "Claude (Anthropic)",
-    "GPT-4o (OpenAI)",
-    "Gemini (Google)",
-    "Groq — Llama 3.3 70B",
-    "Groq — Llama 3.1 8B",
-    "Groq — Mixtral 8x7B",
-    "Groq — Gemma2 9B",
-    "HuggingFace — Mistral 7B",
-    "HuggingFace — Zephyr 7B",
-    "HuggingFace — Phi-3 Mini",
-    "HuggingFace — Llama 3.2 3B",
+    # ── ✅ Gratis ──────────────────────────────────────────────────────────────
+    "⚡ Groq — Llama 3.3 70B",
+    "⚡ Groq — Mixtral 8x7B",
+    "⚡ Groq — Gemma2 9B",
+    "✨ Gemini — 2.0 Flash",
+    "🌐 OpenRouter — Llama 4 Scout",
+    "🌐 OpenRouter — DeepSeek R1",
+    "🌐 OpenRouter — Gemma 3 27B",
+    "🤗 HuggingFace — Qwen 2.5 72B",
+    "🤗 HuggingFace — Phi-3.5",
+    # ── 🟡 Trial Gratis ────────────────────────────────────────────────────────
+    "🌊 Mistral AI — Nemo",
+    "🌊 Mistral AI — Mixtral 8x7B",
+    "🔗 Cohere — Command-R",
+    "🔗 Cohere — Command-R+",
+    # ── 💳 Berbayar ────────────────────────────────────────────────────────────
+    "🤖 Claude — Sonnet 4",
+    "🤖 Claude — Haiku",
+    "💬 ChatGPT — GPT-4o",
+    "💬 ChatGPT — GPT-4o-mini",
 ]
 
+# Digunakan app.py untuk menampilkan badge di sidebar
+FREE_PROVIDER_KEYS  = {"Groq", "Gemini", "OpenRouter", "HuggingFace"}
+TRIAL_PROVIDER_KEYS = {"Mistral", "Cohere"}
+
 PROVIDER_KEY_INFO = {
-    "Claude (Anthropic)":          ("Anthropic API Key",              "console.anthropic.com"),
-    "GPT-4o (OpenAI)":             ("OpenAI API Key",                 "platform.openai.com"),
-    "Gemini (Google)":             ("Gemini API Key",                  "aistudio.google.com"),
-    "Groq — Llama 3.3 70B":        ("Groq API Key (Gratis)",          "console.groq.com"),
-    "Groq — Llama 3.1 8B":         ("Groq API Key (Gratis)",          "console.groq.com"),
-    "Groq — Mixtral 8x7B":         ("Groq API Key (Gratis)",          "console.groq.com"),
-    "Groq — Gemma2 9B":            ("Groq API Key (Gratis)",          "console.groq.com"),
-    "HuggingFace — Mistral 7B":    ("HuggingFace Token (Gratis)",     "huggingface.co/settings/tokens"),
-    "HuggingFace — Zephyr 7B":     ("HuggingFace Token (Gratis)",     "huggingface.co/settings/tokens"),
-    "HuggingFace — Phi-3 Mini":    ("HuggingFace Token (Gratis)",     "huggingface.co/settings/tokens"),
-    "HuggingFace — Llama 3.2 3B":  ("HuggingFace Token (Gratis)",     "huggingface.co/settings/tokens"),
+    # Groq
+    "⚡ Groq — Llama 3.3 70B":        ("Groq API Key (Gratis)",          "console.groq.com"),
+    "⚡ Groq — Mixtral 8x7B":          ("Groq API Key (Gratis)",          "console.groq.com"),
+    "⚡ Groq — Gemma2 9B":             ("Groq API Key (Gratis)",          "console.groq.com"),
+    # Gemini
+    "✨ Gemini — 2.0 Flash":           ("Gemini API Key (Gratis)",        "aistudio.google.com"),
+    # OpenRouter
+    "🌐 OpenRouter — Llama 4 Scout":   ("OpenRouter API Key (Gratis)",    "openrouter.ai"),
+    "🌐 OpenRouter — DeepSeek R1":     ("OpenRouter API Key (Gratis)",    "openrouter.ai"),
+    "🌐 OpenRouter — Gemma 3 27B":     ("OpenRouter API Key (Gratis)",    "openrouter.ai"),
+    # HuggingFace
+    "🤗 HuggingFace — Qwen 2.5 72B":  ("HuggingFace Token (Gratis)",     "huggingface.co/settings/tokens"),
+    "🤗 HuggingFace — Phi-3.5":        ("HuggingFace Token (Gratis)",     "huggingface.co/settings/tokens"),
+    # Mistral
+    "🌊 Mistral AI — Nemo":            ("Mistral API Key (Trial Gratis)", "console.mistral.ai"),
+    "🌊 Mistral AI — Mixtral 8x7B":    ("Mistral API Key (Trial Gratis)", "console.mistral.ai"),
+    # Cohere
+    "🔗 Cohere — Command-R":           ("Cohere API Key (Trial Gratis)",  "dashboard.cohere.com"),
+    "🔗 Cohere — Command-R+":          ("Cohere API Key (Trial Gratis)",  "dashboard.cohere.com"),
+    # Claude
+    "🤖 Claude — Sonnet 4":            ("Anthropic API Key",              "console.anthropic.com"),
+    "🤖 Claude — Haiku":               ("Anthropic API Key",              "console.anthropic.com"),
+    # ChatGPT
+    "💬 ChatGPT — GPT-4o":             ("OpenAI API Key",                 "platform.openai.com"),
+    "💬 ChatGPT — GPT-4o-mini":        ("OpenAI API Key",                 "platform.openai.com"),
 }
 
 
@@ -116,37 +175,58 @@ PROVIDER_KEY_INFO = {
 def call_ai_api(
     prompt: str,
     system: str = "",
-    provider: str = "Claude (Anthropic)",
+    provider: str = "⚡ Groq — Llama 3.3 70B",
     api_key: str = "",
 ) -> str:
+    """
+    Dispatcher utama ke semua provider AI.
+    Routing berdasarkan emoji/nama provider di string.
+    """
     if not api_key:
         return "❌ API Key tidak tersedia. Masukkan API Key di sidebar."
 
-    # Gunakan ACADEMIC_SYSTEM_PROMPT jika tidak ada system prompt khusus yang diberikan.
-    # String kosong "" dianggap "tidak ada" — selalu fallback ke prompt akademis.
     _system = system if (system and system.strip()) else ACADEMIC_SYSTEM_PROMPT
 
-    if "Claude" in provider:
-        return _call_claude(prompt, _system, api_key)
-    elif "GPT" in provider or "OpenAI" in provider:
-        return _call_openai(prompt, _system, api_key)
-    elif "Gemini" in provider:
-        return _call_gemini(prompt, _system, api_key)
-    elif "Groq" in provider:
+    if "Groq" in provider:
         model_id = GROQ_MODELS.get(provider, "llama-3.3-70b-versatile")
         return _call_groq(prompt, _system, api_key, model_id)
+
+    elif "Gemini" in provider:
+        return _call_gemini(prompt, _system, api_key)
+
+    elif "OpenRouter" in provider:
+        model_id = OPENROUTER_MODELS.get(provider, "meta-llama/llama-4-scout:free")
+        return _call_openrouter(prompt, _system, api_key, model_id)
+
     elif "HuggingFace" in provider:
-        model_id = HF_MODELS.get(provider, "mistralai/Mistral-7B-Instruct-v0.3")
+        model_id = HF_MODELS.get(provider, "Qwen/Qwen2.5-72B-Instruct")
         return _call_huggingface(prompt, _system, api_key, model_id)
 
-    return "❌ Provider AI tidak dikenali."
+    elif "Mistral" in provider:
+        model_id = MISTRAL_MODELS.get(provider, "open-mistral-nemo")
+        return _call_mistral(prompt, _system, api_key, model_id)
+
+    elif "Cohere" in provider:
+        model_id = COHERE_MODELS.get(provider, "command-r-plus")
+        return _call_cohere(prompt, _system, api_key, model_id)
+
+    elif "Claude" in provider:
+        model_id = CLAUDE_HAIKU if "Haiku" in provider else CLAUDE_MODEL
+        return _call_claude(prompt, _system, api_key, model_id)
+
+    elif "ChatGPT" in provider or "OpenAI" in provider or "GPT" in provider:
+        model_id = OPENAI_MINI if "mini" in provider.lower() else OPENAI_MODEL
+        return _call_openai(prompt, _system, api_key, model_id)
+
+    return "❌ Provider AI tidak dikenali. Pilih provider lain di sidebar."
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Provider implementations
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _call_claude(prompt: str, system: str, api_key: str) -> str:
+def _call_claude(prompt: str, system: str, api_key: str, model_id: str = None) -> str:
+    model_id = model_id or CLAUDE_MODEL
     try:
         headers = {
             "x-api-key": api_key,
@@ -154,7 +234,7 @@ def _call_claude(prompt: str, system: str, api_key: str) -> str:
             "content-type": "application/json",
         }
         payload = {
-            "model": CLAUDE_MODEL,
+            "model": model_id,
             "max_tokens": 2500,
             "system": system,
             "messages": [{"role": "user", "content": prompt}],
@@ -165,19 +245,24 @@ def _call_claude(prompt: str, system: str, api_key: str) -> str:
         )
         if resp.status_code == 200:
             return resp.json()["content"][0]["text"]
+        elif resp.status_code == 401:
+            return "❌ Anthropic API Key tidak valid."
+        elif resp.status_code == 429:
+            return "⚠️ Rate limit Anthropic tercapai. Tunggu sebentar lalu coba lagi."
         return f"❌ Error Claude ({resp.status_code}): {resp.text}"
     except Exception as e:
         return f"⚠️ Error Koneksi Claude: {str(e)}"
 
 
-def _call_openai(prompt: str, system: str, api_key: str) -> str:
+def _call_openai(prompt: str, system: str, api_key: str, model_id: str = None) -> str:
+    model_id = model_id or OPENAI_MODEL
     try:
         headers = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
         }
         payload = {
-            "model": OPENAI_MODEL,
+            "model": model_id,
             "max_tokens": 2500,
             "messages": [
                 {"role": "system", "content": system},
@@ -190,6 +275,10 @@ def _call_openai(prompt: str, system: str, api_key: str) -> str:
         )
         if resp.status_code == 200:
             return resp.json()["choices"][0]["message"]["content"]
+        elif resp.status_code == 401:
+            return "❌ OpenAI API Key tidak valid."
+        elif resp.status_code == 429:
+            return "⚠️ Rate limit OpenAI tercapai. Tunggu sebentar lalu coba lagi."
         return f"❌ Error OpenAI ({resp.status_code}): {resp.text}"
     except Exception as e:
         return f"⚠️ Error Koneksi OpenAI: {str(e)}"
@@ -200,11 +289,11 @@ def _call_gemini(prompt: str, system: str, api_key: str) -> str:
         full_prompt = f"System: {system}\n\nUser: {prompt}" if system else prompt
         payload = {
             "contents": [{"parts": [{"text": full_prompt}]}],
-            "generationConfig": {"maxOutputTokens": 2048, "temperature": 0.7},
+            "generationConfig": {"maxOutputTokens": 2500, "temperature": 0.7},
         }
         model_name = GEMINI_MODEL
         url = (
-            f"https://generativelanguage.googleapis.com/v1/models/"
+            f"https://generativelanguage.googleapis.com/v1beta/models/"
             f"{model_name}:generateContent?key={api_key}"
         )
         resp = requests.post(url, json=payload, timeout=60)
@@ -213,11 +302,118 @@ def _call_gemini(prompt: str, system: str, api_key: str) -> str:
             if "candidates" in result and result["candidates"][0].get("content"):
                 return result["candidates"][0]["content"]["parts"][0]["text"]
             return "⚠️ Respons Gemini kosong."
+        elif resp.status_code == 400:
+            return "❌ Gemini: permintaan tidak valid. Periksa API Key atau panjang prompt."
+        elif resp.status_code == 403:
+            return "❌ Gemini API Key tidak valid atau quota habis."
         elif resp.status_code == 404:
-            return f"❌ Error 404: Model '{model_name}' tidak tersedia."
+            return f"❌ Error 404: Model '{model_name}' tidak tersedia di Gemini."
         return f"⚠️ Error Gemini ({resp.status_code}): {resp.text}"
     except Exception as e:
         return f"⚠️ Error Koneksi Gemini: {str(e)}"
+
+
+def _call_openrouter(prompt: str, system: str, api_key: str, model_id: str) -> str:
+    """OpenRouter — gateway ke ratusan model, termasuk model :free."""
+    try:
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://ruang-statistika.streamlit.app",
+            "X-Title": "Ruang Statistika",
+        }
+        payload = {
+            "model": model_id,
+            "max_tokens": 2500,
+            "temperature": 0.7,
+            "messages": [
+                {"role": "system", "content": system},
+                {"role": "user",   "content": prompt},
+            ],
+        }
+        resp = requests.post(
+            "https://openrouter.ai/api/v1/chat/completions",
+            headers=headers, json=payload, timeout=90,
+        )
+        if resp.status_code == 200:
+            return resp.json()["choices"][0]["message"]["content"]
+        elif resp.status_code == 401:
+            return "❌ OpenRouter API Key tidak valid."
+        elif resp.status_code == 429:
+            return "⚠️ Rate limit OpenRouter tercapai. Tunggu sebentar lalu coba lagi."
+        elif resp.status_code == 402:
+            return "⚠️ Saldo OpenRouter habis. Topup di openrouter.ai atau pakai model :free."
+        return f"❌ Error OpenRouter ({resp.status_code}): {resp.text[:300]}"
+    except Exception as e:
+        return f"⚠️ Error Koneksi OpenRouter: {str(e)}"
+
+
+def _call_mistral(prompt: str, system: str, api_key: str, model_id: str) -> str:
+    """Mistral AI — API endpoint resmi (trial gratis tersedia)."""
+    try:
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        }
+        payload = {
+            "model": model_id,
+            "max_tokens": 2500,
+            "temperature": 0.7,
+            "messages": [
+                {"role": "system", "content": system},
+                {"role": "user",   "content": prompt},
+            ],
+        }
+        resp = requests.post(
+            "https://api.mistral.ai/v1/chat/completions",
+            headers=headers, json=payload, timeout=60,
+        )
+        if resp.status_code == 200:
+            return resp.json()["choices"][0]["message"]["content"]
+        elif resp.status_code == 401:
+            return "❌ Mistral API Key tidak valid. Daftar di console.mistral.ai"
+        elif resp.status_code == 429:
+            return "⚠️ Rate limit Mistral AI tercapai. Tunggu sebentar lalu coba lagi."
+        return f"❌ Error Mistral ({resp.status_code}): {resp.text[:300]}"
+    except Exception as e:
+        return f"⚠️ Error Koneksi Mistral AI: {str(e)}"
+
+
+def _call_cohere(prompt: str, system: str, api_key: str, model_id: str) -> str:
+    """Cohere — Command-R & Command-R+ (trial gratis tersedia)."""
+    try:
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        }
+        # Cohere Chat API v2
+        payload = {
+            "model": model_id,
+            "max_tokens": 2500,
+            "temperature": 0.7,
+            "system": system,
+            "messages": [
+                {"role": "user", "content": prompt},
+            ],
+        }
+        resp = requests.post(
+            "https://api.cohere.com/v2/chat",
+            headers=headers, json=payload, timeout=60,
+        )
+        if resp.status_code == 200:
+            data = resp.json()
+            # Cohere v2 response: message.content[0].text
+            try:
+                return data["message"]["content"][0]["text"]
+            except (KeyError, IndexError):
+                return str(data)
+        elif resp.status_code == 401:
+            return "❌ Cohere API Key tidak valid. Daftar di dashboard.cohere.com"
+        elif resp.status_code == 429:
+            return "⚠️ Rate limit Cohere tercapai. Tunggu sebentar lalu coba lagi."
+        return f"❌ Error Cohere ({resp.status_code}): {resp.text[:300]}"
+    except Exception as e:
+        return f"⚠️ Error Koneksi Cohere: {str(e)}"
 
 
 def _call_groq(prompt: str, system: str, api_key: str, model_id: str) -> str:
