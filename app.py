@@ -1,7 +1,7 @@
 """
 Ruang Statistika — Automated Research & Stats Reporting
 Oleh: Yogo Aryo Jatmiko | yogoaj.github.io
-Versi: 4.5 Pro — Supabase Auth (Sign In / Sign Up / Forgot Password)
+Versi: 4.8 Pro — Supabase Auth + Google OAuth
 
 Entry point: routing menu, sidebar, shared CSS & state.
 Setiap modul di modules/ bertanggung jawab atas halaman-nya sendiri.
@@ -13,9 +13,11 @@ import streamlit.components.v1 as components
 
 warnings.filterwarnings("ignore")
 
-# ── Supabase: restore session ────────────────────────────────────────────────
-# Dipanggil SEBELUM apapun di-render, termasuk sidebar
-from utils.supabase_auth import restore_supabase_session
+# ── Supabase: tangkap Google callback + restore session ──────────────────────
+# Urutan PENTING: handle_google_callback dulu, baru restore_supabase_session
+# Keduanya harus dipanggil SEBELUM apapun di-render, termasuk sidebar
+from utils.supabase_auth import handle_google_callback, restore_supabase_session
+handle_google_callback()        # tangkap token dari Google OAuth redirect
 restore_supabase_session()      # restore session jika token masih valid
 
 # ── Page config (harus paling pertama) ───────────────────────────────────────
@@ -324,7 +326,7 @@ with st.sidebar:
         </div>
         <div style='font-size:0.72rem;color:#5f8ab5;letter-spacing:0.08em;
                     text-transform:uppercase;margin-top:5px;'>
-            v4.5 — AI-Powered Assistant
+            v4.8 — AI-Powered Assistant
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -673,7 +675,7 @@ with st.sidebar:
     <div style='font-size:0.72rem; color:#3a6080; text-align:center; line-height:1.6;'>
         <a href='https://yogoaj.github.io' target='_blank' style='color:#378add;'>
             Ruang Statistika</a><br/>
-        © 2026 Ruang Statistika v4.5
+        © 2026 Ruang Statistika v4.8
     </div>
     """, unsafe_allow_html=True)
 
@@ -1068,6 +1070,29 @@ if menu == "Beranda":
         </div>
         """, unsafe_allow_html=True)
 
+        # ── JS: baca URL fragment dari Google OAuth callback ─────────────────
+        # Supabase mengirim access_token via #fragment (tidak dikirim ke server).
+        # Script ini membacanya dari browser dan mengonversi ke ?query_params
+        # agar handle_google_callback() di awal app.py bisa membacanya.
+        components.html("""
+        <script>
+        (function() {
+            var hash = window.location.hash.substring(1);
+            if (!hash || hash.indexOf('access_token') === -1) return;
+            var params = new URLSearchParams(hash);
+            var at = params.get('access_token');
+            var rt = params.get('refresh_token') || '';
+            if (!at) return;
+            // Konversi fragment ke query params dan reload
+            var url = new URL(window.parent.location.href);
+            url.hash = '';
+            url.searchParams.set('access_token', at);
+            if (rt) url.searchParams.set('refresh_token', rt);
+            window.parent.location.replace(url.toString());
+        })();
+        </script>
+        """, height=0)
+
         # ── Tab strip — st.button (tetap di halaman sama) ─────────────────
         st.markdown('<div class="signin-tab-row">', unsafe_allow_html=True)
         _tcols = st.columns(2)
@@ -1111,6 +1136,24 @@ if menu == "Beranda":
                 st.session_state.modal_tab = "lupa"
                 st.rerun()
             st.markdown('</div>', unsafe_allow_html=True)
+
+            # ── Tombol Google OAuth ──────────────────────────────────────────
+            st.markdown('<div class="signin-divider">atau masuk dengan</div>', unsafe_allow_html=True)
+            if st.button("🔵  Lanjutkan dengan Google", key="btn_google_login",
+                         use_container_width=True):
+                from utils.supabase_auth import supabase_sign_in_google
+                _app_url = st.secrets.get("app_url", "https://ruang-statistika.streamlit.app")
+                _ok, _url_or_err = supabase_sign_in_google(_app_url)
+                if _ok:
+                    # Redirect browser ke halaman consent Google
+                    st.markdown(
+                        f'<meta http-equiv="refresh" content="0; url={_url_or_err}">',
+                        unsafe_allow_html=True,
+                    )
+                    st.stop()
+                else:
+                    st.session_state["_auth_msg_error"] = _url_or_err
+                    st.rerun()
 
             # Divider + CTA Coba Gratis
             st.markdown('<div class="signin-divider">atau</div>', unsafe_allow_html=True)
@@ -1299,7 +1342,7 @@ if menu == "Beranda":
 
         st.markdown("""
         <div class="signin-page-footer">
-            © 2026 Ruang Statistika v4.5 ·
+            © 2026 Ruang Statistika v4.8 ·
             <a href="https://yogoaj.github.io" target="_blank">yogoaj.github.io</a>
         </div>
         """, unsafe_allow_html=True)
@@ -1555,7 +1598,7 @@ elif menu == "Laporan":
 
 st.markdown("""
 <div class="rs-footer">
-    📊 <b>Ruang Statistika</b> v4.5 — AI-Powered Assistant<br/>
+    📊 <b>Ruang Statistika</b> v4.8 — AI-Powered Assistant<br/>
     <a href='https://yogoaj.github.io' target='_blank'>Ruang Statistika</a> ·
     © 2026 Ruang Statistika · Powered by Python, Streamlit & Claude AI
 </div>
