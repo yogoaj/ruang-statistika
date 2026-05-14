@@ -217,8 +217,7 @@ def _sign_in_via_pro_licenses(
         "expires_at":  expires_str,
     }
     # Set license key otomatis ke session (agar sidebar Pro aktif)
-    st.session_state["_modal_license_key"]  = row.get("license_key", "")
-    st.session_state["sidebar_license_key"] = row.get("license_key", "")
+    st.session_state["_modal_license_key"] = row.get("license_key", "")
 
     return True, ""
 
