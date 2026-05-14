@@ -956,7 +956,7 @@ if menu == "Beranda":
             font-size: 0.88rem !important;
             background: rgba(255,255,255,0.12) !important;
             color: #0c2340 !important;
-            -webkit-text-fill-color: #ffffff !important;
+            -webkit-text-fill-color: #0c2340 !important;
             transition: border-color 0.15s, box-shadow 0.15s !important;
         }
         section[data-testid="stMain"] .stTextInput input:focus {
