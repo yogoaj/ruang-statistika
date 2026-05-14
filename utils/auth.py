@@ -286,37 +286,68 @@ def render_license_sidebar() -> dict:
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# PRO GUARD
+# TIER SYSTEM
 # ══════════════════════════════════════════════════════════════════════════════
 
-def require_pro(license_info: dict, feature_name: str = "Fitur ini") -> bool:
-    """
-    Guard untuk modul Pro. Panggil di baris pertama render() modul Pro.
-    Return True jika Pro, tampilkan pesan upgrade dan return False jika Free.
+TIER_RANK: dict[str, int] = {
+    "free":         0,
+    "starter":      1,
+    "premium":      2,
+    "professional": 3,
+}
 
-    Cek status Pro dari dua sumber (prioritas urut):
-      1. Session state — user login via pro_licenses (dari Lynk.id)
-      2. license_info dict — user input license key manual
+TIER_LABEL: dict[str, str] = {
+    "starter":      "Starter",
+    "premium":      "Premium",
+    "professional": "Professional",
+}
+
+
+def get_user_tier() -> str:
     """
-    # Cek dari session state dulu (user Pro dari Lynk.id)
+    Ambil tier user yang sedang login dari session state.
+    Return: 'starter' | 'premium' | 'professional' | 'free'
+    """
     user_data = st.session_state.get("_user_data", {})
-    if user_data.get("role") == "pro":
-        # Pastikan masa akses belum habis
-        expires_at = user_data.get("expires_at")
-        if expires_at:
-            from datetime import datetime, timezone
-            try:
-                exp_dt = datetime.fromisoformat(expires_at.replace("Z", "+00:00"))
-                if datetime.now(timezone.utc) <= exp_dt:
-                    return True
-            except Exception:
-                return True  # kalau parse gagal, anggap masih valid
-        else:
-            return True  # tidak ada expires = permanent
+    if user_data.get("role") != "pro":
+        return "free"
+    return user_data.get("tier", "starter")
 
-    # Fallback: cek dari license_info (input manual)
-    if license_info.get("status") == "pro":
+
+def require_tier(min_tier: str, feature_name: str = "Fitur ini") -> bool:
+    """
+    Guard fitur berbasis tier. Panggil di baris pertama render() modul.
+    Return True jika tier user >= min_tier, False + tampilkan pesan jika tidak.
+
+    Contoh pemakaian:
+        if not require_tier("premium", "SEM & CFA"):
+            st.stop()
+    """
+    from datetime import datetime, timezone
+
+    user_data  = st.session_state.get("_user_data", {})
+    user_role  = user_data.get("role", "free")
+    user_tier  = user_data.get("tier", "starter") if user_role == "pro" else "free"
+
+    # Cek masa berlaku
+    expires_at = user_data.get("expires_at")
+    if user_role == "pro" and expires_at:
+        try:
+            exp_dt = datetime.fromisoformat(expires_at.replace("Z", "+00:00"))
+            if datetime.now(timezone.utc) > exp_dt:
+                user_tier = "free"
+        except Exception:
+            pass
+
+    user_rank = TIER_RANK.get(user_tier, 0)
+    need_rank = TIER_RANK.get(min_tier, 1)
+
+    if user_rank >= need_rank:
         return True
+
+    # Tampilkan pesan upgrade yang sesuai
+    need_label = TIER_LABEL.get(min_tier, min_tier.capitalize())
+    curr_label = TIER_LABEL.get(user_tier, "Gratis") if user_tier != "free" else "Gratis"
 
     st.markdown(f"""
     <div style='
@@ -326,20 +357,60 @@ def require_pro(license_info: dict, feature_name: str = "Fitur ini") -> bool:
     '>
         <div style='font-size: 2.5rem; margin-bottom: 0.5rem;'>🔒</div>
         <h3 style='color: white; margin: 0 0 0.5rem; font-size: 1.3rem;'>
-            {feature_name} — Fitur Pro
+            {feature_name} — Fitur {need_label}
         </h3>
-        <p style='color: #85b7eb; margin: 0 0 1.2rem; font-size: 0.9rem;'>
-            Fitur ini memerlukan License Key Pro aktif.
+        <p style='color: #85b7eb; margin: 0 0 0.3rem; font-size: 0.9rem;'>
+            Paket kamu saat ini: <b style='color:white;'>{curr_label}</b>.
+            Fitur ini memerlukan paket <b style='color:white;'>{need_label}</b> atau lebih tinggi.
+        </p>
+        <p style='color: #85b7eb; margin: 0 0 1.2rem; font-size: 0.85rem;'>
+            Upgrade untuk mengakses fitur ini.
         </p>
         <a href='https://yogoaj.github.io' target='_blank'
            style='background: white; color: #0c2340; padding: 8px 24px;
                   border-radius: 20px; font-weight: 600; font-size: 0.9rem;
                   text-decoration: none;'>
-            Dapatkan License Key →
+            Upgrade Paket →
         </a>
     </div>
     """, unsafe_allow_html=True)
     return False
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# PRO GUARD (dipertahankan untuk backward compat — pakai require_tier internally)
+# ══════════════════════════════════════════════════════════════════════════════
+
+def require_pro(license_info: dict, feature_name: str = "Fitur ini") -> bool:
+    """
+    Guard untuk modul Pro — backward compat wrapper di atas require_tier.
+    Modul yang belum di-tier-kan tetap pakai ini (minimal Starter).
+
+    Cek status Pro dari dua sumber (prioritas urut):
+      1. Session state — user login via pro_licenses (tier apa pun dianggap Pro)
+      2. license_info dict — user input license key manual
+    """
+    # Cek dari session state dulu (semua tier pro lolos di sini)
+    user_data = st.session_state.get("_user_data", {})
+    if user_data.get("role") == "pro":
+        from datetime import datetime, timezone
+        expires_at = user_data.get("expires_at")
+        if expires_at:
+            try:
+                exp_dt = datetime.fromisoformat(expires_at.replace("Z", "+00:00"))
+                if datetime.now(timezone.utc) <= exp_dt:
+                    return True
+            except Exception:
+                return True
+        else:
+            return True
+
+    # Fallback: cek dari license_info (input manual)
+    if license_info.get("status") == "pro":
+        return True
+
+    # Tidak lolos → tampilkan pesan upgrade (pakai blok UI require_tier Starter)
+    return require_tier("starter", feature_name)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
