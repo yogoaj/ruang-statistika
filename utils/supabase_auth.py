@@ -1,25 +1,30 @@
 """
-utils/supabase_auth.py — Ruang Statistika v4.6
+utils/supabase_auth.py — Ruang Statistika v4.8
 Sistem autentikasi via Supabase:
   - Sign In (email + password) → cek Supabase Auth dulu, fallback ke pro_licenses
+  - Sign In Google (OAuth) → redirect ke Google, tangkap callback
   - Sign Up (registrasi mandiri)
   - Forgot Password (kirim email reset)
   - Sign Out
   - Restore session dari st.session_state
-  - [🔜] Login Google — aktifkan via Supabase Dashboard → Auth → Providers
+  - Handle Google OAuth callback dari URL fragment
 
 Cara pakai di app.py:
     from utils.supabase_auth import (
-        supabase_sign_in, supabase_sign_up,
-        supabase_sign_out, supabase_forgot_password,
+        supabase_sign_in, supabase_sign_in_google,
+        handle_google_callback,
+        supabase_sign_up, supabase_sign_out,
+        supabase_forgot_password,
         restore_supabase_session, get_current_user,
         save_supabase_session,
     )
 
-Perubahan v4.6:
-  - supabase_sign_in: tambah fallback login via tabel pro_licenses
-  - Jika login lewat pro_licenses: role otomatis jadi 'pro', cek expires_at
-  - Siap untuk tambahan Google login (tidak perlu ubah kode ini)
+Perubahan v4.8:
+  - Tambah supabase_sign_in_google() → generate URL OAuth Google
+  - Tambah handle_google_callback() → tangkap token dari URL setelah redirect
+  - supabase_sign_in: perbaikan logika fallback (dari v4.7)
+  - supabase_sign_up: peringatan untuk user Pro Lynk.id (dari v4.7)
+  - supabase_forgot_password: deteksi jalur pro_licenses (dari v4.7)
 """
 
 from __future__ import annotations
@@ -36,17 +41,14 @@ import streamlit as st
 def _get_supabase_client():
     """
     Buat Supabase client sekali, di-cache supaya tidak reconnect tiap rerun.
-    Membaca kredensial dari Streamlit Secrets.
 
     Di Streamlit Cloud, isi Secrets seperti ini:
         [supabase]
         url = "https://xxxxxx.supabase.co"
         anon_key = "eyJhbGci..."
-
-    Di lokal, buat file .streamlit/secrets.toml dengan isi yang sama.
     """
     try:
-        from supabase import create_client, Client
+        from supabase import create_client
         url      = st.secrets["supabase"]["url"]
         anon_key = st.secrets["supabase"]["anon_key"]
         return create_client(url, anon_key)
@@ -75,17 +77,15 @@ def save_supabase_session(user_obj, session_obj=None) -> None:
     Simpan data user Supabase ke st.session_state setelah login berhasil.
     Kompatibel dengan format ctx["user_name"] yang sudah ada di app.py.
     """
-    # Ambil metadata user — bisa dari user_metadata atau dari tabel profiles
-    meta        = getattr(user_obj, "user_metadata", {}) or {}
-    full_name   = (
+    meta      = getattr(user_obj, "user_metadata", {}) or {}
+    full_name = (
         meta.get("full_name")
         or meta.get("name")
-        or user_obj.email.split("@")[0]  # fallback: bagian sebelum @
+        or user_obj.email.split("@")[0]
     )
-    email       = getattr(user_obj, "email", "")
-    user_id     = str(getattr(user_obj, "id", ""))
+    email   = getattr(user_obj, "email", "")
+    user_id = str(getattr(user_obj, "id", ""))
 
-    # Simpan ke session state (kompatibel dengan app.py yang sudah ada)
     st.session_state["user_logged_in"]   = True
     st.session_state["user_name"]        = full_name
     st.session_state["username"]         = email
@@ -96,12 +96,11 @@ def save_supabase_session(user_obj, session_obj=None) -> None:
         "username":    email,
         "name":        full_name,
         "email":       email,
-        "role":        "free",   # default; bisa diupdate dari tabel profiles
+        "role":        "free",
         "license_key": "",
         "active":      True,
     }
 
-    # Simpan access token untuk restore session nanti
     if session_obj:
         st.session_state["_supabase_access_token"]  = session_obj.access_token
         st.session_state["_supabase_refresh_token"] = session_obj.refresh_token
@@ -113,7 +112,6 @@ def restore_supabase_session() -> bool:
     Dipanggil di awal app.py sebelum render apapun.
     Return True jika berhasil restore, False jika token expired/tidak ada.
     """
-    # Kalau sudah login, skip
     if st.session_state.get("user_logged_in"):
         return True
 
@@ -135,7 +133,6 @@ def restore_supabase_session() -> bool:
     except Exception:
         pass
 
-    # Token expired — bersihkan
     for k in ["_supabase_access_token", "_supabase_refresh_token"]:
         st.session_state.pop(k, None)
     return False
@@ -149,19 +146,140 @@ def get_current_user() -> Optional[dict]:
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+# GOOGLE OAUTH
+# ══════════════════════════════════════════════════════════════════════════════
+
+def supabase_sign_in_google(redirect_url: str = "") -> tuple[bool, str]:
+    """
+    Inisiasi login Google via OAuth.
+
+    Alur lengkap:
+      1. Fungsi ini dipanggil saat user klik tombol "Lanjutkan dengan Google"
+      2. Supabase generate URL redirect ke halaman consent Google
+      3. app.py redirect browser user ke URL tersebut (via meta refresh)
+      4. User pilih akun Google di halaman Google
+      5. Google redirect balik ke app dengan token di URL fragment (#access_token=...)
+      6. JS snippet di app.py membaca fragment dan mengonversinya ke query_params
+      7. handle_google_callback() membaca query_params dan restore session
+
+    Return:
+      (True, url_google)   → berhasil, app.py harus redirect browser ke url ini
+      (False, pesan_error) → gagal
+    """
+    sb = get_supabase()
+    if not sb:
+        return False, "Koneksi ke Supabase gagal."
+
+    try:
+        if not redirect_url:
+            redirect_url = st.secrets.get(
+                "app_url", "https://ruang-statistika.streamlit.app"
+            )
+
+        resp = sb.auth.sign_in_with_oauth({
+            "provider": "google",
+            "options": {
+                "redirect_to": redirect_url,
+                "query_params": {
+                    "access_type": "offline",
+                    "prompt":      "select_account",  # selalu tampilkan pilihan akun
+                },
+            },
+        })
+
+        if resp and resp.url:
+            return True, resp.url
+
+        return False, "Gagal generate URL login Google. Coba lagi."
+
+    except Exception as e:
+        return False, f"❌ Login Google gagal: {e}"
+
+
+def handle_google_callback() -> bool:
+    """
+    Tangkap token dari URL setelah redirect balik dari Google.
+
+    HARUS dipanggil di paling awal app.py, SEBELUM restore_supabase_session()
+    dan SEBELUM st.set_page_config().
+
+    Kenapa perlu fungsi ini:
+      Supabase OAuth mengirim token via URL fragment (#access_token=...).
+      Fragment tidak dikirim ke server — hanya ada di browser.
+      JS snippet di halaman login membaca fragment tersebut dan mengonversinya
+      ke query_params (?access_token=...) agar Streamlit bisa membacanya.
+      Fungsi ini membaca query_params tersebut dan men-set session Supabase.
+
+    Return True jika berhasil set session dari callback Google.
+    """
+    if st.session_state.get("user_logged_in"):
+        return True
+
+    params        = st.query_params
+    access_token  = params.get("access_token")
+    refresh_token = params.get("refresh_token", "")
+
+    if not access_token:
+        return False
+
+    sb = get_supabase()
+    if not sb:
+        return False
+
+    try:
+        resp = sb.auth.set_session(access_token, refresh_token)
+        if resp and resp.user:
+            save_supabase_session(resp.user, resp.session)
+            # Bersihkan token dari URL agar tidak tampil di address bar
+            st.query_params.clear()
+            return True
+    except Exception:
+        pass
+
+    # Token tidak valid — bersihkan
+    st.query_params.clear()
+    return False
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# HELPER INTERNAL — cek keberadaan email di Supabase Auth
+# ══════════════════════════════════════════════════════════════════════════════
+
+def _email_exists_in_supabase_auth(sb, email: str) -> Optional[bool]:
+    """
+    Probe apakah email terdaftar di Supabase Auth tanpa Service Role Key.
+
+    Teknik: coba sign_in dengan password dummy →
+      - "Invalid login credentials" → user ADA (password salah)
+      - "Email not confirmed"       → user ADA (belum konfirmasi)
+      - "User not found" / lainnya  → user TIDAK ADA
+      - Exception lain              → tidak bisa ditentukan (return None)
+    """
+    try:
+        sb.auth.sign_in_with_password({"email": email, "password": "__probe_rs__"})
+        return True
+    except Exception as e:
+        msg = str(e).lower()
+        if "invalid login credentials" in msg:
+            return True
+        if "email not confirmed" in msg:
+            return True
+        if "user not found" in msg or "no user" in msg:
+            return False
+        return None
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 # SIGN IN — Email + Password
 # ══════════════════════════════════════════════════════════════════════════════
 
-def _sign_in_via_pro_licenses(
-    sb, email: str, password: str
-) -> tuple[bool, str]:
+def _sign_in_via_pro_licenses(sb, email: str, password: str) -> tuple[bool, str]:
     """
-    Fallback login: cek email + password langsung ke tabel pro_licenses.
-    Dipanggil hanya jika login Supabase Auth gagal.
+    Fallback login via tabel pro_licenses.
 
-    Juga mengecek:
-      - apakah akun masih aktif (is_active = true)
-      - apakah masa akses belum habis (expires_at > sekarang)
+    HANYA dipanggil jika sudah dipastikan email TIDAK ADA di Supabase Auth.
+    Ini mencegah user bypass password Supabase Auth dengan password lama
+    dari pro_licenses.
     """
     from datetime import datetime, timezone
 
@@ -180,15 +298,12 @@ def _sign_in_via_pro_licenses(
     if not row:
         return False, "❌ Email atau password salah."
 
-    # Cek password (plain text — sesuai yang kita generate di Edge Function)
     if row.get("password", "") != password:
         return False, "❌ Email atau password salah."
 
-    # Cek status aktif
     if not row.get("is_active", True):
         return False, "❌ Akun kamu sudah dinonaktifkan. Hubungi admin."
 
-    # Cek masa berlaku
     expires_str = row.get("expires_at")
     if expires_str:
         try:
@@ -201,9 +316,8 @@ def _sign_in_via_pro_licenses(
         except Exception:
             pass
 
-    # Login berhasil via pro_licenses — simpan ke session
     name = row.get("name") or email.split("@")[0]
-    tier = row.get("tier") or "starter"   # default starter jika kolom belum ada
+    tier = row.get("tier") or "starter"
 
     st.session_state["user_logged_in"]  = True
     st.session_state["user_name"]       = name
@@ -219,7 +333,6 @@ def _sign_in_via_pro_licenses(
         "active":      True,
         "expires_at":  expires_str,
     }
-    # Set license key otomatis ke session (agar sidebar Pro aktif)
     st.session_state["_modal_license_key"] = row.get("license_key", "")
 
     return True, ""
@@ -230,28 +343,44 @@ def supabase_sign_in(email: str, password: str) -> tuple[bool, str]:
     Login dengan email + password.
 
     Alur:
-      1. Coba login via Supabase Auth (user biasa / Google nanti)
-      2. Kalau gagal → coba login via tabel pro_licenses (user Pro dari Lynk.id)
-
-    Return: (berhasil: bool, pesan_error: str)
+      1. Coba Supabase Auth
+         - Berhasil → selesai
+         - "Email not confirmed" → STOP, suruh konfirmasi
+         - "Invalid login credentials" → STOP, suruh reset password
+           (jangan fallback — user ADA di Supabase Auth, hanya password salah)
+         - Error lain → lanjut ke langkah 2
+      2. Fallback ke pro_licenses (user Pro Lynk.id yang belum sign_up mandiri)
     """
     sb = get_supabase()
     if not sb:
         return False, "Koneksi ke Supabase gagal."
 
-    # ── Langkah 1: Coba Supabase Auth ────────────────────────────────────────
+    email = email.strip().lower()
+
     try:
         resp = sb.auth.sign_in_with_password({"email": email, "password": password})
         if resp and resp.user:
             save_supabase_session(resp.user, resp.session)
             return True, ""
     except Exception as e:
-        msg = str(e)
-        # Kalau email belum dikonfirmasi → jangan fallback, langsung info user
-        if "Email not confirmed" in msg:
-            return False, "📧 Email belum dikonfirmasi. Cek inbox kamu."
+        msg_lower = str(e).lower()
 
-    # ── Langkah 2: Fallback ke tabel pro_licenses ─────────────────────────────
+        if "email not confirmed" in msg_lower:
+            return False, (
+                "📧 Email kamu belum dikonfirmasi. "
+                "Cek inbox (atau folder spam) dan klik link konfirmasi, "
+                "lalu coba masuk lagi."
+            )
+
+        if "invalid login credentials" in msg_lower:
+            return False, (
+                "❌ Password salah. "
+                "Gunakan tombol **Lupa password?** jika lupa password kamu."
+            )
+
+        # Error lain → user kemungkinan tidak ada di Supabase Auth
+        # Lanjut fallback ke pro_licenses
+
     return _sign_in_via_pro_licenses(sb, email, password)
 
 
@@ -259,24 +388,35 @@ def supabase_sign_in(email: str, password: str) -> tuple[bool, str]:
 # SIGN UP — Registrasi Baru
 # ══════════════════════════════════════════════════════════════════════════════
 
-def supabase_sign_up(
-    email: str,
-    password: str,
-    full_name: str,
-) -> tuple[bool, str]:
+def supabase_sign_up(email: str, password: str, full_name: str) -> tuple[bool, str]:
     """
-    Daftar akun baru.
-    Return: (berhasil: bool, pesan: str)
+    Daftar akun baru via Supabase Auth.
 
-    Supabase akan kirim email konfirmasi ke user.
-    Setelah klik link di email, user baru bisa login.
+    Deteksi konflik: jika email sudah ada di pro_licenses, beri peringatan
+    bahwa password yang berlaku setelah konfirmasi adalah password baru
+    (bukan password dari email Lynk.id).
     """
     sb = get_supabase()
     if not sb:
         return False, "Koneksi ke Supabase gagal."
 
+    email = email.strip().lower()
+
     if len(password) < 6:
         return False, "❌ Password minimal 6 karakter."
+
+    _in_pro_licenses = False
+    try:
+        _pl = (
+            sb.table("pro_licenses")
+            .select("email")
+            .eq("email", email)
+            .maybeSingle()
+            .execute()
+        )
+        _in_pro_licenses = bool(_pl and _pl.data)
+    except Exception:
+        pass
 
     try:
         resp = sb.auth.sign_up({
@@ -291,17 +431,26 @@ def supabase_sign_up(
         })
 
         if resp and resp.user:
-            # Cek apakah email konfirmasi diaktifkan
-            # Jika identities kosong → email sudah terdaftar sebelumnya
             identities = getattr(resp.user, "identities", [])
             if identities is not None and len(identities) == 0:
                 return False, "❌ Email ini sudah terdaftar. Silakan login."
+
+            if _in_pro_licenses:
+                return True, (
+                    "✅ Pendaftaran berhasil! "
+                    "Cek email kamu dan klik link konfirmasi.\n\n"
+                    "⚠️ **Perhatian:** Kamu memiliki akun Pro dari pembelian sebelumnya. "
+                    "Setelah konfirmasi email, gunakan **password yang baru saja kamu buat** "
+                    "saat login — bukan password dari email pembelian Lynk.id."
+                )
+
             return True, (
                 "✅ Pendaftaran berhasil! "
                 "Cek email kamu dan klik link konfirmasi sebelum login."
             )
 
         return False, "Pendaftaran gagal. Coba lagi."
+
     except Exception as e:
         msg = str(e)
         if "already registered" in msg or "already been registered" in msg:
@@ -317,13 +466,42 @@ def supabase_sign_up(
 
 def supabase_forgot_password(email: str, redirect_url: str = "") -> tuple[bool, str]:
     """
-    Kirim email reset password ke user.
-    redirect_url: URL yang dibuka setelah user klik link di email.
-    Return: (berhasil: bool, pesan: str)
+    Kirim email reset password.
+
+    Deteksi jalur akun:
+      - Email hanya di pro_licenses → reset Supabase tidak berlaku,
+        arahkan ke email Lynk.id atau hubungi admin
+      - Email di Supabase Auth → kirim reset normal
     """
     sb = get_supabase()
     if not sb:
         return False, "Koneksi ke Supabase gagal."
+
+    email = email.strip().lower()
+
+    _in_pro_licenses = False
+    try:
+        _pl = (
+            sb.table("pro_licenses")
+            .select("email")
+            .eq("email", email)
+            .maybeSingle()
+            .execute()
+        )
+        _in_pro_licenses = bool(_pl and _pl.data)
+    except Exception:
+        pass
+
+    _in_supabase_auth = _email_exists_in_supabase_auth(sb, email)
+
+    if _in_pro_licenses and _in_supabase_auth is False:
+        return False, (
+            "⚠️ Email ini terdaftar sebagai akun Pro dari pembelian Lynk.id, "
+            "bukan sebagai akun Ruang Statistika biasa.\n\n"
+            "Gunakan **password yang ada di email konfirmasi pembelian** dari Lynk.id. "
+            "Jika tidak punya email tersebut, hubungi admin via "
+            "**WhatsApp 087887533149**."
+        )
 
     try:
         options = {}
@@ -338,10 +516,12 @@ def supabase_forgot_password(email: str, redirect_url: str = "") -> tuple[bool, 
     except Exception as e:
         msg = str(e)
         if "User not found" in msg:
-            # Demi keamanan, tetap tampilkan pesan sukses (tidak bocorkan info)
-            return True, (
-                "📧 Jika email terdaftar, link reset password akan dikirim."
-            )
+            if _in_pro_licenses:
+                return False, (
+                    "⚠️ Email ini terdaftar sebagai akun Pro dari pembelian Lynk.id. "
+                    "Hubungi admin via WhatsApp 087887533149 untuk bantuan reset password."
+                )
+            return True, "📧 Jika email terdaftar, link reset password akan dikirim."
         return False, f"❌ Gagal mengirim email: {msg}"
 
 
@@ -356,9 +536,8 @@ def supabase_sign_out() -> None:
         try:
             sb.auth.sign_out()
         except Exception:
-            pass  # Tetap lanjut bersihkan local state meski API gagal
+            pass
 
-    # Bersihkan semua key auth dari session state
     keys_to_clear = [
         "user_logged_in", "user_name", "username",
         "_user_data", "_supabase_uid", "_supabase_email",
