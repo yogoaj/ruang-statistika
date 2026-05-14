@@ -385,7 +385,8 @@ with st.sidebar:
         st.session_state["sidebar_license_key"] = st.session_state["_modal_license_key"]
     from utils.auth import render_license_sidebar
     license_info = render_license_sidebar()
-    is_pro = license_info["status"] == "pro"
+    _session_role = st.session_state.get("_user_data", {}).get("role", "free")
+    is_pro = (license_info["status"] == "pro") or (_session_role == "pro")
 
     st.markdown("---")
 
