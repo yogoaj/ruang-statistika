@@ -366,7 +366,7 @@ def require_tier(min_tier: str, feature_name: str = "Fitur ini") -> bool:
         <p style='color: #85b7eb; margin: 0 0 1.2rem; font-size: 0.85rem;'>
             Upgrade untuk mengakses fitur ini.
         </p>
-        <a href='https://yogoaj.github.io' target='_blank'
+        <a href='https://lynk.id/ruangstatistika' target='_blank'
            style='background: white; color: #0c2340; padding: 8px 24px;
                   border-radius: 20px; font-weight: 600; font-size: 0.9rem;
                   text-decoration: none;'>
