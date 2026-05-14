@@ -673,7 +673,7 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("""
     <div style='font-size:0.72rem; color:#3a6080; text-align:center; line-height:1.6;'>
-        <a href='https://yogoaj.github.io' target='_blank' style='color:#378add;'>
+        <a href='https://yogoaj.github.io/#aplikasi' target='_blank' style='color:#378add;'>
             Ruang Statistika</a><br/>
         © 2026 Ruang Statistika v4.8
     </div>
@@ -1297,7 +1297,7 @@ if menu == "Beranda":
                             st.error("❌ License key tidak valid atau sudah expired.")
             st.markdown(
                 '<div class="signin-footer">Dapatkan key di '
-                '<a href="https://yogoaj.github.io" target="_blank">yogoaj.github.io</a>'
+                '<a href="https://lynk.id/ruangstatistika" target="_blank">lynk.id/ruangstatistika</a>'
                 '</div>',
                 unsafe_allow_html=True)
             st.markdown('<div class="signin-link-btn" style="margin-top:6px;">', unsafe_allow_html=True)
@@ -1342,7 +1342,7 @@ if menu == "Beranda":
         st.markdown("""
         <div class="signin-page-footer">
             © 2026 Ruang Statistika v4.8 ·
-            <a href="https://yogoaj.github.io" target="_blank">yogoaj.github.io</a>
+            <a href="https://lynk.id/ruangstatistika" target="_blank">lynk.id/ruangstatistika</a>
         </div>
         """, unsafe_allow_html=True)
 
@@ -1432,7 +1432,7 @@ if menu == "Beranda":
 
     st.markdown("""
     <div class="rs-ai-narasi">
-        <span class="rs-ai-badge">✨ v4.3 — Grouped Navigation</span><br/>
+        <span class="rs-ai-badge">✨ v4.8 — Supabase Auth + Google OAuth</span><br/>
         <b>Baru di v4.3:</b> Login berbasis <b>nama pengguna & nama peneliti</b> di laporan kini tersedia<br/><br/>
         <b>Baru di v4.2:</b> <b>📈 Regresi, 📊 ANOVA, 📉 Regresi Logistik</b> kini tersedia
         <b>gratis terbatas</b> — analisis dasar (OLS, one-way ANOVA, odds ratio) dapat diakses
@@ -1598,7 +1598,7 @@ elif menu == "Laporan":
 st.markdown("""
 <div class="rs-footer">
     📊 <b>Ruang Statistika</b> v4.8 — AI-Powered Assistant<br/>
-    <a href='https://yogoaj.github.io' target='_blank'>Ruang Statistika</a> ·
+    <a href='https://yogoaj.github.io/#aplikasi' target='_blank'>Ruang Statistika</a> ·
     © 2026 Ruang Statistika · Powered by Python, Streamlit & Claude AI
 </div>
 """, unsafe_allow_html=True)
