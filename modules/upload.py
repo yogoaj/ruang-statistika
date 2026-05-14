@@ -13,6 +13,49 @@ import numpy as np
 
 from utils.stats_helpers import load_data, auto_clean, encode_categorical, ss_get
 
+# ── Opsi tipe variabel ────────────────────────────────────────────────────────
+TYPE_OPTIONS = [
+    "Numerik Kontinu",
+    "Numerik Diskrit",
+    "Ordinal / Likert",
+    "Kategorik Nominal",
+    "Biner (0/1)",
+    "ID / Diabaikan",
+]
+
+# Tipe yang dianggap analitik (dimasukkan ke selected_cols)
+_NUMERIC_TYPES = {"Numerik Kontinu", "Numerik Diskrit", "Ordinal / Likert", "Biner (0/1)"}
+
+
+def _auto_detect_var_types(df: pd.DataFrame, report: dict) -> dict:
+    """
+    Auto-detect tipe variabel berdasarkan profil data.
+    Dipakai sebagai default awal — user bisa override via UI.
+    Tidak mengubah df atau report.
+    """
+    numeric_cols     = set(report.get("numeric_cols", []))
+    non_numeric_cols = set(report.get("non_numeric_cols", []))
+    var_types = {}
+
+    for col in df.columns:
+        if col in non_numeric_cols:
+            var_types[col] = "Kategorik Nominal"
+        elif col in numeric_cols:
+            s = pd.to_numeric(df[col], errors="coerce").dropna()
+            if s.empty:
+                var_types[col] = "Numerik Kontinu"
+            elif set(s.unique()).issubset({0, 1, 0.0, 1.0}):
+                var_types[col] = "Biner (0/1)"
+            elif s.nunique() <= 10 and (s % 1 == 0).all():
+                var_types[col] = "Ordinal / Likert"
+            else:
+                var_types[col] = "Numerik Kontinu"
+        else:
+            var_types[col] = "Numerik Kontinu"
+
+    return var_types
+
+
 def recommend_analysis(df: pd.DataFrame, report: dict) -> dict:
     """
     Analisis karakteristik data dan buat rekomendasi uji statistik.
@@ -247,6 +290,7 @@ def render(ctx: dict):
             st.session_state.df_clean = None
             st.session_state.report = None
             st.session_state.last_uploaded_filename = uploaded.name
+            st.session_state.pop("var_types", None)   # reset tipe saat file baru
             
         with st.spinner("🔄 Memuat dan memeriksa data..."):
             raw_df = load_data(uploaded)
@@ -323,7 +367,84 @@ def render(ctx: dict):
                     st.session_state.selected_cols = current_selected
 
                     st.success(f"✅ Berhasil mengonversi: {', '.join(to_encode)}")
-                    st.rerun() 
+                    st.rerun()
+
+        st.markdown("<br/>", unsafe_allow_html=True)
+
+        # ─── TIPE VARIABEL ────────────────────────────────────────────────────
+        with st.expander(
+            "🏷️ Tipe Variabel (Opsional — untuk rekomendasi lebih akurat)",
+            expanded=False,
+        ):
+            st.caption(
+                "Sistem mendeteksi tipe variabel secara otomatis. "
+                "Ubah jika ada yang tidak sesuai — hasilnya dipakai untuk rekomendasi analisis "
+                "dan pemilihan kolom analitik."
+            )
+
+            # Gabungkan: var_types tersimpan (prioritas) + auto-detect (fallback)
+            _saved_types   = st.session_state.get("var_types", {})
+            _auto_types    = _auto_detect_var_types(display_df, display_report)
+            _current_types = {
+                col: _saved_types.get(col, _auto_types.get(col, "Numerik Kontinu"))
+                for col in display_df.columns
+            }
+
+            _type_df = pd.DataFrame({
+                "Kolom":         list(display_df.columns),
+                "Tipe Variabel": [_current_types[c] for c in display_df.columns],
+            })
+
+            _edited = st.data_editor(
+                _type_df,
+                column_config={
+                    "Kolom": st.column_config.TextColumn(
+                        "Kolom", disabled=True, width="medium"
+                    ),
+                    "Tipe Variabel": st.column_config.SelectboxColumn(
+                        "Tipe Variabel",
+                        options=TYPE_OPTIONS,
+                        required=True,
+                        width="medium",
+                    ),
+                },
+                hide_index=True,
+                use_container_width=True,
+                key="var_type_editor",
+            )
+
+            if st.button(
+                "💾 Terapkan Tipe Variabel",
+                key="btn_apply_var_types",
+                type="secondary",
+            ):
+                _new_var_types = dict(zip(_edited["Kolom"], _edited["Tipe Variabel"]))
+                st.session_state["var_types"] = _new_var_types
+
+                # Update report hanya jika data sudah di-save (hindari konflik)
+                if st.session_state.get("report") is not None:
+                    _rep = st.session_state["report"].copy()
+                    _rep["numeric_cols"] = [
+                        c for c in display_df.columns
+                        if _new_var_types.get(c) in _NUMERIC_TYPES
+                    ]
+                    _rep["non_numeric_cols"] = [
+                        c for c in display_df.columns
+                        if _new_var_types.get(c) not in _NUMERIC_TYPES
+                    ]
+                    st.session_state["report"] = _rep
+
+                    # Sesuaikan selected_cols — hapus kolom non-analitik
+                    _sel = [
+                        c for c in st.session_state.get("selected_cols", [])
+                        if _new_var_types.get(c) in _NUMERIC_TYPES
+                    ]
+                    st.session_state["selected_cols"] = _sel
+
+                st.success(
+                    f"✅ Tipe variabel diterapkan untuk {len(_new_var_types)} kolom."
+                )
+                st.rerun()
 
         st.markdown("<br/>", unsafe_allow_html=True)
 
@@ -353,10 +474,22 @@ def render(ctx: dict):
 
         if st.button("✅ Simpan & Gunakan Data Ini", type="primary"):
             # Pakai display_df & display_report agar hasil encoding ikut tersimpan
-            st.session_state.df_clean = display_df
-            st.session_state.report = display_report
-            st.session_state.selected_cols = display_report["numeric_cols"][:10]
-            st.session_state.ai_cache = {}
+            st.session_state.df_clean  = display_df
+            st.session_state.report    = display_report
+            st.session_state.ai_cache  = {}
+
+            # Tentukan selected_cols: hormati var_types jika sudah diset,
+            # fallback ke perilaku lama (numeric_cols[:10]) agar backward compat
+            _vt = st.session_state.get("var_types", {})
+            if _vt:
+                _analytic = [
+                    c for c in display_report["numeric_cols"]
+                    if _vt.get(c, "Numerik Kontinu") in _NUMERIC_TYPES
+                ]
+                st.session_state.selected_cols = _analytic[:10]
+            else:
+                st.session_state.selected_cols = display_report["numeric_cols"][:10]
+
             st.success("✅ Data siap dianalisis! Lanjutkan ke modul berikutnya.")
 
         # Menampilkan pilihan kolom jika data sudah tersimpan
