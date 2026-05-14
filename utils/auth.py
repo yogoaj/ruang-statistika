@@ -222,7 +222,41 @@ def render_license_sidebar() -> dict:
         help="Masukkan license key Pro Anda",
     )
 
-    if key_input:
+    # Jika user login via pro_licenses / Supabase dengan role pro,
+    # tampilkan Pro Aktif langsung tanpa validasi ke LICENSE_REGISTRY
+    _session_user = st.session_state.get("_user_data", {})
+    _session_is_pro = _session_user.get("role") == "pro"
+
+    if _session_is_pro:
+        # Cek masa berlaku dari session jika ada
+        from datetime import datetime, timezone
+        expires_str = _session_user.get("expires_at")
+        _expired = False
+        exp_txt = ""
+        if expires_str:
+            try:
+                exp_dt = datetime.fromisoformat(expires_str.replace("Z", "+00:00"))
+                if datetime.now(timezone.utc) > exp_dt:
+                    _expired = True
+                else:
+                    exp_txt = f" · exp {exp_dt.strftime('%d %b %Y')}"
+            except Exception:
+                pass
+
+        if _expired:
+            st.markdown(
+                "<span class='badge-invalid'>⚠️ Akses Pro Expired</span>",
+                unsafe_allow_html=True,
+            )
+            info = {"status": "free", "label": "—", "expires": None}
+        else:
+            st.markdown(
+                f"<span class='badge-valid'>✅ Pro Aktif{exp_txt}</span>",
+                unsafe_allow_html=True,
+            )
+            info = {"status": "pro", "label": "Pro via Login", "expires": None}
+
+    elif key_input:
         info = validate_license(key_input)
         if info["status"] == "pro":
             exp_txt = (
