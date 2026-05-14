@@ -11,6 +11,18 @@ import warnings
 import streamlit as st
 import streamlit.components.v1 as components
 
+st.markdown("""
+<style>
+/* Fix warna teks di input form */
+input[type="text"],
+input[type="password"],
+input[type="email"] {
+    color: #000000 !important;
+    -webkit-text-fill-color: #000000 !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
 warnings.filterwarnings("ignore")
 
 # ── Supabase: restore session ────────────────────────────────────────────────
