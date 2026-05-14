@@ -955,7 +955,7 @@ if menu == "Beranda":
             border-radius: 8px !important; padding: 10px 12px !important;
             font-size: 0.88rem !important;
             background: rgba(255,255,255,0.12) !important;
-            color: #ffffff !important;
+            color: #0c2340 !important;
             -webkit-text-fill-color: #ffffff !important;
             transition: border-color 0.15s, box-shadow 0.15s !important;
         }
