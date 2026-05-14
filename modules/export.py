@@ -1132,7 +1132,7 @@ def render(ctx: dict):
                 "Laporan gratis tersedia **1 kali per hari**. Coba lagi besok, atau upgrade ke "
                 "**Paket Pro** untuk laporan tak terbatas dengan narasi AI penuh."
             )
-            st.info("👉 [Dapatkan akses Pro](https://yogoaj.github.io)")
+            st.info("👉 [Dapatkan akses Pro](https://lynk.id/ruangstatistika)")
             st.markdown("---")
             st.markdown("**Fitur eksklusif laporan Pro:**")
             for item in [
