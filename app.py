@@ -1142,8 +1142,7 @@ if menu == "Beranda":
             if st.button("🔵  Lanjutkan dengan Google", key="btn_google_login",
                          use_container_width=True):
                 from utils.supabase_auth import supabase_sign_in_google
-                _app_url = st.secrets.get("app_url", "https://ruang-statistika.streamlit.app")
-                _ok, _url_or_err = supabase_sign_in_google(_app_url)
+                _ok, _url_or_err = supabase_sign_in_google()
                 if _ok:
                     # Redirect browser ke halaman consent Google
                     st.markdown(
