@@ -1,11 +1,12 @@
 """
-utils/supabase_auth.py — Ruang Statistika v4.5
+utils/supabase_auth.py — Ruang Statistika v4.6
 Sistem autentikasi via Supabase:
-  - Sign In (email + password)
+  - Sign In (email + password) → cek Supabase Auth dulu, fallback ke pro_licenses
   - Sign Up (registrasi mandiri)
   - Forgot Password (kirim email reset)
   - Sign Out
   - Restore session dari st.session_state
+  - [🔜] Login Google — aktifkan via Supabase Dashboard → Auth → Providers
 
 Cara pakai di app.py:
     from utils.supabase_auth import (
@@ -14,6 +15,11 @@ Cara pakai di app.py:
         restore_supabase_session, get_current_user,
         save_supabase_session,
     )
+
+Perubahan v4.6:
+  - supabase_sign_in: tambah fallback login via tabel pro_licenses
+  - Jika login lewat pro_licenses: role otomatis jadi 'pro', cek expires_at
+  - Siap untuk tambahan Google login (tidak perlu ubah kode ini)
 """
 
 from __future__ import annotations
@@ -146,31 +152,105 @@ def get_current_user() -> Optional[dict]:
 # SIGN IN — Email + Password
 # ══════════════════════════════════════════════════════════════════════════════
 
+def _sign_in_via_pro_licenses(
+    sb, email: str, password: str
+) -> tuple[bool, str]:
+    """
+    Fallback login: cek email + password langsung ke tabel pro_licenses.
+    Dipanggil hanya jika login Supabase Auth gagal.
+
+    Juga mengecek:
+      - apakah akun masih aktif (is_active = true)
+      - apakah masa akses belum habis (expires_at > sekarang)
+    """
+    from datetime import datetime, timezone
+
+    try:
+        resp = (
+            sb.table("pro_licenses")
+            .select("email, name, password, license_key, expires_at, is_active")
+            .eq("email", email.strip().lower())
+            .single()
+            .execute()
+        )
+    except Exception:
+        return False, "❌ Email atau password salah."
+
+    row = resp.data if resp else None
+    if not row:
+        return False, "❌ Email atau password salah."
+
+    # Cek password (plain text — sesuai yang kita generate di Edge Function)
+    if row.get("password", "") != password:
+        return False, "❌ Email atau password salah."
+
+    # Cek status aktif
+    if not row.get("is_active", True):
+        return False, "❌ Akun kamu sudah dinonaktifkan. Hubungi admin."
+
+    # Cek masa berlaku
+    expires_str = row.get("expires_at")
+    if expires_str:
+        try:
+            expires_dt = datetime.fromisoformat(expires_str.replace("Z", "+00:00"))
+            if datetime.now(timezone.utc) > expires_dt:
+                return False, (
+                    "⏰ Masa akses Pro kamu sudah habis. "
+                    "Silakan perpanjang di yogoaj.github.io"
+                )
+        except Exception:
+            pass
+
+    # Login berhasil via pro_licenses — simpan ke session
+    name = row.get("name") or email.split("@")[0]
+    st.session_state["user_logged_in"]  = True
+    st.session_state["user_name"]       = name
+    st.session_state["username"]        = email
+    st.session_state["_auth_provider"]  = "pro_licenses"
+    st.session_state["_user_data"] = {
+        "username":    email,
+        "name":        name,
+        "email":       email,
+        "role":        "pro",   # semua user di pro_licenses = Pro
+        "license_key": row.get("license_key", ""),
+        "active":      True,
+        "expires_at":  expires_str,
+    }
+    # Set license key otomatis ke session (agar sidebar Pro aktif)
+    st.session_state["_modal_license_key"]  = row.get("license_key", "")
+    st.session_state["sidebar_license_key"] = row.get("license_key", "")
+
+    return True, ""
+
+
 def supabase_sign_in(email: str, password: str) -> tuple[bool, str]:
     """
     Login dengan email + password.
+
+    Alur:
+      1. Coba login via Supabase Auth (user biasa / Google nanti)
+      2. Kalau gagal → coba login via tabel pro_licenses (user Pro dari Lynk.id)
+
     Return: (berhasil: bool, pesan_error: str)
     """
     sb = get_supabase()
     if not sb:
         return False, "Koneksi ke Supabase gagal."
 
+    # ── Langkah 1: Coba Supabase Auth ────────────────────────────────────────
     try:
         resp = sb.auth.sign_in_with_password({"email": email, "password": password})
         if resp and resp.user:
             save_supabase_session(resp.user, resp.session)
             return True, ""
-        return False, "Login gagal. Periksa email dan password."
     except Exception as e:
         msg = str(e)
-        # Pesan error user-friendly
-        if "Invalid login credentials" in msg:
-            return False, "❌ Email atau password salah."
+        # Kalau email belum dikonfirmasi → jangan fallback, langsung info user
         if "Email not confirmed" in msg:
             return False, "📧 Email belum dikonfirmasi. Cek inbox kamu."
-        if "User not found" in msg:
-            return False, "❌ Akun tidak ditemukan. Silakan daftar dulu."
-        return False, f"❌ Login gagal: {msg}"
+
+    # ── Langkah 2: Fallback ke tabel pro_licenses ─────────────────────────────
+    return _sign_in_via_pro_licenses(sb, email, password)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
