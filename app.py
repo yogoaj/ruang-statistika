@@ -11,18 +11,6 @@ import warnings
 import streamlit as st
 import streamlit.components.v1 as components
 
-st.markdown("""
-<style>
-/* Fix warna teks di input form */
-input[type="text"],
-input[type="password"],
-input[type="email"] {
-    color: #000000 !important;
-    -webkit-text-fill-color: #000000 !important;
-}
-</style>
-""", unsafe_allow_html=True)
-
 warnings.filterwarnings("ignore")
 
 # ── Supabase: restore session ────────────────────────────────────────────────
@@ -766,10 +754,10 @@ if menu == "Beranda":
             display: none !important;
         }
 
-        /* Background terang — nada seperti email konfirmasi */
+        /* Background dengan subtle pattern */
         [data-testid="stAppViewContainer"],
         [data-testid="stApp"] {
-            background: #eef4fb !important;
+            background: linear-gradient(135deg, #0c2340 0%, #1a3a5c 50%, #185FA5 100%) !important;
         }
 
         /* Pusatkan kartu — pertahankan max-width sempit */
@@ -782,12 +770,15 @@ if menu == "Beranda":
             padding-bottom: 3rem !important;
         }
 
-        /* ── Kartu utama — dengan header gradient di atas ── */
+        /* ── Kartu utama — semi transparan dengan blur ── */
         .signin-card {
-            background: #ffffff;
+            background: rgba(255, 255, 255, 0.10);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
             border-radius: 18px;
             overflow: hidden;
-            box-shadow: 0 8px 32px rgba(12,35,64,0.13), 0 2px 8px rgba(12,35,64,0.07);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.35);
             width: 100%;
             max-width: 420px;
             margin-bottom: 0;
@@ -848,7 +839,7 @@ if menu == "Beranda":
         /* Tab strip — tombol Streamlit disamarkan jadi tab */
         .signin-tab-row {
             display: flex;
-            border-bottom: 1px solid #e2ecf5;
+            border-bottom: 1px solid rgba(255,255,255,0.15);
             margin-bottom: 1.3rem;
             gap: 0;
         }
@@ -858,7 +849,7 @@ if menu == "Beranda":
             border: none !important;
             border-bottom: 2.5px solid transparent !important;
             border-radius: 0 !important;
-            color: #8aabcc !important;
+            color: rgba(255,255,255,0.50) !important;
             font-size: 0.85rem !important;
             font-weight: 500 !important;
             padding: 8px 4px !important;
@@ -867,13 +858,13 @@ if menu == "Beranda":
             transition: color 0.15s, border-color 0.15s !important;
         }
         .signin-tab-row .stButton > button:hover {
-            color: #0c2340 !important;
+            color: rgba(255,255,255,0.90) !important;
             background: transparent !important;
         }
         .signin-tab-active .stButton > button {
-            color: #0c2340 !important;
+            color: #ffffff !important;
             font-weight: 700 !important;
-            border-bottom-color: #185FA5 !important;
+            border-bottom-color: #F5B800 !important;
         }
 
         /* Link lupa password — kecil rata kanan */
@@ -957,18 +948,25 @@ if menu == "Beranda":
         /* Input fields */
         section[data-testid="stMain"] .stTextInput label {
             font-size: 0.78rem !important; font-weight: 600 !important;
-            color: #3d5a73 !important; margin-bottom: 4px !important;
+            color: rgba(255,255,255,0.80) !important; margin-bottom: 4px !important;
         }
         section[data-testid="stMain"] .stTextInput input {
-            border: 1.5px solid #d0e4f2 !important;
+            border: 1.5px solid rgba(255,255,255,0.25) !important;
             border-radius: 8px !important; padding: 10px 12px !important;
-            font-size: 0.88rem !important; background: #f7faff !important;
+            font-size: 0.88rem !important;
+            background: rgba(255,255,255,0.12) !important;
+            color: #ffffff !important;
+            -webkit-text-fill-color: #ffffff !important;
             transition: border-color 0.15s, box-shadow 0.15s !important;
         }
         section[data-testid="stMain"] .stTextInput input:focus {
-            border-color: #185FA5 !important;
-            background: #ffffff !important;
-            box-shadow: 0 0 0 3px rgba(24,95,165,0.10) !important;
+            border-color: rgba(255,255,255,0.5) !important;
+            background: rgba(255,255,255,0.18) !important;
+            box-shadow: 0 0 0 3px rgba(255,255,255,0.08) !important;
+        }
+        section[data-testid="stMain"] .stTextInput input::placeholder {
+            color: rgba(255,255,255,0.40) !important;
+            -webkit-text-fill-color: rgba(255,255,255,0.40) !important;
         }
 
         /* Submit button (form) */
@@ -988,15 +986,16 @@ if menu == "Beranda":
 
         /* CTA Coba Gratis — tombol Streamlit biasa di luar form */
         section[data-testid="stMain"] .stButton > button {
-            background: #f0f6ff !important;
-            border: 1.5px solid #c0d9f0 !important;
-            border-radius: 9px !important; color: #185FA5 !important;
+            background: rgba(255,255,255,0.10) !important;
+            border: 1.5px solid rgba(255,255,255,0.25) !important;
+            border-radius: 9px !important; color: #ffffff !important;
             font-size: 0.85rem !important; font-weight: 600 !important;
             padding: 9px !important; width: 100% !important;
             transition: background 0.15s, border-color 0.15s !important;
         }
         section[data-testid="stMain"] .stButton > button:hover {
-            background: #deeef9 !important; border-color: #185FA5 !important;
+            background: rgba(255,255,255,0.18) !important;
+            border-color: rgba(255,255,255,0.45) !important;
         }
 
         /* Lupa password — link kecil */
