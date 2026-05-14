@@ -259,7 +259,28 @@ def require_pro(license_info: dict, feature_name: str = "Fitur ini") -> bool:
     """
     Guard untuk modul Pro. Panggil di baris pertama render() modul Pro.
     Return True jika Pro, tampilkan pesan upgrade dan return False jika Free.
+
+    Cek status Pro dari dua sumber (prioritas urut):
+      1. Session state — user login via pro_licenses (dari Lynk.id)
+      2. license_info dict — user input license key manual
     """
+    # Cek dari session state dulu (user Pro dari Lynk.id)
+    user_data = st.session_state.get("_user_data", {})
+    if user_data.get("role") == "pro":
+        # Pastikan masa akses belum habis
+        expires_at = user_data.get("expires_at")
+        if expires_at:
+            from datetime import datetime, timezone
+            try:
+                exp_dt = datetime.fromisoformat(expires_at.replace("Z", "+00:00"))
+                if datetime.now(timezone.utc) <= exp_dt:
+                    return True
+            except Exception:
+                return True  # kalau parse gagal, anggap masih valid
+        else:
+            return True  # tidak ada expires = permanent
+
+    # Fallback: cek dari license_info (input manual)
     if license_info.get("status") == "pro":
         return True
 
