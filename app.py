@@ -345,11 +345,20 @@ with st.sidebar:
     # Sidebar hanya tampilkan nama + tombol keluar (jika sudah login)
     if st.session_state.user_logged_in:
         _display_name = st.session_state.user_name or "Pengguna"
-        _is_pro_user  = st.session_state.get("_user_data", {}).get("role") == "pro"
+        _user_data    = st.session_state.get("_user_data", {})
+        _is_pro_user  = _user_data.get("role") == "pro"
+        _user_tier    = _user_data.get("tier", "starter") if _is_pro_user else "free"
+        _TIER_COLORS  = {
+            "starter":      ("#185FA5", "#0c2340"),
+            "premium":      ("#7c3aed", "#4c1d95"),
+            "professional": ("#b45309", "#78350f"),
+        }
+        _tc = _TIER_COLORS.get(_user_tier, ("#185FA5", "#0c2340"))
         _tier_badge   = (
-            "<span style='background:linear-gradient(90deg,#185FA5,#0c2340);"
+            f"<span style='background:linear-gradient(90deg,{_tc[0]},{_tc[1]});"
             "color:#fff;font-size:0.65rem;font-weight:600;letter-spacing:0.04em;"
-            "padding:2px 8px;border-radius:10px;margin-left:6px;'>PRO</span>"
+            f"padding:2px 8px;border-radius:10px;margin-left:6px;'>"
+            f"{_user_tier.upper()}</span>"
             if _is_pro_user else
             "<span style='background:rgba(255,255,255,0.12);color:#85b7eb;"
             "font-size:0.65rem;padding:2px 8px;border-radius:10px;margin-left:6px;'>"
@@ -670,9 +679,11 @@ with st.sidebar:
 
 
 # ── Context dict — diteruskan ke setiap modul ────────────────────────────────
+_ctx_user_data = st.session_state.get("_user_data", {})
 ctx = {
     "license_info":      license_info,
     "is_pro":            is_pro,
+    "user_tier":         _ctx_user_data.get("tier", "free") if is_pro else "free",
     "alpha_level":       alpha_level,
     "r_tab":             r_tab,
     "ai_enabled":        ai_enabled,
