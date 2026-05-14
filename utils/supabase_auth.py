@@ -309,7 +309,7 @@ def _sign_in_via_pro_licenses(sb, email: str, password: str) -> tuple[bool, str]
             if datetime.now(timezone.utc) > expires_dt:
                 return False, (
                     "⏰ Masa akses Pro kamu sudah habis. "
-                    "Silakan perpanjang di yogoaj.github.io"
+                    "Silakan perpanjang di lynk.id/ruangstatistika"
                 )
         except Exception:
             pass
