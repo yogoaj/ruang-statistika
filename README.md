@@ -1,4 +1,4 @@
-# Ruang Statistika v4.5 — Modular Architecture
+# Ruang Statistika v4.8 — Modular Architecture
 
 > AI-Powered Research & Stats Reporting | [ruang-statistika.streamlit.app](https://ruang-statistika.streamlit.app/)
 
@@ -28,28 +28,28 @@ ruang_statistika/
 │   ├── uji_nonparametrik.py        ← Wilcoxon, Friedman, McNemar, Cochran Q, Korelasi Ordinal
 │   ├── chat_ai.py                  ← Chat AI Analyst
 │   │
-│   └── # ── PRO MODULES ──
-│       ├── regresi.py              ← Regresi & Prediksi ★
-│       ├── ols_plus.py             ← OLS+ Uji Asumsi Klasik ★
-│       ├── ols_robust.py           ← Regresi Robust (RLM) & WLS ★
-│       ├── efa.py                  ← Analisis Faktor Eksploratori (EFA) ★
-│       ├── cfa.py                  ← Confirmatory Factor Analysis (CFA) ★
-│       ├── mediasi.py              ← Mediasi + Bootstrap CI ★
-│       ├── anova.py                ← ANOVA + Post-hoc ★
-│       ├── moderasi.py             ← Moderasi/Interaksi + Johnson-Neyman ★
-│       ├── logistik.py             ← Regresi Logistik + ROC ★
-│       ├── sem.py                  ← SEM + CFA via semopy ★
-│       ├── klaster.py              ← Analisis Klaster (K-Means + Hierarki) ★
-│       ├── reliabilitas_icc.py     ← Reliabilitas ICC (Intraclass Correlation) ★
-│       ├── power_analysis.py       ← Power Analysis & Sample Size ★
-│       ├── scraping.py             ← Web Scraping Data ★
-│       └── export.py               ← Generate Laporan Pro (.docx / .md) ★
+│   └── # ── FREE (terbatas) + PRO MODULES ──
+│       ├── regresi.py              ← Regresi & Prediksi (OLS dasar gratis; VIF, prediksi, AI → Pro)
+│       ├── anova.py                ← ANOVA + Post-hoc (one-way + η² gratis; post-hoc, KW, AI → Pro)
+│       ├── logistik.py             ← Regresi Logistik (OR + CM gratis; ROC, CR, AI → Pro)
+│       ├── ols_plus.py             ← OLS+ Uji Asumsi Klasik ★ Pro
+│       ├── ols_robust.py           ← Regresi Robust (RLM) & WLS ★ Pro
+│       ├── efa.py                  ← Analisis Faktor Eksploratori (EFA) ★ Pro
+│       ├── cfa.py                  ← Confirmatory Factor Analysis (CFA) ★ Pro
+│       ├── mediasi.py              ← Mediasi + Bootstrap CI ★ Pro
+│       ├── moderasi.py             ← Moderasi/Interaksi + Johnson-Neyman ★ Pro
+│       ├── sem.py                  ← SEM + CFA via semopy ★ Pro
+│       ├── klaster.py              ← Analisis Klaster (K-Means + Hierarki) ★ Pro
+│       ├── reliabilitas_icc.py     ← Reliabilitas ICC (Intraclass Correlation) ★ Pro
+│       ├── power_analysis.py       ← Power Analysis & Sample Size ★ Pro
+│       ├── scraping.py             ← Web Scraping Data ★ Pro
+│       └── export.py               ← Generate Laporan (1×/hari gratis; tak terbatas + AI → Pro)
 │
 ├── utils/
 │   ├── __init__.py
-│   ├── auth.py                     ← License key validation, Pro guard, quota harian gratis
-│   ├── supabase_auth.py            ← Autentikasi Supabase: Sign In/Up/Forgot Password
-│   ├── ai_helpers.py               ← call_ai_api, interpretasi AI per modul (Claude/GPT/Gemini/Groq)
+│   ├── auth.py                     ← License key validation, Pro guard, tier system, quota harian
+│   ├── supabase_auth.py            ← Autentikasi Supabase: Sign In/Up/Out/Forgot Password/Google OAuth
+│   ├── ai_helpers.py               ← call_ai_api, interpretasi AI per modul (Claude/GPT/Gemini/Groq/dll.)
 │   ├── stats_helpers.py            ← Fungsi statistik reusable + encode_categorical
 │   ├── plot_helpers.py             ← Plotly chart factory (histogram, QQ, heatmap, mediasi SVG, dll.)
 │   ├── docx_helpers.py             ← generate_pro_docx (+ user_name), generate_markdown_report
@@ -67,18 +67,18 @@ ruang_statistika/
 
 ## 🔐 Sistem Akses & Lisensi
 
-### Alur Login (v4.5)
+### Alur Login (v4.8)
 
 ```
 User buka app
       ↓
-Modal login muncul (5 tab — layout 2 kolom)
+Halaman login muncul (2 tab utama + navigasi via tombol)
       ↓
 [Masuk]         → Email + Password via Supabase
 [Daftar]        → Registrasi mandiri via Supabase
-[Lupa Password] → Kirim link reset ke email via Supabase
-[Kode Pro]      → Aktivasi Pro langsung dengan license key (tanpa akun Supabase)
-[Lanjut Gratis] → Masuk tanpa akun
+[Lupa Password] → Kirim link reset ke email via Supabase (diakses dari tab Masuk)
+[Aktivasi Pro]  → Aktivasi Pro langsung dengan license key (diakses dari tab Masuk/Daftar)
+[Coba Gratis]   → Masuk tanpa akun
       ↓
 Setelah login → cek License Key di sidebar
       ↓
@@ -109,6 +109,12 @@ LICENSE_REGISTRY = {
 }
 ```
 
+### Link Upgrade Paket
+
+Arahkan user ke: **[lynk.id/ruangstatistika](https://lynk.id/ruangstatistika)**
+
+Semua tombol dan link "Upgrade" / "Dapatkan akses Pro" di dalam aplikasi mengarah ke URL tersebut.
+
 ### Kelola User (via Supabase Dashboard)
 
 Buka [supabase.com](https://supabase.com) → project kamu → **Authentication → Users**
@@ -119,20 +125,20 @@ Buka [supabase.com](https://supabase.com) → project kamu → **Authentication 
 | Hapus user | Klik nama user → Delete |
 | Undang user baru | Klik "Invite user" → masukkan email |
 | Reset password user | Klik nama user → Send password recovery |
-| User daftar sendiri | Klik tab "Daftar" di modal login app |
+| User daftar sendiri | Klik tab "Daftar" di halaman login app |
 
 ---
 
 ## 👤 Personalisasi & Login
 
-Sejak v4.5, login menggunakan **Supabase Authentication**:
+Sejak v4.5, login menggunakan **Supabase Authentication**. Di v4.8 ditambah Google OAuth:
 
-- **Tab Masuk** — email + password
+- **Tab Masuk** — email + password, atau Google OAuth
 - **Tab Daftar** — registrasi mandiri (nama, email, password)
-- **Tab Lupa Password** — kirim link reset ke email
-- **Tab Kode Pro** — aktivasi Pro langsung dengan license key
-- **Tab Lanjut Gratis** — masuk tanpa akun (nama opsional)
-- **Sidebar** — tampilkan nama user + tombol Keluar
+- **Lupa Password** — kirim link reset ke email (tombol di tab Masuk)
+- **Aktivasi Pro** — input license key (tombol di tab Masuk/Daftar)
+- **Coba Gratis** — masuk tanpa akun (nama opsional)
+- **Sidebar** — tampilkan nama user + badge tier + tombol Keluar
 - **Laporan .docx & .md** — nama peneliti otomatis di cover page
 
 Nama pengguna disimpan di `st.session_state` dan diteruskan via `ctx["user_name"]` ke semua modul.
@@ -144,14 +150,14 @@ Nama pengguna disimpan di `st.session_state` dan diteruskan via `ctx["user_name"
 ```python
 """
 modules/nama_modul.py — Deskripsi Singkat (Free/Pro)
-Ruang Statistika v4.5
+Ruang Statistika v4.8
 """
 import streamlit as st
 from utils.auth import require_pro          # hanya untuk Pro modules
 from utils.stats_helpers import require_data, require_cols
 
 def render(ctx: dict):
-    # ctx keys: license_info, is_pro, alpha_level, r_tab,
+    # ctx keys: license_info, is_pro, user_tier, alpha_level, r_tab,
     #           ai_enabled, anthropic_api_key, ai_provider, user_name
 
     license_info = ctx["license_info"]
@@ -195,13 +201,21 @@ def render(ctx: dict):
 
 ## ✨ Changelog
 
-### v4.5 (Terkini)
+### v4.8 (Terkini)
+- **Google OAuth aktif kembali:** Login via Google tersedia di tab Masuk menggunakan Supabase OAuth provider
+- **`handle_google_callback()`:** Dipanggil di awal `app.py` untuk menangkap token dari Google redirect via URL fragment → query params
+- **Tier System:** `require_tier()` di `auth.py` — guard berbasis tier (starter / premium / professional)
+- **Badge tier di sidebar:** Nama user + badge tier tampil di panel sidebar setelah login
+- **`user_tier` di ctx:** Diteruskan ke semua modul untuk logika tier-aware
+- **Bug fix:** Badge versi beranda diperbarui dari v4.3 → v4.8
+- **Link upgrade:** Semua tombol upgrade mengarah ke `lynk.id/ruangstatistika`; link footer ke `yogoaj.github.io/#aplikasi`
+
+### v4.5
 - **Auth Supabase:** Login, Registrasi mandiri, Lupa Password — semua via Supabase Auth
 - **`utils/supabase_auth.py`:** `supabase_sign_in`, `supabase_sign_up`, `supabase_forgot_password`, `restore_supabase_session`
-- **Modal login baru:** 5 tab (Masuk / Daftar / Lupa Password / Kode Pro / Lanjut Gratis) dalam layout 2 kolom
-- **Google OAuth dihapus:** Tidak ada lagi ketergantungan pada Google Cloud Console — setup lebih sederhana
+- **Modal login baru:** Halaman login dengan 2 tab utama (Masuk / Daftar) + navigasi tombol ke Lupa Password, Aktivasi Pro, Coba Gratis
 - **Session restore:** Token Supabase disimpan di `session_state`, di-restore otomatis saat refresh
-- **Bug fix `auth.py`:** Tambah `check_daily_export_quota()`, `get_quota_remaining()`, dan `consume_export_quota()` tanpa argumen wajib — diperlukan oleh `export.py`
+- **Bug fix `auth.py`:** Tambah `check_daily_export_quota()`, `get_quota_remaining()`, dan `consume_export_quota()` tanpa argumen wajib
 
 ### v4.4
 - **Auth berbasis akun:** Login username + password via `users.yaml` + bcrypt (digantikan v4.5 dengan Supabase)
@@ -212,18 +226,20 @@ def render(ctx: dict):
 - **Bugfix kritis `export.py`:** Berbagai perbaikan indentasi, duplikat key, dan quota handling
 
 ### v4.2
-- **Modul baru:** `ols_robust.py`, `compute.py`
-- **Navigasi:** Sidebar dikelompokkan per kategori
-- **AI Provider:** Dukungan Groq dan HuggingFace gratis
+- **Modul baru:** `ols_robust.py`, `compute.py`, `scraping.py`, `power_analysis.py`
+- **Navigasi:** Sidebar dikelompokkan per kategori (Eksplorasi Data, Uji Statistik, Pemodelan, Faktor & SEM, AI & Laporan)
+- **AI Provider:** Dukungan Groq, Gemini, OpenRouter, HuggingFace, Mistral, Cohere
+- **Regresi, ANOVA, Logistik:** Tersedia gratis (terbatas); fitur lanjutan tetap Pro
+- **Laporan gratis:** 1×/hari tanpa narasi AI; Pro tak terbatas + narasi AI + grafik
 
 ### v4.1
-- `validitas.py` ditingkatkan dengan Item-Total Statistics
+- `validitas.py` ditingkatkan dengan Item-Total Statistics, CITC, α-if-deleted
 - AI cache key konsisten di seluruh modul
 
 ### v4.0
 - Arsitektur modular penuh
 - EFA, OLS+, Mediasi, ANOVA, Moderasi, Logistik, SEM/CFA
-- Export laporan multi-format
+- Export laporan multi-format (.docx / .md)
 
 ---
 
@@ -252,7 +268,8 @@ streamlit run app.py
 1. Buat project di [supabase.com](https://supabase.com)
 2. Ambil **URL** dan **anon key** dari Settings → API
 3. Aktifkan Email provider di Authentication → Providers
-4. Buat file `.streamlit/secrets.toml`:
+4. Untuk Google OAuth: aktifkan Google provider di Authentication → Providers → Google
+5. Buat file `.streamlit/secrets.toml`:
 
 ```toml
 [supabase]
@@ -286,7 +303,10 @@ app_url = "http://localhost:8501"
 | GPT-4o (OpenAI) | Berbayar | [platform.openai.com](https://platform.openai.com) |
 | Gemini (Google) | Terbatas gratis | [aistudio.google.com](https://aistudio.google.com) |
 | Groq — Llama 3.3 70B | **Gratis** | [console.groq.com](https://console.groq.com) |
+| OpenRouter | **Gratis** (model tertentu) | [openrouter.ai](https://openrouter.ai) |
 | HuggingFace — Mistral 7B | **Gratis** | [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens) |
+| Mistral AI | Trial gratis | [console.mistral.ai](https://console.mistral.ai) |
+| Cohere | Trial gratis | [dashboard.cohere.com](https://dashboard.cohere.com) |
 
 ---
 
@@ -299,3 +319,19 @@ app_url = "http://localhost:8501"
 | Cohen's f² | Regresi Linier | < 0.02 | 0.02–0.15 | ≥ 0.35 |
 | Pearson r | Korelasi | < 0.10 | 0.30–0.49 | ≥ 0.50 |
 | Odds Ratio | Regresi Logistik | < 1.5 | 1.5–2.5 | ≥ 4.0 |
+
+---
+
+## 🐛 Bug yang Diperbaiki (v4.8)
+
+| File | Bug | Perbaikan |
+|---|---|---|
+| `app.py` | Badge versi beranda masih menampilkan v4.3 | Diperbarui ke v4.8 |
+| `app.py` | Semua link upgrade mengarah ke `yogoaj.github.io` | Diubah ke `lynk.id/ruangstatistika` |
+| `app.py` | Link footer mengarah ke `yogoaj.github.io` | Diubah ke `yogoaj.github.io/#aplikasi` |
+| `auth.py` | Link "Upgrade Paket" mengarah ke `yogoaj.github.io` | Diubah ke `lynk.id/ruangstatistika` |
+| `anova.py` | Link "Dapatkan akses Pro" mengarah ke `yogoaj.github.io` | Diubah ke `lynk.id/ruangstatistika` |
+| `logistik.py` | Link "Dapatkan akses Pro" mengarah ke `yogoaj.github.io` | Diubah ke `lynk.id/ruangstatistika` |
+| `regresi.py` | Link "Dapatkan akses Pro" mengarah ke `yogoaj.github.io` | Diubah ke `lynk.id/ruangstatistika` |
+| `export.py` | Link "Dapatkan akses Pro" mengarah ke `yogoaj.github.io` | Diubah ke `lynk.id/ruangstatistika` |
+| `supabase_auth.py` | Pesan perpanjangan mengarah ke `yogoaj.github.io` | Diubah ke `lynk.id/ruangstatistika` |
