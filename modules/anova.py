@@ -218,7 +218,7 @@ def render(ctx: dict):
         st.info(
             "🔒 **Fitur Pro:** Post-hoc Tukey HSD / Bonferroni, Kruskal-Wallis "
             "(uji non-parametrik), dan interpretasi AI — tersedia di **Paket Akademisi Pro**.\n\n"
-            "👉 [Dapatkan akses Pro](https://yogoaj.github.io)"
+            "👉 [Dapatkan akses Pro](https://lynk.id/ruangstatistika)"
         )
         st.session_state["anova_result"] = anova_result_base
         return
