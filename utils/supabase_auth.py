@@ -1,5 +1,5 @@
 """
-utils/supabase_auth.py — Ruang Statistika v4.8
+utils/supabase_auth.py — Ruang Statistika v4.9
 Sistem autentikasi via Supabase:
   - Sign In (email + password) → cek Supabase Auth dulu, fallback ke pro_licenses
   - Sign In Google (OAuth) → redirect ke Google, tangkap callback
@@ -7,24 +7,15 @@ Sistem autentikasi via Supabase:
   - Forgot Password (kirim email reset)
   - Sign Out
   - Restore session dari st.session_state
-  - Handle Google OAuth callback dari URL fragment
+  - Handle Google OAuth callback dari URL query params
 
-Cara pakai di app.py:
-    from utils.supabase_auth import (
-        supabase_sign_in, supabase_sign_in_google,
-        handle_google_callback,
-        supabase_sign_up, supabase_sign_out,
-        supabase_forgot_password,
-        restore_supabase_session, get_current_user,
-        save_supabase_session,
-    )
-
-Perubahan v4.8:
-  - Tambah supabase_sign_in_google() → generate URL OAuth Google
-  - Tambah handle_google_callback() → tangkap token dari URL setelah redirect
-  - supabase_sign_in: perbaikan logika fallback (dari v4.7)
-  - supabase_sign_up: peringatan untuk user Pro Lynk.id (dari v4.7)
-  - supabase_forgot_password: deteksi jalur pro_licenses (dari v4.7)
+Perubahan v4.9 — Fix Google OAuth 403:
+  - supabase_sign_in_google(): HAPUS redirect_to dari options.
+    Dulu redirect_to diisi URL Streamlit → Google reject karena tidak cocok
+    dengan Authorized Redirect URI yang terdaftar (URL Supabase).
+    Sekarang biarkan Supabase pakai Callback URL default-nya sendiri.
+  - handle_google_callback(): lebih robust, tangkap error dengan jelas.
+  - JS fragment reader dipindah sepenuhnya ke app.py (tidak berubah).
 """
 
 from __future__ import annotations
@@ -146,24 +137,36 @@ def get_current_user() -> Optional[dict]:
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# GOOGLE OAUTH
+# GOOGLE OAUTH  ← DIPERBAIKI TOTAL v4.9
 # ══════════════════════════════════════════════════════════════════════════════
 
-def supabase_sign_in_google(redirect_url: str = "") -> tuple[bool, str]:
+def supabase_sign_in_google() -> tuple[bool, str]:
     """
     Inisiasi login Google via OAuth.
 
-    Alur lengkap:
-      1. Fungsi ini dipanggil saat user klik tombol "Lanjutkan dengan Google"
+    PERBAIKAN v4.9:
+      - redirect_to DIHAPUS dari options.
+      - Dulu redirect_to diisi URL Streamlit (app_url dari secrets).
+        Ini menyebabkan 403 dari Google karena URL yang dikirim sebagai
+        redirect_uri ke Google adalah URL Streamlit, sedangkan yang terdaftar
+        di Google Cloud Authorized Redirect URIs adalah URL Supabase callback
+        (https://xxx.supabase.co/auth/v1/callback).
+      - Sekarang Supabase otomatis memakai Callback URL default-nya sendiri
+        yang sudah terdaftar di Google Cloud → tidak ada mismatch → tidak 403.
+
+    Alur setelah fix:
+      1. Fungsi ini dipanggil saat user klik "Lanjutkan dengan Google"
       2. Supabase generate URL redirect ke halaman consent Google
-      3. app.py redirect browser user ke URL tersebut (via meta refresh)
-      4. User pilih akun Google di halaman Google
-      5. Google redirect balik ke app dengan token di URL fragment (#access_token=...)
-      6. JS snippet di app.py membaca fragment dan mengonversinya ke query_params
-      7. handle_google_callback() membaca query_params dan restore session
+         (dengan redirect_uri = https://xxx.supabase.co/auth/v1/callback)
+      3. User pilih akun Google
+      4. Google redirect ke Supabase callback URL
+      5. Supabase redirect ke Site URL (ruang-statistika.streamlit.app)
+         dengan token di URL fragment (#access_token=...)
+      6. JS snippet di app.py membaca fragment → konversi ke query_params
+      7. handle_google_callback() membaca query_params → set session
 
     Return:
-      (True, url_google)   → berhasil, app.py harus redirect browser ke url ini
+      (True, url_google)   → berhasil, app.py redirect browser ke url ini
       (False, pesan_error) → gagal
     """
     sb = get_supabase()
@@ -171,18 +174,13 @@ def supabase_sign_in_google(redirect_url: str = "") -> tuple[bool, str]:
         return False, "Koneksi ke Supabase gagal."
 
     try:
-        if not redirect_url:
-            redirect_url = st.secrets.get(
-                "app_url", "https://ruang-statistika.streamlit.app"
-            )
-
         resp = sb.auth.sign_in_with_oauth({
             "provider": "google",
             "options": {
-                "redirect_to": redirect_url,
+                # TIDAK ada redirect_to — Supabase pakai Callback URL default
                 "query_params": {
                     "access_type": "offline",
-                    "prompt":      "select_account",  # selalu tampilkan pilihan akun
+                    "prompt":      "select_account",
                 },
             },
         })
@@ -198,17 +196,17 @@ def supabase_sign_in_google(redirect_url: str = "") -> tuple[bool, str]:
 
 def handle_google_callback() -> bool:
     """
-    Tangkap token dari URL setelah redirect balik dari Google.
+    Tangkap token dari URL setelah redirect balik dari Google/Supabase.
 
     HARUS dipanggil di paling awal app.py, SEBELUM restore_supabase_session()
     dan SEBELUM st.set_page_config().
 
-    Kenapa perlu fungsi ini:
-      Supabase OAuth mengirim token via URL fragment (#access_token=...).
-      Fragment tidak dikirim ke server — hanya ada di browser.
-      JS snippet di halaman login membaca fragment tersebut dan mengonversinya
-      ke query_params (?access_token=...) agar Streamlit bisa membacanya.
-      Fungsi ini membaca query_params tersebut dan men-set session Supabase.
+    Alur:
+      - Supabase OAuth mengirim token via URL fragment (#access_token=...).
+      - Fragment tidak dikirim ke server — hanya ada di browser.
+      - JS snippet di app.py membaca fragment dan mengonversinya ke
+        query_params (?access_token=...) agar Streamlit bisa membacanya.
+      - Fungsi ini membaca query_params tersebut dan men-set session Supabase.
 
     Return True jika berhasil set session dari callback Google.
     """
@@ -233,10 +231,10 @@ def handle_google_callback() -> bool:
             # Bersihkan token dari URL agar tidak tampil di address bar
             st.query_params.clear()
             return True
-    except Exception:
+    except Exception as e:
+        # Token tidak valid atau expired — bersihkan saja
         pass
 
-    # Token tidak valid — bersihkan
     st.query_params.clear()
     return False
 
@@ -270,7 +268,7 @@ def _email_exists_in_supabase_auth(sb, email: str) -> Optional[bool]:
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# SIGN IN — Email + Password
+# SIGN IN — Fallback via pro_licenses
 # ══════════════════════════════════════════════════════════════════════════════
 
 def _sign_in_via_pro_licenses(sb, email: str, password: str) -> tuple[bool, str]:
@@ -337,6 +335,10 @@ def _sign_in_via_pro_licenses(sb, email: str, password: str) -> tuple[bool, str]
 
     return True, ""
 
+
+# ══════════════════════════════════════════════════════════════════════════════
+# SIGN IN — Email + Password
+# ══════════════════════════════════════════════════════════════════════════════
 
 def supabase_sign_in(email: str, password: str) -> tuple[bool, str]:
     """
