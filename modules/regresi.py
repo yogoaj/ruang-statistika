@@ -258,7 +258,7 @@ def render(ctx: dict):
         st.info(
             "🔒 **Fitur Pro:** Uji VIF (multikolinearitas), Cook's Distance, "
             "prediksi nilai baru, dan interpretasi AI — tersedia di **Paket Akademisi Pro**.\n\n"
-            "👉 [Dapatkan akses Pro](https://yogoaj.github.io)"
+            "👉 [Dapatkan akses Pro](https://lynk.id/ruangstatistika)"
         )
         return
 
