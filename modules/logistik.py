@@ -251,7 +251,7 @@ def _display_results(res, dep_var, indep_vars, alpha_level,
             "🔒 **Fitur Pro:** ROC Curve interaktif, Classification Report lengkap "
             "(precision, recall, F1), dan interpretasi AI — tersedia di "
             "**Paket Akademisi Pro**.\n\n"
-            "👉 [Dapatkan akses Pro](https://yogoaj.github.io)"
+            "👉 [Dapatkan akses Pro](https://lynk.id/ruangstatistika)"
         )
         return
 
