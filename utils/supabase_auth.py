@@ -168,7 +168,7 @@ def _sign_in_via_pro_licenses(
     try:
         resp = (
             sb.table("pro_licenses")
-            .select("email, name, password, license_key, expires_at, is_active")
+            .select("email, name, password, license_key, expires_at, is_active, tier")
             .eq("email", email.strip().lower())
             .single()
             .execute()
@@ -203,6 +203,8 @@ def _sign_in_via_pro_licenses(
 
     # Login berhasil via pro_licenses — simpan ke session
     name = row.get("name") or email.split("@")[0]
+    tier = row.get("tier") or "starter"   # default starter jika kolom belum ada
+
     st.session_state["user_logged_in"]  = True
     st.session_state["user_name"]       = name
     st.session_state["username"]        = email
@@ -211,7 +213,8 @@ def _sign_in_via_pro_licenses(
         "username":    email,
         "name":        name,
         "email":       email,
-        "role":        "pro",   # semua user di pro_licenses = Pro
+        "role":        "pro",
+        "tier":        tier,
         "license_key": row.get("license_key", ""),
         "active":      True,
         "expires_at":  expires_str,
