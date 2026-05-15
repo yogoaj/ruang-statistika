@@ -339,7 +339,6 @@ def _normalize_mod_data(mod_key: str, raw: dict) -> dict:
             if raw.get(field) is not None and out.get(field) is None:
                 out[field] = raw[field]
         # Bridge dari scraping_result jika tersedia
-        import streamlit as st
         scr = st.session_state.get("scraping_result", {})
         if scr and not out.get("source"):
             out["source"] = scr.get("source", "")
@@ -368,11 +367,48 @@ def _normalize_mod_data(mod_key: str, raw: dict) -> dict:
             if raw.get(field) is not None and out.get(field) is None:
                 out[field] = raw[field]
         # Bridge ai_text dari ai_cache["cfa"]
-        import streamlit as st
         if not raw.get("ai_text"):
             ai_t = st.session_state.get("ai_cache", {}).get("cfa", "")
             if ai_t:
                 out["ai_text"] = ai_t
+
+
+    elif mod_key == "regresi":
+        # alias dari ols_plus — normalisasi minimal
+        model = raw.get("model")
+        if model is not None and raw.get("coef_table") is None:
+            try:
+                out["coef_table"] = pd.DataFrame({
+                    "Parameter": model.params.index.tolist(),
+                    "β (Koefisien)": model.params.values.round(4).tolist(),
+                    "Std. Error": model.bse.values.round(4).tolist(),
+                    "t-hitung": model.tvalues.values.round(4).tolist(),
+                    "p-value": model.pvalues.values.round(4).tolist(),
+                })
+                out["r2"] = float(model.rsquared)
+                out["adj_r2"] = float(model.rsquared_adj)
+                out["f_pvalue"] = float(model.f_pvalue)
+            except Exception:
+                pass
+
+    elif mod_key == "sem":
+        # normalisasi fit indices dan path estimates
+        for df_field in ("fit_indices", "path_estimates", "loadings"):
+            df_val = raw.get(df_field)
+            if df_val is not None and hasattr(df_val, "to_dict"):
+                try:
+                    out[df_field + "_records"] = df_val.to_dict("records")
+                    out[df_field + "_cols"] = df_val.columns.tolist()
+                except Exception:
+                    pass
+        for field in ("model_syntax", "n_obs", "estimator", "ai_text"):
+            if raw.get(field) is not None and out.get(field) is None:
+                out[field] = raw[field]
+
+    elif mod_key == "power_analysis":
+        for field in ("test_type", "effect_size", "alpha", "power", "n_total", "n_per_group", "ai_text"):
+            if raw.get(field) is not None and out.get(field) is None:
+                out[field] = raw[field]
 
     return out
 
@@ -1022,9 +1058,6 @@ ALWAYS_INCLUDE = [
     "scipy_2020",
     "python_statsmodels",
 ]
-
-   
-    # ... kode Anda selanjutnya ...
 def generate_apa_references(
     inc_desc: bool,
     inc_val: bool,
@@ -1270,10 +1303,17 @@ def render(ctx: dict):
 
     module_checkboxes = {}
     MODULE_ICONS = {
-        "regresi":   "📈", "ols_plus":  "📐", "logistik":  "📉",
-        "mediasi":   "🔀", "moderasi":  "🎛️", "anova":     "📊",
-        "uji_beda":  "🔢", "outlier":   "🎯", "sem":       "🧩",
-        "efa":       "🔬", "kelompok":  "📂", "compute": "🧮",
+        "regresi":                "📈", "ols_plus":               "📐",
+        "logistik":               "📉", "mediasi":                "🔀",
+        "moderasi":               "🎛️", "anova":                  "📊",
+        "uji_beda":               "🔢", "outlier":                "🎯",
+        "sem":                    "🧩", "efa":                    "🔬",
+        "cfa":                    "🏗️", "kelompok":               "📂",
+        "compute":                "🧮", "ols_robust":             "🛡️",
+        "ols_wls":                "⚖️", "ols_robust_comparison":  "🔄",
+        "reliabilitas_icc":       "📏", "uji_asumsi":             "✅",
+        "klaster":                "🗂️", "eda":                    "🔍",
+        "scraping":               "🕸️", "power_analysis":         "⚡",
     }
     if session_results:
         cols_cb = st.columns(2)
@@ -1976,6 +2016,9 @@ def render(ctx: dict):
                 ("cluster",             "klaster"),
                 ("efa",                 "efa"),
                 ("cfa",                 "cfa"),
+                ("sem",                 "sem"),          # FIX: sem sebelumnya hilang
+                ("sem_cfa",             "sem"),          # backward compat
+                ("eda",                 "eda"),
                 ("scraping",            "scraping"),
                 ("scraping_quality",    "scraping"),
             ]:
