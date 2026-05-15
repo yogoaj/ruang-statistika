@@ -238,6 +238,7 @@ MENU_GROUPS = [
         "label": None,   # tanpa header — beranda & data
         "items": [
             ("Beranda",           "🏠  Beranda",                False),
+            ("Wizard",            "🧭  Wizard Analisis",        False),
             ("Upload",            "📁  Upload & Cleaning",      False),
             ("Scraping",          "🕸️  Web Scraping",           True),
             ("EDA",               "🔍  Visualisasi EDA",        False),
@@ -1407,10 +1408,10 @@ if menu == "Beranda":
     st.markdown("<br/>", unsafe_allow_html=True)
 
     steps = [
+        ("Wizard Analisis (Baru!)",     "Panduan 3 langkah pilih uji yang tepat — gratis, tanpa AI"),
         ("Upload & Cleaning",           "Unggah CSV/Excel/SPSS (.sav)/Stata (.dta)/TXT, sistem auto-bersihkan duplikat"),
         ("Compute Variabel (Opsional)", "Buat variabel baru: skor komposit, recode, transformasi"),
-        ("Pilih Modul Analisis",        "Navigasi dari sidebar ke modul yang dibutuhkan"),
-        ("Interpretasi AI (Opsional)",  "Masukkan API Key untuk narasi otomatis"),
+        ("Jalankan Analisis",           "Modul akan terbuka otomatis dari hasil Wizard"),
         ("Generate Laporan",            "Export .docx atau .md dengan satu klik (Pro)"),
     ]
     for i, (title, desc) in enumerate(steps, 1):
@@ -1428,7 +1429,27 @@ if menu == "Beranda":
     with st.expander("📏 Panduan Effect Size (Cohen, 1988)"):
         render_effect_size_summary_table()
 
-    st.info("💡 Mulai dari menu **📁 Upload & Cleaning** di sidebar kiri.")
+    # ── CTA Wizard ─────────────────────────────────────────────────────────
+    col_wiz1, col_wiz2 = st.columns([3,2])
+    with col_wiz1:
+        st.markdown("""
+        <div style='background:linear-gradient(135deg,#eef2ff 0%,#e0e7ff 100%);
+                    border:1px solid #c7d2fe; border-radius:12px; padding:1rem 1.2rem;'>
+            <div style='font-size:0.95rem; font-weight:600; color:#3730a3; margin-bottom:4px;'>
+                🧭 Bingung pilih uji statistik?
+            </div>
+            <div style='font-size:0.85rem; color:#4338ca; line-height:1.5;'>
+                Jawab 3 pertanyaan singkat, Wizard akan rekomendasikan uji yang tepat
+                dan langsung buka modulnya untuk Anda.
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+    with col_wiz2:
+        if st.button("🚀 Mulai Wizard Sekarang", type="primary", use_container_width=True):
+            st.session_state.active_menu = "Wizard"
+            st.rerun()
+    
+    st.info("💡 Baru di v4.8: Mulai dari **🧭 Wizard Analisis** untuk dipandu memilih uji.")
 
     st.markdown("""
     <div class="rs-ai-narasi">
@@ -1451,6 +1472,10 @@ if menu == "Beranda":
         dan interpretasi AI item-level.
     </div>
     """, unsafe_allow_html=True)
+
+elif menu == "Wizard":
+    from modules.wizard import render
+    render(ctx)
 
 elif menu == "Upload":
     from modules.upload import render
