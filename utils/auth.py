@@ -12,8 +12,6 @@ Perubahan v4.4:
 
 from __future__ import annotations
 
-import json
-import os
 from datetime import date, datetime
 from pathlib import Path
 from typing import Optional
@@ -23,8 +21,10 @@ import streamlit as st
 import yaml
 
 # ── Quota cache ───────────────────────────────────────────────────────────────
-QUOTA_CACHE_FILE = ".quota_cache.json"
+# v4.8 bugfix: quota disimpan di st.session_state, bukan file JSON
+# (file JSON tidak persisten di Streamlit Community Cloud)
 DAILY_FREE_QUOTA = 1
+_QUOTA_SS_KEY    = "_export_quota_used"   # key di session_state
 
 # ── License Registry ──────────────────────────────────────────────────────────
 # Tetap dipertahankan untuk validasi key manual / backward compat
@@ -414,68 +414,36 @@ def require_pro(license_info: dict, feature_name: str = "Fitur ini") -> bool:
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# QUOTA SYSTEM (tidak berubah dari v4.3)
+# QUOTA SYSTEM — v4.8 (session_state based, Cloud-safe)
+# Tidak lagi menulis ke file JSON yang tidak persisten di Streamlit Cloud.
+# Kuota per-session (bukan per-hari persisten), reset saat browser ditutup.
 # ══════════════════════════════════════════════════════════════════════════════
 
-def _load_quota_cache() -> dict:
-    if not os.path.exists(QUOTA_CACHE_FILE):
-        return {}
-    try:
-        with open(QUOTA_CACHE_FILE, "r") as f:
-            return json.load(f)
-    except Exception:
-        return {}
-
-
-def _save_quota_cache(cache: dict) -> None:
-    try:
-        with open(QUOTA_CACHE_FILE, "w") as f:
-            json.dump(cache, f)
-    except Exception:
-        pass
-
-
-def check_export_quota(session_id: str) -> tuple[bool, int]:
+def check_export_quota(session_id: str = "") -> tuple[bool, int]:
     """
-    Cek apakah user masih punya kuota export gratis hari ini.
-    Return (can_export: bool, used_today: int)
+    Cek apakah user masih punya kuota export gratis dalam session ini.
+    Return (can_export: bool, used_count: int)
     """
-    cache = _load_quota_cache()
-    today = date.today().isoformat()
-    key = f"{session_id}:{today}"
-    used = cache.get(key, 0)
+    used = st.session_state.get(_QUOTA_SS_KEY, 0)
     return used < DAILY_FREE_QUOTA, used
 
 
 def check_daily_export_quota(session_id: str = "") -> tuple[bool, int]:
     """
     Alias untuk check_export_quota — kompatibel dengan export.py.
-    Jika session_id kosong, ambil dari st.session_state.
     """
-    if not session_id:
-        import streamlit as _st
-        session_id = _st.session_state.get("_session_id", "default")
     return check_export_quota(session_id)
 
 
 def get_quota_remaining(session_id: str = "") -> int:
     """
-    Return sisa kuota export harian. Digunakan di export.py untuk tampilan UI.
+    Return sisa kuota export dalam session ini.
+    Digunakan di export.py untuk tampilan UI.
     """
-    if not session_id:
-        import streamlit as _st
-        session_id = _st.session_state.get("_session_id", "default")
     _, used = check_export_quota(session_id)
     return max(0, DAILY_FREE_QUOTA - used)
 
 
 def consume_export_quota(session_id: str = "") -> None:
-    """Kurangi kuota export gratis harian."""
-    if not session_id:
-        import streamlit as _st
-        session_id = _st.session_state.get("_session_id", "default")
-    cache = _load_quota_cache()
-    today = date.today().isoformat()
-    key = f"{session_id}:{today}"
-    cache[key] = cache.get(key, 0) + 1
-    _save_quota_cache(cache)
+    """Tambahkan hitungan export yang sudah digunakan di session ini."""
+    st.session_state[_QUOTA_SS_KEY] = st.session_state.get(_QUOTA_SS_KEY, 0) + 1
