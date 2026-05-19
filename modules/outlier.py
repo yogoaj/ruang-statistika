@@ -36,6 +36,14 @@ def render(ctx: dict):
     col_sel = st.selectbox("Pilih variabel:", cols)
     s       = df[col_sel].dropna()
 
+    # Invalidasi cache AI jika variabel atau metode berubah
+    _outlier_sig = f"{col_sel}__{method[:3]}"
+    if st.session_state.get("_outlier_last_sig") != _outlier_sig:
+        # Hapus semua cache outlier lama
+        for _k in [k for k in st.session_state.get("ai_cache", {}) if k.startswith("outlier_")]:
+            st.session_state.ai_cache.pop(_k, None)
+        st.session_state["_outlier_last_sig"] = _outlier_sig
+
     if "IQR" in method:
         Q1, Q3 = s.quantile(0.25), s.quantile(0.75)
         IQR    = Q3 - Q1
