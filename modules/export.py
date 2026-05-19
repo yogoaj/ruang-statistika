@@ -434,6 +434,9 @@ def collect_session_results() -> dict:
         "eda_result":             ("eda",              "Eksplorasi Data (EDA)"),
         "cfa_result":             ("cfa",              "CFA Standalone"),
         "scraping_session":       ("scraping",         "Web Scraping"),
+        # Non-parametrik (v4.8 bugfix — key dipisah dari uji_beda_result)
+        "wilcoxon_result":        ("uji_nonparametrik", "Wilcoxon Signed-Rank"),
+        "friedman_result":        ("uji_nonparametrik", "Friedman Test"),
     }
 
     FALLBACK_KEYS = {
@@ -463,6 +466,9 @@ def collect_session_results() -> dict:
         "eda_summary":        ("eda",              "Eksplorasi Data (EDA)"),
         "cfa_result":         ("cfa",              "CFA Standalone"),
         "scraping_result":    ("scraping",         "Web Scraping"),
+        # Non-parametrik fallback (v4.8)
+        "wilcoxon_result":    ("uji_nonparametrik", "Wilcoxon Signed-Rank"),
+        "friedman_result":    ("uji_nonparametrik", "Friedman Test"),
     }
 
     MODULE_LABELS = {
@@ -491,6 +497,8 @@ def collect_session_results() -> dict:
         "eda":                   "Eksplorasi Data (EDA)",
         "cfa":                   "CFA Standalone",
         "scraping":              "Web Scraping & Data Collector",
+        # Non-parametrik (v4.8)
+        "uji_nonparametrik":     "Uji Non-Parametrik Lengkap",
     }
 
     collected = {}
