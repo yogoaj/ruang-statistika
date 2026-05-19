@@ -125,21 +125,20 @@ def render(ctx: dict):
         "Signifikan":    ["✓" if float(p) < alpha_level else "✗" for p in p_vals],
     })
 
-    # ── Simpan ke session_state (Pro: lengkap; Free: ringkasan saja) ───────
-    if is_pro:
-        st.session_state["regresi_result"] = {
-            "coef_table": coeff_df,
-            "r2":         float(r2),
-            "adj_r2":     float(r2_adj),
-            "f_stat":     float(f_stat),
-            "f_pvalue":   float(p_f),
-            "rmse":       float(rmse),
-            "y":          dep_var,
-            "x":          indep_vars,
-            "y_actual":   Y.tolist(),
-            "y_pred":     Y_pred.tolist(),
-            "residuals":  resid.tolist(),
-        }
+    # ── Simpan ke session_state (semua tier — agar laporan & export selalu punya data)
+    st.session_state["regresi_result"] = {
+        "coef_table": coeff_df,
+        "r2":         float(r2),
+        "adj_r2":     float(r2_adj),
+        "f_stat":     float(f_stat),
+        "f_pvalue":   float(p_f),
+        "rmse":       float(rmse),
+        "y":          dep_var,
+        "x":          indep_vars,
+        "y_actual":   Y.tolist(),
+        "y_pred":     Y_pred.tolist(),
+        "residuals":  resid.tolist(),
+    }
 
     # ── Metrik ─────────────────────────────────────────────────────────────
     st.markdown("#### Ringkasan Model Regresi")
