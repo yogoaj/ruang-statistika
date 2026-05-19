@@ -253,6 +253,7 @@ MENU_GROUPS = [
             ("Korelasi",          "🔗  Korelasi",               False),
             ("Kelompok",          "📂  Analisis Kelompok",      False),
             ("Klaster",           "🗂️  Analisis Klaster",       False),
+            ("Reliabilitas ICC",  "📏  Reliabilitas ICC",       True),
             ("Outlier",           "🎯  Deteksi Outlier",        False),
         ],
     },
@@ -1516,6 +1517,14 @@ elif menu == "Kelompok":
 elif menu == "Klaster":
     from modules.klaster import render
     render(ctx)
+
+elif menu == "Reliabilitas ICC":
+    if is_pro:
+        from modules.reliabilitas_icc import render
+        render(ctx)
+    else:
+        from utils.auth import require_pro
+        require_pro(license_info, "Reliabilitas ICC")
 
 elif menu == "Outlier":
     from modules.outlier import render
