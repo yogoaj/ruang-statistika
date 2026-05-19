@@ -1659,3 +1659,47 @@ Tulis 3–4 paragraf akademis ringkas, Bahasa Indonesia baku.
 Referensi: Greene (2012), Huber (1973), Hampel et al. (1986), Wooldridge (2010).
 """
     return call_ai_api(prompt, system="", api_key=api_key, provider=provider)
+
+def ai_interpret_icc(
+    icc_summary: list,
+    anova_summary: list,
+    n_subj: int,
+    n_rater: int,
+    rater_names: list,
+    use_type: str,
+    api_key: str,
+    provider: str,
+) -> str:
+    """
+    Interpretasi AI untuk hasil Intraclass Correlation Coefficient (ICC).
+    Dipanggil dari modules/reliabilitas_icc.py.
+    """
+    import json as _json
+
+    prompt = f"""
+Berikut hasil analisis Intraclass Correlation Coefficient (ICC) untuk uji reliabilitas antar-rater:
+
+KONTEKS:
+- Jumlah subjek (n): {n_subj}
+- Jumlah rater/penilai: {n_rater}
+- Nama rater: {', '.join(rater_names)}
+- Tipe penggunaan: {use_type}
+
+HASIL ICC:
+{_json.dumps(icc_summary, ensure_ascii=False, indent=2)}
+
+ANOVA TABLE:
+{_json.dumps(anova_summary, ensure_ascii=False, indent=2)}
+
+Berikan interpretasi komprehensif dalam Bahasa Indonesia yang mencakup:
+1. Evaluasi nilai ICC — tergolong buruk (<0.50), sedang (0.50-0.75), baik (0.75-0.90), atau sangat baik (≥0.90)?
+2. Perbedaan ICC single measures vs average measures — mana yang lebih relevan untuk konteks ini?
+3. Makna ANOVA F-test — apakah ada variasi signifikan antar rater atau antar subjek?
+4. Kesimpulan reliabilitas — apakah instrumen/rater ini layak digunakan untuk penelitian?
+5. Rekomendasi: apakah perlu pelatihan ulang rater atau revisi instrumen?
+
+Tulis 3–4 paragraf akademis, Bahasa Indonesia baku.
+Referensi: Shrout & Fleiss (1979), Koo & Mae (2016), McGraw & Wong (1996).
+"""
+    return call_ai_api(prompt, system="", api_key=api_key, provider=provider)
+
