@@ -31,6 +31,7 @@ from scipy import stats
 
 from utils.auth import require_pro
 from utils.stats_helpers import require_data
+from utils.ai_helpers import call_ai_api, ai_interpret_icc
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -773,7 +774,6 @@ correlation coefficients for reliability research. Journal of Chiropractic Medic
 
             if st.button("🤖 Generate Interpretasi AI", key="btn_icc_ai"):
                 with st.spinner("🤖 AI sedang menganalisis hasil ICC…"):
-                    from utils.ai_helpers import ai_interpret_icc
                     icc_summary = icc_df[["Model", "Tipe", "ICC", "CI_Lower",
                                           "CI_Upper", "p_value"]].to_dict(orient="records")
                     anova_summary = anova_tbl.to_dict(orient="records")
