@@ -155,7 +155,8 @@ def _tab_wilcoxon(df: pd.DataFrame, cols: list[str], alpha: float,
     sig_lbl, sig_col = _sig_badge(p_val, alpha)
 
     # ── Simpan ke session_state ──────────────────────────────────────────────
-    st.session_state["uji_beda_result"] = {
+    # Gunakan key terpisah agar tidak menimpa hasil uji_beda (t-test/Mann-Whitney)
+    st.session_state["wilcoxon_result"] = {
         "uji_type":    "Wilcoxon Signed-Rank",
         "num_col":     f"{pre_col} vs {post_col}",
         "g1_name":     pre_col,
@@ -282,8 +283,8 @@ def _tab_friedman(df: pd.DataFrame, cols: list[str], alpha: float,
     df_stat          = k - 1
 
     # ── Simpan ──────────────────────────────────────────────────────────────
-    st.session_state.setdefault("uji_beda_result", {})
-    st.session_state["uji_beda_result"] = {
+    # Gunakan key terpisah agar tidak menimpa hasil Wilcoxon atau uji_beda
+    st.session_state["friedman_result"] = {
         "uji_type":    "Friedman Test",
         "num_col":     ", ".join(selected),
         "statistic":   round(float(chi2_stat), 4),
