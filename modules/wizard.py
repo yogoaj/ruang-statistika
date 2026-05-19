@@ -1,6 +1,6 @@
 """
 modules/wizard.py — Wizard Pemilihan Metode Analisis (Free)
-Ruang Statistika v4.9 - Wizard v2.4.2
+Ruang Statistika v4.8 - Wizard v2.4.2
 
 Panduan interaktif 4 langkah untuk membantu pengguna memilih
 uji statistik yang tepat berdasarkan tujuan, data, dan jumlah variabel.
