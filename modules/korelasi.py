@@ -8,7 +8,7 @@ from scipy import stats
 
 from utils.stats_helpers import require_data, require_cols, narrate_correlation, ss_get
 from utils.plot_helpers import plotly_heatmap, plotly_scatter
-from utils.effect_size import interpret_effect_size, render_effect_size_card
+from utils.effect_size import render_effect_size_card
 from utils.ai_helpers import (
     ai_interpret_correlation,
     ai_interpret_heatmap,
@@ -126,8 +126,6 @@ def render(ctx: dict):
             "p_val": p_val,
             "n":     len(paired),
         }
-        from utils.effect_size import render_effect_size_card
-
         render_effect_size_card("r", abs(r_val))
         # ── AI: Scatter Plot ──────────────────────────────────────────────
         if ai_enabled:
