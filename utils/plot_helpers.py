@@ -16,9 +16,25 @@ GREEN  = "#3B6D11"
 RED    = "#A32D2D"
 RED2   = "#E24B4A"
 
+# ── Plot performance: auto-downsample untuk dataset besar ─────────────────────
+N_PLOT_MAX = 5_000   # batas baris untuk visualisasi — di atas ini dilakukan sampling
+
+def _maybe_sample(df: pd.DataFrame, n_max: int = N_PLOT_MAX) -> tuple[pd.DataFrame, bool]:
+    """
+    Downsample df jika lebih dari n_max baris.
+    Returns (df_sampled, was_sampled).
+    Dipanggil sebelum chart creation agar Plotly tidak lambat di dataset besar.
+    """
+    if len(df) > n_max:
+        return df.sample(n=n_max, random_state=42).sort_index(), True
+    return df, False
+
 
 def plotly_qq(data: pd.Series, title: str) -> go.Figure:
-    """Q-Q Plot normal."""
+    """Q-Q Plot normal. Auto-downsample jika > N_PLOT_MAX baris."""
+    if len(data) > N_PLOT_MAX:
+        data = data.dropna().sample(n=N_PLOT_MAX, random_state=42)
+        title = f"{title} (sampel {N_PLOT_MAX:,})"
     qq = stats.probplot(data.dropna(), dist="norm")
     x_line = np.array([qq[0][0][0], qq[0][0][-1]])
     fig = go.Figure()
@@ -36,6 +52,9 @@ def plotly_qq(data: pd.Series, title: str) -> go.Figure:
 
 
 def plotly_histogram(s: pd.Series, col_name: str) -> go.Figure:
+    s_df, sampled = _maybe_sample(s.to_frame(), N_PLOT_MAX)
+    s = s_df.iloc[:, 0]
+    suffix = f" (sampel {N_PLOT_MAX:,} dari {len(s_df)+len(s):,})" if sampled else ""
     fig = go.Figure(go.Histogram(x=s, nbinsx=20, marker_color=BLUE, opacity=0.75))
     fig.update_layout(
         title=f"Distribusi: {col_name}", template="plotly_white", height=320,
@@ -105,6 +124,8 @@ def plotly_heatmap(corr: pd.DataFrame) -> go.Figure:
 
 def plotly_scatter(df: pd.DataFrame, var_x: str, var_y: str,
                    r_val: float, p_val: float) -> go.Figure:
+    df, sampled = _maybe_sample(df)
+    sample_note = f" (sampel {N_PLOT_MAX:,} titik)" if sampled else ""
     fig = px.scatter(
         df, x=var_x, y=var_y, trendline="ols",
         title=f"Scatter: {var_x} vs {var_y} | r = {r_val:.3f}, p = {p_val:.4f}",

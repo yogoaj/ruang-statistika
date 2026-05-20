@@ -240,6 +240,7 @@ def calc_cronbach(df: pd.DataFrame, cols: list) -> Optional[float]:
 
 # ── OLS & Mediation ───────────────────────────────────────────────────────────
 
+@st.cache_data(show_spinner=False)
 def ols_advanced(df: pd.DataFrame, y_col: str, X_vars: list):
     import statsmodels.api as sm
     from statsmodels.stats.outliers_influence import variance_inflation_factor
