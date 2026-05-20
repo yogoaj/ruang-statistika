@@ -82,27 +82,12 @@ from utils.docx_helpers import generate_pro_docx, generate_markdown_report
 
 
 # ── Import sub-modul internal ─────────────────────────────────────────────────
-from utils._export_normalize import _normalize_mod_data
+from utils._export_normalize import _normalize_mod_data, _first_valid_df
 from utils._export_ai_prompt import _build_module_ai_prompt
 from utils._export_apa_refs  import (
     generate_apa_references,
     render_apa_preview,
 )
-
-def _first_valid_df(*candidates):
-    """Kembalikan DataFrame/nilai pertama yang tidak None dan tidak kosong.
-    Aman digunakan sebagai pengganti `a or b` ketika salah satu bisa berupa DataFrame."""
-    for c in candidates:
-        if c is None:
-            continue
-        try:
-            if not c.empty:
-                return c
-        except AttributeError:
-            if c:
-                return c
-    return None
-
 
 
 # ─────────────────────────────────────────────────────────────────────────────
