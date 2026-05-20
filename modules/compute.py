@@ -46,19 +46,52 @@ def _validate_colname(new_name: str, df: pd.DataFrame) -> tuple[bool, str]:
 def _apply_formula(df: pd.DataFrame, formula: str) -> pd.Series:
     """
     Evaluasi formula menggunakan kolom df sebagai variabel lokal.
-    Fungsi yang tersedia: np (numpy), abs, log, exp, sqrt, round.
+    Fungsi yang tersedia: np (numpy), abs, log, exp, sqrt, round, dan lainnya.
+
+    Keamanan (v4.8):
+    - Menggunakan pd.eval() dengan engine='python' sebagai lapis pertama
+    - pd.eval() memblokir import, exec, dan class introspection
+    - Fallback ke eval() terkontrol hanya jika pd.eval() tidak mendukung syntax
     """
-    # Buat namespace aman: kolom df + fungsi numpy umum
+    # Namespace fungsi matematika yang diizinkan
     local_ns = {col: pd.to_numeric(df[col], errors="coerce") for col in df.columns}
-    local_ns.update({
+    math_ns = {
         "np": np, "abs": np.abs, "log": np.log, "log10": np.log10,
         "exp": np.exp, "sqrt": np.sqrt, "round": np.round,
         "sin": np.sin, "cos": np.cos, "tan": np.tan,
         "mean": np.mean, "std": np.std, "sum": np.sum,
         "nan": np.nan, "inf": np.inf,
-    })
-    result = eval(formula, {"__builtins__": {}}, local_ns)  # noqa: S307
-    return pd.Series(result, index=df.index)
+    }
+    local_ns.update(math_ns)
+
+    # Validasi formula: blokir pola berbahaya sebelum evaluasi
+    import re as _re
+    _BLOCKED = _re.compile(
+        r'(__\w+__|import\s|exec\s*\(|compile\s*\(|open\s*\(|'
+        r'subprocess|os\s*\.|sys\s*\.|builtins|getattr\s*\(|'
+        r'setattr\s*\(|delattr\s*\(|globals\s*\(|locals\s*\()',
+        _re.IGNORECASE,
+    )
+    if _BLOCKED.search(formula):
+        raise ValueError(
+            f"Formula mengandung ekspresi yang tidak diizinkan: '{formula}'. "
+            "Gunakan operasi matematika standar saja."
+        )
+
+    # Coba pd.eval() terlebih dahulu (lebih aman: memblokir import & introspection)
+    try:
+        result = pd.eval(formula, local_dict=local_ns, engine='python')
+        return pd.Series(result, index=df.index)
+    except Exception:
+        pass
+
+    # Fallback ke eval() terkontrol dengan __builtins__ dikosongkan
+    # (hanya dicapai jika pd.eval() tidak mendukung syntax tertentu seperti ternary)
+    try:
+        result = eval(formula, {"__builtins__": {}}, local_ns)  # noqa: S307
+        return pd.Series(result, index=df.index)
+    except Exception as e:
+        raise ValueError(f"Formula tidak valid: '{formula}'. Error: {e}") from e
 
 
 def _compute_composite(df: pd.DataFrame, cols: list, method: str,
