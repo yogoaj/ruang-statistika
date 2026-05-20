@@ -1073,27 +1073,25 @@ if menu == "Beranda":
         """, unsafe_allow_html=True)
 
         # ── JS: baca URL fragment dari Google OAuth callback ─────────────────
-        # Supabase mengirim access_token via #fragment (tidak dikirim ke server).
-        # Script ini membacanya dari browser dan mengonversi ke ?query_params
-        # agar handle_google_callback() di awal app.py bisa membacanya.
-        components.html("""
-        <script>
-        (function() {
-            var hash = window.location.hash.substring(1);
-            if (!hash || hash.indexOf('access_token') === -1) return;
-            var params = new URLSearchParams(hash);
-            var at = params.get('access_token');
-            var rt = params.get('refresh_token') || '';
-            if (!at) return;
-            // Konversi fragment ke query params dan reload
-            var url = new URL(window.parent.location.href);
-            url.hash = '';
-            url.searchParams.set('access_token', at);
-            if (rt) url.searchParams.set('refresh_token', rt);
-            window.parent.location.replace(url.toString());
-        })();
-        </script>
-        """, height=0)
+        # SEMENTARA DINONAKTIFKAN — tombol Google OAuth sedang diperbaiki
+        # components.html("""
+        # <script>
+        # (function() {
+        #     var hash = window.location.hash.substring(1);
+        #     if (!hash || hash.indexOf('access_token') === -1) return;
+        #     var params = new URLSearchParams(hash);
+        #     var at = params.get('access_token');
+        #     var rt = params.get('refresh_token') || '';
+        #     if (!at) return;
+        #     // Konversi fragment ke query params dan reload
+        #     var url = new URL(window.parent.location.href);
+        #     url.hash = '';
+        #     url.searchParams.set('access_token', at);
+        #     if (rt) url.searchParams.set('refresh_token', rt);
+        #     window.parent.location.replace(url.toString());
+        # })();
+        # </script>
+        # """, height=0)
 
         # ── Tab strip — st.button (tetap di halaman sama) ─────────────────
         st.markdown('<div class="signin-tab-row">', unsafe_allow_html=True)
@@ -1139,22 +1137,21 @@ if menu == "Beranda":
                 st.rerun()
             st.markdown('</div>', unsafe_allow_html=True)
 
-            # ── Tombol Google OAuth ──────────────────────────────────────────
-            st.markdown('<div class="signin-divider">atau masuk dengan</div>', unsafe_allow_html=True)
-            if st.button("🔵  Lanjutkan dengan Google", key="btn_google_login",
-                         use_container_width=True):
-                from utils.supabase_auth import supabase_sign_in_google
-                _ok, _url_or_err = supabase_sign_in_google()
-                if _ok:
-                    # Redirect browser ke halaman consent Google
-                    st.markdown(
-                        f'<meta http-equiv="refresh" content="0; url={_url_or_err}">',
-                        unsafe_allow_html=True,
-                    )
-                    st.stop()
-                else:
-                    st.session_state["_auth_msg_error"] = _url_or_err
-                    st.rerun()
+            # ── Tombol Google OAuth — SEMENTARA DINONAKTIFKAN (error callback) ──
+            # st.markdown('<div class="signin-divider">atau masuk dengan</div>', unsafe_allow_html=True)
+            # if st.button("🔵  Lanjutkan dengan Google", key="btn_google_login",
+            #              use_container_width=True):
+            #     from utils.supabase_auth import supabase_sign_in_google
+            #     _ok, _url_or_err = supabase_sign_in_google()
+            #     if _ok:
+            #         st.markdown(
+            #             f'<meta http-equiv="refresh" content="0; url={_url_or_err}">',
+            #             unsafe_allow_html=True,
+            #         )
+            #         st.stop()
+            #     else:
+            #         st.session_state["_auth_msg_error"] = _url_or_err
+            #         st.rerun()
 
             # Divider + CTA Coba Gratis
             st.markdown('<div class="signin-divider">atau</div>', unsafe_allow_html=True)
