@@ -630,9 +630,6 @@ def _add_model_equation_box(doc: Document, profile: StyleProfile, equation_text:
 # MODULE RENDERERS
 # =============================================================================
 
-def _get_eq(analysis_type, data, ai_texts):
-    return (ai_texts or {}).get(f"model_equation_{analysis_type}", "")
-
 
 
 
