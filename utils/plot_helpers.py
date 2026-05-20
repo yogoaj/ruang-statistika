@@ -155,14 +155,25 @@ def plotly_vif_bar(vif_df: pd.DataFrame) -> go.Figure:
 
 def plotly_residual_scatter(y_pred: np.ndarray, resid: np.ndarray,
                              dep_var: str) -> go.Figure:
+    # Downsample jika dataset besar agar rendering cepat
+    n_orig = len(y_pred)
+    if n_orig > N_PLOT_MAX:
+        idx = np.random.default_rng(42).choice(n_orig, size=N_PLOT_MAX, replace=False)
+        idx = np.sort(idx)
+        y_pred = y_pred[idx]
+        resid  = resid[idx]
+        sample_note = f" (sampel {N_PLOT_MAX:,} dari {n_orig:,} titik)"
+    else:
+        sample_note = ""
+
     fig = go.Figure()
     fig.add_trace(go.Scatter(
         x=y_pred, y=resid, mode="markers",
-        marker=dict(color=BLUE, size=6, opacity=0.7), name="Residual"
+        marker=dict(color=BLUE, size=5, opacity=0.7), name="Residual"
     ))
     fig.add_hline(y=0, line_dash="dash", line_color=RED2)
     fig.update_layout(
-        title=f"Residual vs Fitted: {dep_var}",
+        title=f"Residual vs Fitted: {dep_var}{sample_note}",
         xaxis_title="Fitted Values", yaxis_title="Residual",
         template="plotly_white", height=380,
         margin=dict(l=30, r=30, t=50, b=30)
