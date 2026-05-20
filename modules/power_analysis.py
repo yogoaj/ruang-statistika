@@ -541,7 +541,7 @@ def tab_proporsi():
     # Simpan hasil tab ini ke session_state
     if "n_min" in dir():
         st.session_state["_power_proporsi"] = {
-            "jenis": jenis_prop, "alpha": alpha,
+            "jenis": jenis, "alpha": alpha,
             "target_power": target_power, "n_min": n_min, "power_achieved": p_ach,
         }
 
@@ -654,7 +654,16 @@ def tab_chisquare():
         label_key="w"
     )
     st.dataframe(tbl.set_index("Effect Size"), use_container_width=True)
-
+    # ── Simpan hasil tab ini ke session_state ──────────────────────────────────
+    st.session_state["_power_chisquare"] = {
+        "jenis": jenis,
+        "w": w,
+        "df": df_chi,
+        "alpha": alpha,
+        "target_power": target_power,
+        "n_min": n_min,
+        "power_achieved": p_ach,
+    }
 
 # ══════════════════════════════════════════════════════════════════════════════
 # TAB 7 — Kalkulator Balik (Achieved Power)
