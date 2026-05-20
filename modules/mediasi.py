@@ -15,8 +15,9 @@ from utils.plot_helpers import mediasi_path_svg
 from utils.ai_helpers import call_ai_api
 
 
+@st.cache_data(show_spinner=False)
 def _bootstrap_indirect(df: pd.DataFrame, x_col: str, m_col: str, y_col: str,
-                         n_boot: int = 5000, ci: float = 0.95) -> dict:
+                         n_boot: int = 1000, ci: float = 0.95) -> dict:
     """Bootstrap confidence interval untuk indirect effect (Preacher & Hayes)."""
     import statsmodels.api as sm
 
@@ -106,7 +107,8 @@ def render(ctx: dict):
 
     col_opt1, col_opt2 = st.columns(2)
     with col_opt1:
-        n_boot = st.number_input("Jumlah Bootstrap samples:", 1000, 10000, 5000, 1000)
+        n_boot = st.number_input("Jumlah Bootstrap samples:", 500, 10000, 1000, 500,
+                             help="Default 1000 sudah cukup untuk eksplorasi. Gunakan 5000 untuk publikasi ilmiah.")
     with col_opt2:
         ci_level = st.selectbox("Tingkat Kepercayaan CI:", [0.95, 0.99, 0.90], index=0)
 

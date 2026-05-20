@@ -95,8 +95,22 @@ from utils._export_apa_refs  import (
 # ─────────────────────────────────────────────────────────────────────────────
 
 def fig_to_png_bytes(fig: go.Figure, width: int = 800, height: int = 400) -> bytes | None:
+    """Konversi Plotly figure ke PNG bytes via kaleido.
+    Di-cache di session_state berdasarkan hash figure — menghindari re-render
+    kaleido yang lambat (~1-2 detik/fig) saat generate laporan berulang dalam sesi.
+    """
     try:
-        return fig.to_image(format="png", width=width, height=height, scale=2)
+        import hashlib, json as _json
+        fig_hash = hashlib.md5(
+            _json.dumps(fig.to_dict(), default=str, sort_keys=True).encode()
+        ).hexdigest()
+        cache_key = f"_png_cache_{fig_hash}_{width}x{height}"
+        cached = st.session_state.get(cache_key)
+        if cached is not None:
+            return cached
+        png = fig.to_image(format="png", width=width, height=height, scale=2)
+        st.session_state[cache_key] = png
+        return png
     except Exception:
         try:
             import plotly.io as pio

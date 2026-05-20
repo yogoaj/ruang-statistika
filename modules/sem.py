@@ -155,6 +155,12 @@ def _render_sem(df, cols, ai_enabled, api_key, ai_provider):
         help="Gunakan format semopy. Lihat contoh di narasi di atas.",
     )
 
+    max_iter_sem = st.number_input(
+        "Maks. iterasi fitting:", min_value=50, max_value=1000,
+        value=200, step=50,
+        help="Naikkan jika model belum konvergen. Default 200 cukup untuk model sederhana.",
+        key="sem_max_iter",
+    )
     if st.button("▶ Jalankan SEM", type="primary"):
         if not model_syntax.strip():
             st.warning("⚠️ Masukkan sintaks model terlebih dahulu.")
@@ -179,7 +185,7 @@ def _run_sem_model(df, cols, model_syntax, mode_label, ai_enabled, api_key, ai_p
         with st.spinner(f"⏳ Fitting {mode_label} model…"):
             data_sem  = df[cols].dropna()
             sem_model = SemModel(model_syntax)
-            sem_model.fit(data_sem)
+            sem_model.fit(data_sem, obj="MLW", solver="SLSQP")
     except Exception as e:
         st.error(f"❌ Gagal fitting model: {e}")
         st.info(

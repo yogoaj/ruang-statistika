@@ -191,7 +191,13 @@ def _render_cfa_ui(df, cols, ai_enabled, api_key, ai_provider):
 
     st.markdown("---")
 
-    # ── Tombol jalankan ───────────────────────────────────────────────────
+    # ── Maks iterasi & Tombol jalankan ────────────────────────────────────
+    max_iter_cfa = st.number_input(
+        "Maks. iterasi fitting:", min_value=50, max_value=1000,
+        value=200, step=50,
+        help="Naikkan jika model belum konvergen. Default 200 cukup untuk CFA standar.",
+        key="cfa_max_iter",
+    )
     col_run, col_reset = st.columns([3, 1])
     with col_run:
         run_btn = st.button("▶ Jalankan CFA", type="primary", use_container_width=True)

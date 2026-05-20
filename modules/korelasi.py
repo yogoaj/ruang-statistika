@@ -39,7 +39,12 @@ def render(ctx: dict):
     if "ai_cache" not in st.session_state:
         st.session_state.ai_cache = {}
 
-    corr = df[cols].corr()
+    @st.cache_data(show_spinner=False)
+    def _cached_corr(_df_hash, cols_tuple):
+        # _df_hash digunakan sebagai cache key (bukan df langsung karena tidak hashable)
+        return df[list(cols_tuple)].corr()
+
+    corr = _cached_corr(hash(str(df[cols].values.tobytes())), tuple(cols))
 
     # =========================================================================
     # BAGIAN 1 — Heatmap Korelasi
