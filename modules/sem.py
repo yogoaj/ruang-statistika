@@ -118,6 +118,7 @@ def _render_cfa(df, cols, ai_enabled, api_key, ai_provider):
             df, cols, model_syntax, "CFA",
             ai_enabled, api_key, ai_provider,
             factor_map=factor_map,
+            max_iter=st.session_state.get("sem_max_iter", 200),
         )
 
 
@@ -168,6 +169,7 @@ def _render_sem(df, cols, ai_enabled, api_key, ai_provider):
         _run_sem_model(
             df, cols, model_syntax, "SEM",
             ai_enabled, api_key, ai_provider,
+            max_iter=st.session_state.get("sem_max_iter", 200),
         )
 
 
@@ -176,7 +178,7 @@ def _render_sem(df, cols, ai_enabled, api_key, ai_provider):
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _run_sem_model(df, cols, model_syntax, mode_label, ai_enabled, api_key, ai_provider,
-                   factor_map: dict | None = None):
+                   factor_map: dict | None = None, max_iter: int = 200):
     """
     Fit model SEM/CFA, tampilkan hasil, simpan ke session_state,
     dan optionally generate AI interpretasi + persamaan model.
@@ -185,7 +187,7 @@ def _run_sem_model(df, cols, model_syntax, mode_label, ai_enabled, api_key, ai_p
         with st.spinner(f"⏳ Fitting {mode_label} model…"):
             data_sem  = df[cols].dropna()
             sem_model = SemModel(model_syntax)
-            sem_model.fit(data_sem, obj="MLW", solver="SLSQP")
+            sem_model.fit(data_sem, obj="MLW", solver="SLSQP", maxiter=max_iter)
     except Exception as e:
         st.error(f"❌ Gagal fitting model: {e}")
         st.info(

@@ -209,7 +209,8 @@ def _render_cfa_ui(df, cols, ai_enabled, api_key, ai_provider):
             st.rerun()
 
     if run_btn:
-        result = _run_cfa(df, cols, model_syntax, factor_map, alpha_level)
+        result = _run_cfa(df, cols, model_syntax, factor_map, alpha_level,
+                          max_iter=st.session_state.get("cfa_max_iter", 200))
         if result:
             st.session_state["cfa_result"] = result
             st.rerun()
@@ -227,13 +228,13 @@ def _render_cfa_ui(df, cols, ai_enabled, api_key, ai_provider):
 # Engine: fitting model
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _run_cfa(df, cols, model_syntax, factor_map, alpha_level) -> dict | None:
+def _run_cfa(df, cols, model_syntax, factor_map, alpha_level, max_iter: int = 200) -> dict | None:
     """Fit CFA model, hitung semua metrik, kembalikan dict hasil."""
     try:
         with st.spinner("⏳ Fitting CFA model…"):
             data_cfa  = df[cols].dropna()
             sem_model = SemModel(model_syntax)
-            sem_model.fit(data_cfa)
+            sem_model.fit(data_cfa, maxiter=max_iter)
     except Exception as e:
         st.error(f"❌ Gagal fitting model: {e}")
         st.info(
