@@ -345,6 +345,11 @@ def tab_ttest():
 
     if jenis == "Dua Sampel Independen":
         st.info(f"💡 Total sampel yang dibutuhkan: **{n_min * 2} responden** ({n_min} per kelompok)")
+    # Simpan hasil tab ini ke session_state
+    st.session_state["_power_ttest"] = {
+        "jenis": jenis, "d": d, "alpha": alpha,
+        "target_power": target_power, "n_min": n_min, "power_achieved": p_ach,
+    }
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -406,6 +411,12 @@ def tab_anova():
             row[f"Power {tp:.0%} (N total)"] = n * k
         rows.append(row)
     st.dataframe(pd.DataFrame(rows), use_container_width=True)
+    # Simpan hasil tab ini ke session_state
+    if "n_min" in dir():
+        st.session_state["_power_anova"] = {
+            "k": k, "f": f, "alpha": alpha, "target_power": target_power,
+            "n_min": n_min, "n_total": n_min * k, "power_achieved": p_ach,
+        }
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -455,6 +466,12 @@ def tab_regresi():
             row[f"Power {tp:.0%}"] = find_n(fn2, tp, alpha, f2=f2v)
         rows.append(row)
     st.dataframe(pd.DataFrame(rows), use_container_width=True)
+    # Simpan hasil tab ini ke session_state
+    if "n_min" in dir():
+        st.session_state["_power_regresi"] = {
+            "u": u, "f2": f2, "alpha": alpha, "target_power": target_power,
+            "n_min": n_min, "power_achieved": p_ach,
+        }
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -521,6 +538,12 @@ def tab_proporsi():
                 row[f"Power {tp:.0%} (n/grp)"] = find_n(fn_v, tp, alpha)
             rows.append(row)
         st.dataframe(pd.DataFrame(rows), use_container_width=True)
+    # Simpan hasil tab ini ke session_state
+    if "n_min" in dir():
+        st.session_state["_power_proporsi"] = {
+            "jenis": jenis_prop, "alpha": alpha,
+            "target_power": target_power, "n_min": n_min, "power_achieved": p_ach,
+        }
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -576,6 +599,12 @@ def tab_korelasi():
         label_key="r"
     )
     st.dataframe(tbl.set_index("Effect Size"), use_container_width=True)
+    # Simpan hasil tab ini ke session_state
+    if "n_min" in dir():
+        st.session_state["_power_korelasi"] = {
+            "r": r, "alpha": alpha,
+            "target_power": target_power, "n_min": n_min, "power_achieved": p_ach,
+        }
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -693,6 +722,52 @@ def tab_achieved():
     """, unsafe_allow_html=True)
 
 
+
+# ─── Helper: Simpan hasil Power Analysis ke session_state ────────────────────
+
+def _save_power_state():
+    """
+    Kumpulkan semua hasil power analysis dari intermediate keys
+    dan simpan ke session_state["power_result"] untuk export laporan.
+    Dipanggil di akhir render() setiap kali modul dijalankan.
+    """
+    tabs_data = {}
+    for key in ["_power_ttest", "_power_anova", "_power_regresi",
+                "_power_proporsi", "_power_korelasi", "_power_chisquare"]:
+        val = st.session_state.get(key)
+        if val:
+            tabs_data[key.replace("_power_", "")] = val
+
+    if tabs_data:
+        st.session_state["power_result"] = {
+            "tabs":    tabs_data,
+            "summary": _build_power_summary(tabs_data),
+        }
+
+
+def _build_power_summary(tabs_data: dict) -> list:
+    """Bangun ringkasan tabel untuk semua uji yang sudah dijalankan."""
+    rows = []
+    label_map = {
+        "ttest":      "t-Test",
+        "anova":      "ANOVA Satu Arah",
+        "regresi":    "Regresi Linier",
+        "proporsi":   "Uji Proporsi",
+        "korelasi":   "Korelasi Pearson",
+        "chisquare":  "Chi-Square",
+    }
+    for tab_key, data in tabs_data.items():
+        n_min = data.get("n_min") or data.get("n_total", "—")
+        rows.append({
+            "Uji":             label_map.get(tab_key, tab_key),
+            "n Minimum":       n_min,
+            "Power Tercapai":  f"{data.get('power_achieved', 0):.1%}",
+            "Alpha (α)":       data.get("alpha", "—"),
+            "Target Power":    f"{data.get('target_power', 0.8):.0%}",
+        })
+    return rows
+
+
 # ══════════════════════════════════════════════════════════════════════════════
 # RENDER UTAMA
 # ══════════════════════════════════════════════════════════════════════════════
@@ -725,6 +800,9 @@ def render(ctx: dict):
     with tabs[4]: tab_korelasi()
     with tabs[5]: tab_chisquare()
     with tabs[6]: tab_achieved()
+
+    # Kumpulkan dan simpan semua hasil ke session_state["power_result"]
+    _save_power_state()
 
     # ── Catatan metodologis ──────────────────────────────────────────────────
     st.markdown("---")

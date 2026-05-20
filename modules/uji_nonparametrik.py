@@ -489,6 +489,21 @@ Berikan interpretasi Bahasa Indonesia (2 paragraf akademis) mencakup:
         ai_enabled=ai_enabled, api_key=api_key, ai_provider=ai_provider,
     )
 
+    # ── Simpan hasil ke session_state untuk export laporan ───────────────────
+    st.session_state["mcnemar_result"] = {
+        "uji_type":   "McNemar Test",
+        "col_pre":    col_pre,
+        "col_post":   col_post,
+        "n_total":    int(n_total),
+        "b":          int(b),
+        "c":          int(c),
+        "chi2_stat":  round(chi2_stat, 4),
+        "p_value":    round(p_val, 4),
+        "phi_eff":    phi_eff,
+        "signifikan": p_val < alpha,
+        "alpha":      alpha,
+    }
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Tab 4 — Cochran Q Test (k kondisi biner)
@@ -624,6 +639,19 @@ Interpretasi dalam Bahasa Indonesia (2 paragraf akademis):
 """,
         ai_enabled=ai_enabled, api_key=api_key, ai_provider=ai_provider,
     )
+
+    # ── Simpan hasil ke session_state untuk export laporan ───────────────────
+    st.session_state["cochran_result"] = {
+        "uji_type":   "Cochran Q Test",
+        "selected":   selected,
+        "n":          int(n),
+        "k":          int(k),
+        "q_stat":     round(float(q_stat), 4),
+        "df_q":       int(df_q),
+        "p_value":    round(float(p_val), 4),
+        "signifikan": p_val < alpha,
+        "alpha":      alpha,
+    }
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

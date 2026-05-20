@@ -643,6 +643,11 @@ def _fetch_html_table(
     except Exception as e:
         return None, f"Error: {e}", 0
 
+    # Bug #14 fix: set apparent_encoding agar karakter non-UTF8 (ISO-8859, Windows-1252, dll)
+    # tidak muncul sebagai mojibake. Fallback ke utf-8 jika deteksi gagal.
+    if resp.encoding and resp.encoding.lower() in ("iso-8859-1", "latin-1", "windows-1252"):
+        resp.encoding = resp.apparent_encoding or "utf-8"
+
     soup = BeautifulSoup(resp.text, "lxml")
     tables = soup.find_all("table")
     n_tables = len(tables)

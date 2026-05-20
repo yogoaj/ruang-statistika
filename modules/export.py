@@ -1,4 +1,21 @@
 """
+utils/export.py — Ruang Statistika v4.8
+UI laporan & koordinasi export (.docx / .md).
+
+Sub-modul (internal, JANGAN diimport langsung dari modul lain):
+  _export_normalize.py  — _normalize_mod_data per modul
+  _export_ai_prompt.py  — _build_module_ai_prompt per modul
+  _export_apa_refs.py   — APA database, mapping, generate_apa_references
+
+API publik:
+  render(ctx)                       — UI Streamlit modul Laporan
+  collect_session_results()         — kumpulkan semua hasil analisis
+  fig_to_png_bytes(fig)             — konversi Plotly → PNG bytes
+  build_regression_scatter(...)     — scatter plot untuk laporan
+  build_model_comparison_table(...) — tabel perbandingan model
+"""
+
+"""
 modules/export.py — Generate Laporan Pro
 Ruang Statistika v4.0
 
@@ -63,6 +80,15 @@ from utils.ai_helpers import (
 from utils.docx_helpers import generate_pro_docx, generate_markdown_report
 
 
+
+# ── Import sub-modul internal ─────────────────────────────────────────────────
+from utils._export_normalize import _normalize_mod_data
+from utils._export_ai_prompt import _build_module_ai_prompt
+from utils._export_apa_refs  import (
+    generate_apa_references,
+    render_apa_preview,
+)
+
 def _first_valid_df(*candidates):
     """Kembalikan DataFrame/nilai pertama yang tidak None dan tidak kosong.
     Aman digunakan sebagai pengganti `a or b` ketika salah satu bisa berupa DataFrame."""
@@ -98,320 +124,6 @@ def fig_to_png_bytes(fig: go.Figure, width: int = 800, height: int = 400) -> byt
 # Helper: Normalisasi data modul dari session_state
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _normalize_mod_data(mod_key: str, raw: dict) -> dict:
-    if not isinstance(raw, dict):
-        return {}
-
-    out = dict(raw)
-
-    if mod_key == "ols_plus":
-        model = raw.get("model")
-        if model is not None and raw.get("coef_table") is None:
-            try:
-                out["coef_table"] = pd.DataFrame({
-                    "Parameter":     model.params.index.tolist(),
-                    "β (Koefisien)": model.params.values.round(4).tolist(),
-                    "Std. Error":    model.bse.values.round(4).tolist(),
-                    "t-hitung":      model.tvalues.values.round(4).tolist(),
-                    "p-value":       model.pvalues.values.round(4).tolist(),
-                    "Signifikan":    ["✓" if p < 0.05 else "✗" for p in model.pvalues],
-                })
-                out["r2"]       = float(model.rsquared)
-                out["adj_r2"]   = float(model.rsquared_adj)
-                out["f_pvalue"] = float(model.f_pvalue)
-                out["y_actual"] = model.model.endog.tolist()
-                out["y_pred"]   = model.fittedvalues.tolist()
-                out["residuals"]= model.resid.tolist()
-            except Exception:
-                pass
-        vif_df = raw.get("vif")
-        if vif_df is not None and not raw.get("vif_max"):
-            try:
-                out["vif_max"] = float(vif_df["VIF"].max())
-            except Exception:
-                pass
-        try:
-            from statsmodels.stats.stattools import durbin_watson
-            model = raw.get("model")
-            if model is not None and not raw.get("durbin_watson"):
-                out["durbin_watson"] = float(durbin_watson(model.resid))
-        except Exception:
-            pass
-
-    elif mod_key == "mediasi":
-        med_info = raw.get("med_info", {})
-        boot     = raw.get("boot", {})
-        if med_info and not raw.get("path_table"):
-            try:
-                x = raw.get("x", "X")
-                m = raw.get("m", "M")
-                y = raw.get("y", "Y")
-                out["path_table"] = pd.DataFrame([
-                    {"Jalur": "a (X→M)",       "Koefisien": med_info.get("a (X→M)"),
-                     "Keterangan": f"{x} → {m}"},
-                    {"Jalur": "b (M→Y|X)",     "Koefisien": med_info.get("b (M→Y|X)"),
-                     "Keterangan": f"{m} → {y}"},
-                    {"Jalur": "c (Total)",      "Koefisien": med_info.get("c (total X→Y)"),
-                     "Keterangan": f"{x} → {y} total"},
-                    {"Jalur": "c' (Langsung)", "Koefisien": med_info.get("c' (direct X→Y)"),
-                     "Keterangan": f"{x} → {y} langsung"},
-                ])
-                if med_info.get("Indirect (a×b)") is not None:
-                    out["indirect_effect"] = float(med_info["Indirect (a×b)"])
-                if med_info.get("c' (direct X→Y)") is not None:
-                    out["direct_effect"] = float(med_info["c' (direct X→Y)"])
-                if med_info.get("c (total X→Y)") is not None:
-                    out["total_effect"] = float(med_info["c (total X→Y)"])
-            except Exception:
-                pass
-        if boot and not raw.get("bootstrap_ci"):
-            lo = boot.get("ci_lower")
-            hi = boot.get("ci_upper")
-            if lo is not None and hi is not None:
-                out["bootstrap_ci"] = [float(lo), float(hi)]
-
-    elif mod_key == "moderasi":
-        model = raw.get("model")
-        if model is not None and not raw.get("coef_table"):
-            try:
-                x = raw.get("x", "X")
-                z = raw.get("z", "Z")
-                b0 = raw.get("b0", 0)
-                b1 = raw.get("b1", 0)
-                b2 = raw.get("b2", 0)
-                b3 = raw.get("b3", 0)
-                pvals = model.pvalues
-                out["coef_table"] = pd.DataFrame({
-                    "Parameter":  ["Konstanta", x, z, f"{x} × {z}"],
-                    "β":          [round(b0, 4), round(b1, 4), round(b2, 4), round(b3, 4)],
-                    "SE":         model.bse.round(4).tolist(),
-                    "t":          model.tvalues.round(4).tolist(),
-                    "p-value":    pvals.round(4).tolist(),
-                    "Signifikan": ["✓" if p < 0.05 else "✗" for p in pvals],
-                })
-                out["r2"]     = float(model.rsquared)
-                out["adj_r2"] = float(model.rsquared_adj)
-                if abs(b3) > 1e-10:
-                    out["johnson_neyman"] = float(-b1 / b3)
-            except Exception:
-                pass
-
-    elif mod_key == "logistik":
-        odds_df = raw.get("odds_df")
-        coef_table = raw.get("coef_table")
-        coef_table_missing = coef_table is None or (hasattr(coef_table, "empty") and coef_table.empty)
-        if odds_df is not None and coef_table_missing:
-            out["coef_table"] = odds_df
-        for alias in ("auc", "pseudo_r2", "aic", "bic"):
-            if raw.get(alias) is not None:
-                out[alias] = raw[alias]
-        if raw.get("fpr") is not None and raw.get("tpr") is not None:
-            out["roc"] = {
-                "fpr": list(raw["fpr"]),
-                "tpr": list(raw["tpr"]),
-                "auc": raw.get("auc"),
-            }
-        # Sertakan classification report
-        if raw.get("cr") is not None:
-            out["cr"] = raw["cr"]
-
-    elif mod_key == "uji_beda":
-        for field in ("uji_type", "num_col", "g1_name", "g2_name",
-                      "g1_mean", "g2_mean", "statistic", "p_value",
-                      "effect_size", "signifikan", "alpha"):
-            if raw.get(field) is not None and out.get(field) is None:
-                out[field] = raw[field]
-
-    elif mod_key == "outlier":
-        for field in ("variabel", "method", "n_total", "total_outliers", "pct_outliers"):
-            if raw.get(field) is not None and out.get(field) is None:
-                out[field] = raw[field]
-
-    elif mod_key == "kelompok":
-        for field in ("cat", "num", "best_group", "worst_group",
-                      "f_stat", "p_value", "signifikan", "alpha"):
-            if raw.get(field) is not None and out.get(field) is None:
-                out[field] = raw[field]
-
-    elif mod_key == "anova":
-        pass  # sudah lengkap dari anova.py patch
-
-    elif mod_key == "efa":
-        # efa_session sudah flat dict dari efa.py, normalisasi minimal
-        # Bridging efa_ai_text -> ai_text agar renderer bisa pakai
-        if not raw.get("ai_text"):
-            ai_t = st.session_state.get("efa_ai_text", "")
-            if ai_t:
-                out["ai_text"] = ai_t
-        for field in ("kmo", "kmo_label", "bartlett_p", "n_factors",
-                      "rotation", "total_var", "loading_df", "variance_df", "ai_text"):
-            if raw.get(field) is not None and out.get(field) is None:
-                out[field] = raw[field]
-
-    elif mod_key == "reliabilitas_icc":
-        # Pastikan icc_df tersimpan sebagai list of dict (agar bisa di-DataFrame)
-        icc_df = raw.get("icc_df")
-        if icc_df is not None:
-            try:
-                if hasattr(icc_df, "to_dict"):
-                    out["icc_df"] = icc_df.to_dict("records")
-                elif isinstance(icc_df, list):
-                    out["icc_df"] = icc_df
-            except Exception:
-                pass
-        anova_tbl = raw.get("anova_tbl")
-        if anova_tbl is not None:
-            try:
-                if hasattr(anova_tbl, "to_dict"):
-                    out["anova_tbl"] = anova_tbl.to_dict("records")
-                elif isinstance(anova_tbl, list):
-                    out["anova_tbl"] = anova_tbl
-            except Exception:
-                pass
-        for field in ("n_subj", "n_rater", "use_type", "rec_model",
-                      "rater_names", "ai_text"):
-            if raw.get(field) is not None and out.get(field) is None:
-                out[field] = raw[field]
-
-    elif mod_key == "uji_asumsi":
-        # rekomendasi bisa berupa dict dari _build_rekomendasi_dict()
-        rec = raw.get("rekomendasi")
-        if rec is not None:
-            out["rekomendasi"] = rec
-        for field in ("n_var", "alpha", "ai_text"):
-            if raw.get(field) is not None and out.get(field) is None:
-                out[field] = raw[field]
-
-    elif mod_key in ("ols_robust", "ols_wls", "ols_robust_comparison"):
-        # Normalisasi coef_df dari statsmodels jika belum DataFrame biasa
-        coef_df = raw.get("coef_df")
-        if coef_df is not None and hasattr(coef_df, "to_dict"):
-            try:
-                out["coef_df"] = coef_df.reset_index(drop=True)
-            except Exception:
-                pass
-        comp_df = raw.get("comparison_df")
-        if comp_df is not None and hasattr(comp_df, "to_dict"):
-            try:
-                out["comparison_df"] = comp_df.reset_index(drop=True)
-            except Exception:
-                pass
-        for field in ("dep_var", "ind_vars", "estimator", "n_obs",
-                      "n_low_weight", "n_changed", "best_model",
-                      "ols_rmse", "rlm_rmse", "wls_rmse",
-                      "ols_glejser_p", "wls_glejser_p", "weight_method",
-                      "r2", "adj_r2", "ai_text"):
-            if raw.get(field) is not None and out.get(field) is None:
-                out[field] = raw[field]
-
-    elif mod_key == "compute":
-        # compute_log bisa di root atau nested
-        log = raw.get("compute_log") or raw.get("log", [])
-        if log:
-            out["compute_log"] = log if isinstance(log, list) else []
-
-    elif mod_key == "klaster":
-        # Normalisasi profile_df ke list of dict
-        profile_df = raw.get("profile_df")
-        if profile_df is not None and hasattr(profile_df, "to_dict"):
-            try:
-                out["profile_df_records"] = profile_df.to_dict("records")
-                out["profile_cols"]       = profile_df.columns.tolist()
-            except Exception:
-                pass
-        # labels numpy array -> list
-        labels = raw.get("labels")
-        if labels is not None and hasattr(labels, "tolist"):
-            out["labels"] = labels.tolist()
-        for field in ("method", "k", "cols", "silhouette", "linkage"):
-            if raw.get(field) is not None and out.get(field) is None:
-                out[field] = raw[field]
-
-    elif mod_key == "eda":
-        for field in ("n_rows", "n_cols", "n_numeric", "n_cat",
-                      "n_missing", "pct_missing", "n_dup", "num_cols", "cat_cols"):
-            if raw.get(field) is not None and out.get(field) is None:
-                out[field] = raw[field]
-
-    elif mod_key == "scraping":
-        for field in ("n_rows", "n_cols", "source", "col_names",
-                      "n_numeric", "n_missing", "n_dup"):
-            if raw.get(field) is not None and out.get(field) is None:
-                out[field] = raw[field]
-        # Bridge dari scraping_result jika tersedia
-        scr = st.session_state.get("scraping_result", {})
-        if scr and not out.get("source"):
-            out["source"] = scr.get("source", "")
-            out["n_rows"] = scr.get("n_rows", 0)
-            out["n_cols"] = scr.get("n_cols", 0)
-
-    elif mod_key == "cfa":
-        # Serialize DataFrame ke records agar bisa masuk docx renderer
-        for df_field in ("fit_df", "loadings_df", "ave_cr_df"):
-            df_val = raw.get(df_field)
-            if df_val is not None and hasattr(df_val, "to_dict"):
-                try:
-                    out[df_field + "_records"] = df_val.to_dict("records")
-                    out[df_field + "_cols"]    = df_val.columns.tolist()
-                except Exception:
-                    pass
-        # htmt_df dan fl_df adalah DataFrame dengan index = konstruk
-        for df_field in ("htmt_df", "fl_df"):
-            df_val = raw.get(df_field)
-            if df_val is not None and hasattr(df_val, "to_dict"):
-                try:
-                    out[df_field + "_records"] = df_val.reset_index().to_dict("records")
-                except Exception:
-                    pass
-        for field in ("model_syntax", "factor_map", "n_obs", "alpha_level"):
-            if raw.get(field) is not None and out.get(field) is None:
-                out[field] = raw[field]
-        # Bridge ai_text dari ai_cache["cfa"]
-        if not raw.get("ai_text"):
-            ai_t = st.session_state.get("ai_cache", {}).get("cfa", "")
-            if ai_t:
-                out["ai_text"] = ai_t
-
-
-    elif mod_key == "regresi":
-        # alias dari ols_plus — normalisasi minimal
-        model = raw.get("model")
-        if model is not None and raw.get("coef_table") is None:
-            try:
-                out["coef_table"] = pd.DataFrame({
-                    "Parameter": model.params.index.tolist(),
-                    "β (Koefisien)": model.params.values.round(4).tolist(),
-                    "Std. Error": model.bse.values.round(4).tolist(),
-                    "t-hitung": model.tvalues.values.round(4).tolist(),
-                    "p-value": model.pvalues.values.round(4).tolist(),
-                })
-                out["r2"] = float(model.rsquared)
-                out["adj_r2"] = float(model.rsquared_adj)
-                out["f_pvalue"] = float(model.f_pvalue)
-            except Exception:
-                pass
-
-    elif mod_key == "sem":
-        # normalisasi fit indices dan path estimates
-        for df_field in ("fit_indices", "path_estimates", "loadings"):
-            df_val = raw.get(df_field)
-            if df_val is not None and hasattr(df_val, "to_dict"):
-                try:
-                    out[df_field + "_records"] = df_val.to_dict("records")
-                    out[df_field + "_cols"] = df_val.columns.tolist()
-                except Exception:
-                    pass
-        for field in ("model_syntax", "n_obs", "estimator", "ai_text"):
-            if raw.get(field) is not None and out.get(field) is None:
-                out[field] = raw[field]
-
-    elif mod_key == "power_analysis":
-        for field in ("test_type", "effect_size", "alpha", "power", "n_total", "n_per_group", "ai_text"):
-            if raw.get(field) is not None and out.get(field) is None:
-                out[field] = raw[field]
-
-    return out
-
 
 def collect_session_results() -> dict:
     CONFIRMED_KEYS = {
@@ -437,6 +149,10 @@ def collect_session_results() -> dict:
         # Non-parametrik (v4.8 bugfix — key dipisah dari uji_beda_result)
         "wilcoxon_result":        ("uji_nonparametrik", "Wilcoxon Signed-Rank"),
         "friedman_result":        ("uji_nonparametrik", "Friedman Test"),
+        "mcnemar_result":         ("uji_nonparametrik", "McNemar Test"),
+        "cochran_result":         ("uji_nonparametrik", "Cochran Q Test"),
+        # Power Analysis (v4.8 bugfix — sebelumnya tidak disimpan sama sekali)
+        "power_result":           ("power_analysis",    "Power Analysis & Sample Size"),
     }
 
     FALLBACK_KEYS = {
@@ -469,6 +185,9 @@ def collect_session_results() -> dict:
         # Non-parametrik fallback (v4.8)
         "wilcoxon_result":    ("uji_nonparametrik", "Wilcoxon Signed-Rank"),
         "friedman_result":    ("uji_nonparametrik", "Friedman Test"),
+        "mcnemar_result":     ("uji_nonparametrik", "McNemar Test"),
+        "cochran_result":     ("uji_nonparametrik", "Cochran Q Test"),
+        "power_result":       ("power_analysis",    "Power Analysis & Sample Size"),
     }
 
     MODULE_LABELS = {
@@ -566,6 +285,7 @@ def collect_session_results() -> dict:
 # ─────────────────────────────────────────────────────────────────────────────
 # Helper: build scatter figure dari regresi
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 def build_regression_scatter(df: pd.DataFrame, reg_result: dict) -> go.Figure | None:
     try:
@@ -704,437 +424,6 @@ def build_model_comparison_table(session_results: dict) -> pd.DataFrame | None:
 # Helper: prompt ringkasan per modul untuk AI
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _build_module_ai_prompt(mod_key: str, mod_data: dict, mod_label: str) -> str:
-    """Buat prompt AI yang kaya konteks untuk setiap modul."""
-
-    # Kumpulkan ringkasan data
-    summary = {}
-    for k in ("coef_table", "r2", "adj_r2", "f_pvalue", "rmse",
-              "accuracy", "auc", "pseudo_r2", "aic", "bic",
-              "indirect_effect", "direct_effect", "total_effect",
-              "bootstrap_ci", "eta_squared", "statistic", "p_value",
-              "effect_size", "total_outliers", "method", "pct_outliers",
-              "variabel", "num_col", "g1_name", "g2_name", "g1_mean", "g2_mean",
-              "cat", "num", "best_group", "worst_group", "f_stat",
-              "fit_indices", "durbin_watson", "vif_max",
-              "n_total", "n_valid", "n_butir",
-              "x", "y", "m", "z", "jenis_mediasi", "johnson_neyman",
-              "posthoc_method", "test_name", "n_groups"):
-        v = mod_data.get(k) if isinstance(mod_data, dict) else None
-        if v is not None:
-            if hasattr(v, "to_dict"):
-                summary[k] = v.head(10).to_dict()
-            elif isinstance(v, (int, float, str, list, dict, bool)):
-                summary[k] = v
-
-    # Prompt spesifik per modul
-    MODULE_SYSTEM_PROMPTS = {
-        "regresi": (
-            "Buat interpretasi komprehensif hasil Regresi Linier dalam Bahasa Indonesia "
-            "mencakup: (1) kualitas model (R², F-test), (2) interpretasi koefisien yang "
-            "signifikan, (3) persamaan regresi dan maknanya, (4) rekomendasi. "
-            "Format: 4 paragraf akademis tanpa bullet points."
-        ),
-        "ols_plus": (
-            "Buat interpretasi komprehensif hasil Regresi OLS+ dalam Bahasa Indonesia "
-            "mencakup: (1) kualitas model, (2) koefisien signifikan, "
-            "(3) evaluasi uji asumsi klasik (Durbin-Watson, VIF, White test, normalitas), "
-            "(4) rekomendasi jika ada asumsi yang dilanggar. "
-            "Format: 4 paragraf akademis tanpa bullet points."
-        ),
-        "logistik": (
-            "Buat interpretasi komprehensif hasil Regresi Logistik dalam Bahasa Indonesia "
-            "mencakup: (1) kualitas model (AUC, Pseudo R²), (2) odds ratio yang signifikan, "
-            "(3) performa klasifikasi, (4) limitasi model. "
-            "Format: 4 paragraf akademis tanpa bullet points."
-        ),
-        "mediasi": (
-            "Buat interpretasi komprehensif hasil Analisis Mediasi dalam Bahasa Indonesia "
-            "mencakup: (1) jalur a, b, c, c', (2) efek tidak langsung & Bootstrap CI, "
-            "(3) jenis mediasi (penuh/sebagian/tidak ada), (4) implikasi teoritis. "
-            "Format: 4 paragraf akademis tanpa bullet points."
-        ),
-        "moderasi": (
-            "Buat interpretasi komprehensif hasil Analisis Moderasi dalam Bahasa Indonesia "
-            "mencakup: (1) signifikansi efek interaksi, (2) interpretasi substantif, "
-            "(3) Johnson-Neyman jika ada, (4) implikasi penelitian. "
-            "Format: 4 paragraf akademis tanpa bullet points."
-        ),
-        "anova": (
-            "Buat interpretasi komprehensif hasil ANOVA dalam Bahasa Indonesia "
-            "mencakup: (1) keputusan H₀ (F-test), (2) ukuran efek η², "
-            "(3) perbedaan spesifik antar kelompok (post-hoc), (4) implikasi. "
-            "Format: 4 paragraf akademis tanpa bullet points."
-        ),
-        "uji_beda": (
-            "Buat interpretasi komprehensif hasil Uji Beda dalam Bahasa Indonesia "
-            "mencakup: (1) statistik uji & p-value, (2) besar perbedaan (effect size), "
-            "(3) kesimpulan praktis, (4) rekomendasi. "
-            "Format: 3-4 paragraf akademis tanpa bullet points."
-        ),
-        "outlier": (
-            "Buat interpretasi singkat hasil Deteksi Outlier dalam Bahasa Indonesia "
-            "mencakup: (1) metode & jumlah outlier, (2) dampak pada analisis, "
-            "(3) rekomendasi penanganan. "
-            "Format: 2-3 paragraf akademis tanpa bullet points."
-        ),
-        "sem": (
-            "Buat interpretasi komprehensif hasil SEM & CFA dalam Bahasa Indonesia "
-            "mencakup: (1) evaluasi model fit, (2) factor loadings CFA, "
-            "(3) jalur struktural, (4) kesimpulan. "
-            "Format: 4 paragraf akademis tanpa bullet points."
-        ),
-        "efa": (
-            "Buat interpretasi komprehensif hasil Analisis Faktor Eksploratori (EFA) "
-            "dalam Bahasa Indonesia mencakup: (1) evaluasi kelayakan data (KMO & Bartlett), "
-            "(2) jumlah faktor yang tepat dan dasar pengambilan keputusan (Kaiser criterion, "
-            "cumulative variance), (3) struktur faktor dan interpretasi konseptual loading, "
-            "(4) rekomendasi untuk penelitian selanjutnya (CFA, construct validity). "
-            "Format: 4 paragraf akademis tanpa bullet points."
-        ),
-        "kelompok": (
-            "Buat interpretasi komprehensif hasil Analisis Kelompok dalam Bahasa Indonesia "
-            "mencakup: (1) perbedaan antar kelompok, (2) kelompok terbaik/terburuk, "
-            "(3) signifikansi statistik, (4) implikasi. "
-            "Format: 3 paragraf akademis tanpa bullet points."
-        ),
-    }
-
-    # Handle compute modul separately — return early before generic prompt
-    if mod_key == "compute":
-        compute_log = mod_data.get("compute_log", [])
-        n_ops       = len(compute_log)
-        log_str     = json.dumps(compute_log[:10], ensure_ascii=False, indent=2)
-        return (
-            f"Ringkasan operasi Compute Variabel ({n_ops} operasi):\n{log_str}\n\n"
-            "Berikan interpretasi akademis dalam Bahasa Indonesia:\n"
-            "1. Rasionalisasi setiap variabel baru yang dibuat\n"
-            "2. Metode komputasi yang digunakan dan implikasinya\n"
-            "3. Rekomendasi penggunaan variabel baru dalam analisis\n"
-            "Format: 3 paragraf akademis."
-        )
-
-    system_prompt = MODULE_SYSTEM_PROMPTS.get(
-        mod_key,
-        f"Buat interpretasi {mod_label} dalam Bahasa Indonesia. Format akademis 3 paragraf."
-    )
-
-    return (
-        system_prompt
-        + "\n\nData hasil analisis:\n"
-        + json.dumps(summary, default=str, indent=2)
-    )
-
-# ── Database referensi APA 7th ────────────────────────────────────────────────
-
-APA_REFERENCES: dict[str, str] = {
-
-    # ── Statistik Umum ───────────────────────────────────────────────────────
-    "field_2018": (
-        "Field, A. (2018). *Discovering statistics using IBM SPSS statistics* "
-        "(5th ed.). SAGE Publications."
-    ),
-    "hair_2010": (
-        "Hair, J. F., Black, W. C., Babin, B. J., & Anderson, R. E. (2010). "
-        "*Multivariate data analysis* (7th ed.). Pearson Prentice Hall."
-    ),
-    "ghozali_2018": (
-        "Ghozali, I. (2018). *Aplikasi analisis multivariate dengan program IBM SPSS 25* "
-        "(9th ed.). Badan Penerbit Universitas Diponegoro."
-    ),
-    "sugiyono_2019": (
-        "Sugiyono. (2019). *Metode penelitian kuantitatif, kualitatif, dan R&D* "
-        "(2nd ed.). Alfabeta."
-    ),
-
-    # ── Validitas & Reliabilitas ──────────────────────────────────────────────
-    "cronbach_1951": (
-        "Cronbach, L. J. (1951). Coefficient alpha and the internal structure of tests. "
-        "*Psychometrika*, *16*(3), 297–334. https://doi.org/10.1007/BF02310555"
-    ),
-    "pearson_1895": (
-        "Pearson, K. (1895). Notes on regression and inheritance in the case of two parents. "
-        "*Proceedings of the Royal Society of London*, *58*, 240–242."
-    ),
-    "nunnally_1978": (
-        "Nunnally, J. C. (1978). *Psychometric theory* (2nd ed.). McGraw-Hill."
-    ),
-
-    # ── Normalitas ────────────────────────────────────────────────────────────
-    "shapiro_wilk_1965": (
-        "Shapiro, S. S., & Wilk, M. B. (1965). An analysis of variance test for normality "
-        "(complete samples). *Biometrika*, *52*(3–4), 591–611. "
-        "https://doi.org/10.1093/biomet/52.3-4.591"
-    ),
-
-    # ── Regresi ───────────────────────────────────────────────────────────────
-    "cohen_1988": (
-        "Cohen, J. (1988). *Statistical power analysis for the behavioral sciences* "
-        "(2nd ed.). Lawrence Erlbaum Associates."
-    ),
-    "durbin_watson_1950": (
-        "Durbin, J., & Watson, G. S. (1950). Testing for serial correlation in least squares "
-        "regression: I. *Biometrika*, *37*(3–4), 409–428. "
-        "https://doi.org/10.1093/biomet/37.3-4.409"
-    ),
-    "white_1980": (
-        "White, H. (1980). A heteroskedasticity-consistent covariance matrix estimator and a "
-        "direct test for heteroskedasticity. *Econometrica*, *48*(4), 817–838. "
-        "https://doi.org/10.2307/1912934"
-    ),
-    "breusch_godfrey_1978": (
-        "Breusch, T. S. (1978). Testing for autocorrelation in dynamic linear models. "
-        "*Australian Economic Papers*, *17*(31), 334–355."
-    ),
-    "vif_marquardt_1970": (
-        "Marquardt, D. W. (1970). Generalized inverses, ridge regression, biased linear "
-        "estimation, and nonlinear estimation. *Technometrics*, *12*(3), 591–612. "
-        "https://doi.org/10.1080/00401706.1970.10488699"
-    ),
-
-    # ── Mediasi ───────────────────────────────────────────────────────────────
-    "baron_kenny_1986": (
-        "Baron, R. M., & Kenny, D. A. (1986). The moderator–mediator variable distinction in "
-        "social psychological research: Conceptual, strategic, and statistical considerations. "
-        "*Journal of Personality and Social Psychology*, *51*(6), 1173–1182. "
-        "https://doi.org/10.1037/0022-3514.51.6.1173"
-    ),
-    "preacher_hayes_2008": (
-        "Preacher, K. J., & Hayes, A. F. (2008). Asymptotic and resampling strategies for "
-        "assessing and comparing indirect effects in multiple mediator models. "
-        "*Behavior Research Methods*, *40*(3), 879–891. "
-        "https://doi.org/10.3758/BRM.40.3.879"
-    ),
-    "hayes_2013": (
-        "Hayes, A. F. (2013). *Introduction to mediation, moderation, and conditional process "
-        "analysis: A regression-based approach*. Guilford Press."
-    ),
-    "sobel_1982": (
-        "Sobel, M. E. (1982). Asymptotic confidence intervals for indirect effects in structural "
-        "equation models. *Sociological Methodology*, *13*, 290–312. "
-        "https://doi.org/10.2307/270723"
-    ),
-
-    # ── Moderasi ─────────────────────────────────────────────────────────────
-    "johnson_neyman_1936": (
-        "Johnson, P. O., & Neyman, J. (1936). Tests of certain linear hypotheses and their "
-        "application to some educational problems. *Statistical Research Memoirs*, *1*, 57–93."
-    ),
-    "aiken_west_1991": (
-        "Aiken, L. S., & West, S. G. (1991). *Multiple regression: Testing and interpreting "
-        "interactions*. SAGE Publications."
-    ),
-
-    # ── ANOVA ─────────────────────────────────────────────────────────────────
-    "tukey_1949": (
-        "Tukey, J. W. (1949). Comparing individual means in the analysis of variance. "
-        "*Biometrics*, *5*(2), 99–114. https://doi.org/10.2307/3001913"
-    ),
-    "kruskal_wallis_1952": (
-        "Kruskal, W. H., & Wallis, W. A. (1952). Use of ranks in one-criterion variance analysis. "
-        "*Journal of the American Statistical Association*, *47*(260), 583–621. "
-        "https://doi.org/10.1080/01621459.1952.10483441"
-    ),
-
-    # ── Regresi Logistik ─────────────────────────────────────────────────────
-    "hosmer_lemeshow_2013": (
-        "Hosmer, D. W., Lemeshow, S., & Sturdivant, R. X. (2013). "
-        "*Applied logistic regression* (3rd ed.). Wiley."
-    ),
-    "mcfadden_1974": (
-        "McFadden, D. (1974). Conditional logit analysis of qualitative choice behavior. "
-        "In P. Zarembka (Ed.), *Frontiers in econometrics* (pp. 105–142). Academic Press."
-    ),
-
-    # ── EFA ───────────────────────────────────────────────────────────────────
-    "kaiser_1974": (
-        "Kaiser, H. F. (1974). An index of factorial simplicity. "
-        "*Psychometrika*, *39*(1), 31–36. https://doi.org/10.1007/BF02291575"
-    ),
-    "bartlett_1950": (
-        "Bartlett, M. S. (1950). Tests of significance in factor analysis. "
-        "*British Journal of Psychology*, *3*(2), 77–85. "
-        "https://doi.org/10.1111/j.2044-8317.1950.tb00285.x"
-    ),
-    "jennrich_sampson_1966": (
-        "Jennrich, R. I., & Sampson, P. F. (1966). Rotation for simple loadings. "
-        "*Psychometrika*, *31*(3), 313–323. https://doi.org/10.1007/BF02289465"
-    ),
-    "cattell_1966": (
-        "Cattell, R. B. (1966). The scree test for the number of factors. "
-        "*Multivariate Behavioral Research*, *1*(2), 245–276. "
-        "https://doi.org/10.1207/s15327906mbr0102_10"
-    ),
-    "fabrigar_1999": (
-        "Fabrigar, L. R., Wegener, D. T., MacCallum, R. C., & Strahan, E. J. (1999). "
-        "Evaluating the use of exploratory factor analysis in psychological research. "
-        "*Psychological Methods*, *4*(3), 272–299. https://doi.org/10.1037/1082-989X.4.3.272"
-    ),
-
-    # ── SEM ───────────────────────────────────────────────────────────────────
-    "fornell_larcker_1981": (
-        "Fornell, C., & Larcker, D. F. (1981). Evaluating structural equation models with "
-        "unobservable variables and measurement error. *Journal of Marketing Research*, "
-        "*18*(1), 39–50. https://doi.org/10.1177/002224378101800104"
-    ),
-    "hu_bentler_1999": (
-        "Hu, L., & Bentler, P. M. (1999). Cutoff criteria for fit indexes in covariance structure "
-        "analysis: Conventional criteria versus new alternatives. *Structural Equation Modeling*, "
-        "*6*(1), 1–55. https://doi.org/10.1080/10705519909540118"
-    ),
-
-    # ── Software ─────────────────────────────────────────────────────────────
-    "python_statsmodels": (
-        "Seabold, S., & Perktold, J. (2010). Statsmodels: Econometric and statistical modeling "
-        "with Python. *Proceedings of the 9th Python in Science Conference*, 92–96. "
-        "https://doi.org/10.25080/Majora-92bf1922-011"
-    ),
-    "scipy_2020": (
-        "Virtanen, P., Gommers, R., Oliphant, T. E., Haberland, M., Reddy, T., "
-        "Cournapeau, D., ... & van der Walt, S. J. (2020). SciPy 1.0: Fundamental algorithms "
-        "for scientific computing in Python. *Nature Methods*, *17*(3), 261–272. "
-        "https://doi.org/10.1038/s41592-019-0686-2"
-    ),
-}
-
-
-# ── Mapping modul → referensi yang relevan ─────────────────────────────────
-
-MODULE_REFERENCES: dict[str, list[str]] = {
-    "deskriptif": [
-        "field_2018", "ghozali_2018", "sugiyono_2019",
-        "shapiro_wilk_1965", "scipy_2020",
-    ],
-    "validitas": [
-        "cronbach_1951", "pearson_1895", "nunnally_1978",
-        "ghozali_2018", "field_2018",
-    ],
-    "korelasi": [
-        "pearson_1895", "field_2018", "cohen_1988", "scipy_2020",
-    ],
-    "regresi": [
-        "field_2018", "hair_2010", "cohen_1988",
-        "python_statsmodels", "scipy_2020",
-    ],
-    "ols_plus": [
-        "field_2018", "hair_2010",
-        "durbin_watson_1950", "white_1980", "breusch_godfrey_1978",
-        "vif_marquardt_1970", "shapiro_wilk_1965",
-        "python_statsmodels",
-    ],
-    "mediasi": [
-        "baron_kenny_1986", "preacher_hayes_2008", "hayes_2013",
-        "sobel_1982", "field_2018",
-    ],
-    "moderasi": [
-        "aiken_west_1991", "hayes_2013",
-        "johnson_neyman_1936", "cohen_1988", "field_2018",
-    ],
-    "anova": [
-        "field_2018", "tukey_1949", "kruskal_wallis_1952",
-        "cohen_1988", "scipy_2020",
-    ],
-    "logistik": [
-        "hosmer_lemeshow_2013", "mcfadden_1974",
-        "field_2018", "python_statsmodels",
-    ],
-    "sem": [
-        "hair_2010", "fornell_larcker_1981", "hu_bentler_1999",
-        "cohen_1988",
-    ],
-    "efa": [
-        "kaiser_1974", "bartlett_1950", "jennrich_sampson_1966",
-        "cattell_1966", "fabrigar_1999", "hair_2010", "field_2018",
-    ],
-    "uji_beda": [
-        "field_2018", "cohen_1988", "kruskal_wallis_1952", "scipy_2020",
-    ],
-    "kelompok": [
-        "field_2018", "ghozali_2018", "scipy_2020",
-    ],
-    "outlier": [
-        "field_2018", "ghozali_2018",
-    ],
-}
-
-# Referensi wajib yang selalu disertakan
-ALWAYS_INCLUDE = [
-    "field_2018",
-    "ghozali_2018",
-    "sugiyono_2019",
-    "cohen_1988",
-    "scipy_2020",
-    "python_statsmodels",
-]
-def generate_apa_references(
-    inc_desc: bool,
-    inc_val: bool,
-    inc_corr: bool,
-    module_checkboxes: dict,       # {mod_key: bool}
-    report_style: str = "APA 7th Edition",
-) -> str:
-    """
-    Generate daftar referensi APA 7th berdasarkan modul yang digunakan.
-
-    Returns:
-        String teks referensi siap masuk ke dokumen laporan.
-    """
-    ref_keys: set[str] = set(ALWAYS_INCLUDE)
-
-    if inc_desc:
-        ref_keys.update(MODULE_REFERENCES.get("deskriptif", []))
-    if inc_val:
-        ref_keys.update(MODULE_REFERENCES.get("validitas", []))
-    if inc_corr:
-        ref_keys.update(MODULE_REFERENCES.get("korelasi", []))
-
-    for mod_key, selected in module_checkboxes.items():
-        if selected:
-            ref_keys.update(MODULE_REFERENCES.get(mod_key, []))
-
-    # Ambil teks referensi dan urutkan alfabetis
-    ref_texts = []
-    for key in sorted(ref_keys):
-        text = APA_REFERENCES.get(key)
-        if text:
-            ref_texts.append(text)
-
-    if not ref_texts:
-        return ""
-
-    # Header sesuai gaya laporan
-    if "APA" in report_style:
-        header = "References"
-    elif "Vancouver" in report_style:
-        header = "Daftar Pustaka (Vancouver)"
-    else:
-        header = "Daftar Pustaka"
-
-    lines = [f"## {header}\n"]
-    for i, ref in enumerate(ref_texts, 1):
-        if "Vancouver" in report_style:
-            # Vancouver: numbered
-            lines.append(f"{i}. {ref}\n")
-        else:
-            # APA / Skripsi Indonesia: hanging indent simulation
-            lines.append(f"{ref}\n")
-
-    return "\n".join(lines)
-
-
-def render_apa_preview(apa_text: str):
-    """Tampilkan preview referensi di Streamlit."""
-    if not apa_text:
-        return
-    st.markdown("---")
-    st.markdown("#### 📚 Preview Daftar Referensi (APA 7th)")
-    with st.expander("Lihat daftar referensi yang akan disertakan dalam laporan"):
-        st.markdown(apa_text)
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# RENDER UTAMA
-# ─────────────────────────────────────────────────────────────────────────────
 
 def render(ctx: dict):
     license_info      = ctx["license_info"]
@@ -1197,31 +486,7 @@ def render(ctx: dict):
         # Override ai_enabled agar tidak ada call ke API AI
         ai_enabled = False
 
-        # ── Konfigurasi (Free) ────────────────────────────────────────────────
-        st.markdown("#### ⚙️ Konfigurasi Laporan")
-        cfg1, cfg2 = st.columns(2)
-        with cfg1:
-            data_type = st.radio("📋 Tipe Data / Penelitian:", [
-                "Data Primer (Kuesioner / Survei)",
-                "Data Sekunder (Laporan / Statistik / Keuangan)",
-                "Data Eksperimen (Pre-Post / Kelompok Kontrol)",
-            ])
-        with cfg2:
-            report_style = st.selectbox("🎨 Gaya Format Laporan:", [
-                "APA 7th Edition",
-                "Skripsi / Tesis Indonesia (DIKTI)",
-                "Vancouver (Medis / Kesehatan)",
-                "Jurnal Ilmiah Umum",
-                "Laporan Bisnis / Kantor",
-            ])
-
-        output_format = st.radio("📄 Format File Output:", ["Word (.docx)", "Markdown (.md)"],
-                                  horizontal=True)
-
         # ── Deteksi modul sesi (Free) ─────────────────────────────────────────
-        st.markdown("---")
-        st.markdown("#### 📦 Pilih Konten Laporan")
-
     else:
         # Pro — akses penuh
         st.success("✨ Akses Pro dikonfirmasi. Laporan lengkap siap di-generate.")
@@ -1235,30 +500,32 @@ def render(ctx: dict):
                 "💡 Masukkan API Key di sidebar untuk laporan dengan narasi AI dan persamaan model."
             )
 
-        # ── Konfigurasi (Pro) ─────────────────────────────────────────────────
-        st.markdown("#### ⚙️ Konfigurasi Laporan")
-        cfg1, cfg2 = st.columns(2)
-        with cfg1:
-            data_type = st.radio("📋 Tipe Data / Penelitian:", [
-                "Data Primer (Kuesioner / Survei)",
-                "Data Sekunder (Laporan / Statistik / Keuangan)",
-                "Data Eksperimen (Pre-Post / Kelompok Kontrol)",
-            ])
-        with cfg2:
-            report_style = st.selectbox("🎨 Gaya Format Laporan:", [
-                "APA 7th Edition",
-                "Skripsi / Tesis Indonesia (DIKTI)",
-                "Vancouver (Medis / Kesehatan)",
-                "Jurnal Ilmiah Umum",
-                "Laporan Bisnis / Kantor",
-            ])
-
-        output_format = st.radio("📄 Format File Output:", ["Word (.docx)", "Markdown (.md)"],
-                                  horizontal=True)
-
         # ── Deteksi modul sesi ────────────────────────────────────────────────
         st.markdown("---")
         st.markdown("#### 📦 Pilih Konten Laporan")
+
+    # ── Konfigurasi Laporan (shared Free & Pro — satu definisi) ─────────────
+    st.markdown("---")
+    st.markdown("#### ⚙️ Konfigurasi Laporan")
+    cfg1, cfg2 = st.columns(2)
+    with cfg1:
+        data_type = st.radio("📋 Tipe Data / Penelitian:", [
+            "Data Primer (Kuesioner / Survei)",
+            "Data Sekunder (Laporan / Statistik / Keuangan)",
+            "Data Eksperimen (Pre-Post / Kelompok Kontrol)",
+        ], key="export_data_type")
+    with cfg2:
+        report_style = st.selectbox("🎨 Gaya Format Laporan:", [
+            "APA 7th Edition",
+            "Skripsi / Tesis Indonesia (DIKTI)",
+            "Vancouver (Medis / Kesehatan)",
+            "Jurnal Ilmiah Umum",
+            "Laporan Bisnis / Kantor",
+        ], key="export_report_style")
+    output_format = st.radio("📄 Format File Output:", ["Word (.docx)", "Markdown (.md)"],
+                              horizontal=True, key="export_output_format")
+    st.markdown("---")
+
 
     session_results = collect_session_results()
     # ── Tabel Perbandingan Model ──────────────────────────────────────────────────
