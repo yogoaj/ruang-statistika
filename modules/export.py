@@ -15,38 +15,6 @@ API publik:
   build_model_comparison_table(...) — tabel perbandingan model
 """
 
-"""
-modules/export.py — Generate Laporan Pro
-Ruang Statistika v4.0
-
-Perbaikan v4.1:
-- Setiap modul analisis kini menghasilkan AI interpretasi lengkap
-  (tabel + grafik + persamaan model + narasi akademis)
-- Tambah generate model equation per modul via ai_generate_model_equation()
-- Konsistensi ai_texts keys dengan docx_helpers.py
-- Perbaikan progress bar dan status message
-- Auto-generate AI interpretasi bahkan dari cache sesi sebelumnya
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# RINGKASAN PERUBAHAN v4.2
-# ═══════════════════════════════════════════════════════════════════════════════
-#
-# File yang diubah          Baris yang berubah    Keterangan
-# ──────────────────────── ──────────────────── ─────────────────────────────────
-# utils/auth.py             Tambah ~60 baris     Fungsi quota (check/consume/get)
-# modules/export.py         ~1109–1131            Guard diganti (quota + free mode)
-#                           ~2118 & ~2141         Konsumsi quota setelah sukses
-# modules/regresi.py        Seluruh file          Guard soft, Pro block di bawah
-# modules/anova.py          Seluruh file          Guard soft, Pro block di bawah
-# modules/logistik.py       Seluruh file          Guard soft, Pro block di bawah
-#
-# File yang TIDAK berubah
-# ──────────────────────────────────────────────────────────────────────────────
-# app.py, utils/ai_helpers.py, utils/docx_helpers.py, utils/stats_helpers.py,
-# utils/plot_helpers.py, utils/effect_size.py, semua modul lain
-# ═══════════════════════════════════════════════════════════════════════════════
-
-"""
 from __future__ import annotations
 
 import io
