@@ -10,6 +10,8 @@ Menambah modul baru:
 Diimport oleh: utils/export.py
 """
 
+import json
+
 def _build_module_ai_prompt(mod_key: str, mod_data: dict, mod_label: str) -> str:
     """Buat prompt AI yang kaya konteks untuk setiap modul."""
 
@@ -120,7 +122,14 @@ def _build_module_ai_prompt(mod_key: str, mod_data: dict, mod_label: str) -> str
             "Format: 3 paragraf akademis."
         )
 
+    # Definisikan system_prompt default (digunakan untuk semua modul, termasuk CFA)
+    system_prompt = MODULE_SYSTEM_PROMPTS.get(
+        mod_key,
+        f"Buat interpretasi {mod_label} dalam Bahasa Indonesia. Format akademis 3 paragraf."
+    )
+
     # ── CFA (Confirmatory Factor Analysis) ──────────────────────────────────
+    # Blok ini DIPINDAHKAN ke sini (setelah system_prompt didefinisikan)
     if mod_key == "cfa":
         fit = mod_data.get("fit_indices", {})
         loadings = mod_data.get("loadings_df")
@@ -148,15 +157,9 @@ def _build_module_ai_prompt(mod_key: str, mod_data: dict, mod_label: str) -> str
             + """Referensi: Hair et al. (2019), Fornell & Larcker (1981), Henseler et al. (2015)."""
         )
 
-
-    system_prompt = MODULE_SYSTEM_PROMPTS.get(
-        mod_key,
-        f"Buat interpretasi {mod_label} dalam Bahasa Indonesia. Format akademis 3 paragraf."
-    )
-
+    # Default return untuk semua modul lainnya
     return (
         system_prompt
         + "\n\nData hasil analisis:\n"
         + json.dumps(summary, default=str, indent=2)
     )
-
