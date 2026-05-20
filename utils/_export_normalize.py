@@ -12,6 +12,23 @@ Diimport oleh: utils/export.py
 
 import pandas as pd
 import numpy as np
+import streamlit as st  # diperlukan untuk bridge ai_cache & session_state tertentu
+
+
+def _first_valid_df(*candidates):
+    """Kembalikan DataFrame/nilai pertama yang tidak None dan tidak kosong.
+    Aman digunakan sebagai pengganti `a or b` ketika salah satu bisa berupa DataFrame."""
+    for c in candidates:
+        if c is None:
+            continue
+        try:
+            if not c.empty:
+                return c
+        except AttributeError:
+            if c:
+                return c
+    return None
+
 
 def _normalize_mod_data(mod_key: str, raw: dict) -> dict:
     if not isinstance(raw, dict):
