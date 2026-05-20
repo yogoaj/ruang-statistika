@@ -120,6 +120,35 @@ def _build_module_ai_prompt(mod_key: str, mod_data: dict, mod_label: str) -> str
             "Format: 3 paragraf akademis."
         )
 
+    # ── CFA (Confirmatory Factor Analysis) ──────────────────────────────────
+    if mod_key == "cfa":
+        fit = mod_data.get("fit_indices", {})
+        loadings = mod_data.get("loadings_df")
+        load_str = loadings.to_string(index=False) if hasattr(loadings, "to_string") else str(loadings)[:500]
+        ave  = mod_data.get("ave", "N/A")
+        cr   = mod_data.get("cr", "N/A")
+        htmt = mod_data.get("htmt", "N/A")
+        return (
+            system_prompt
+            + f"""\n\nHasil Confirmatory Factor Analysis (CFA):\n\n"""
+            + f"""FIT INDICES:\n"""
+            + f"""- CFI  = {fit.get('CFI', 'N/A')} (≥ 0.95)\n"""
+            + f"""- RMSEA= {fit.get('RMSEA', 'N/A')} (≤ 0.06)\n"""
+            + f"""- SRMR = {fit.get('SRMR', 'N/A')} (≤ 0.08)\n"""
+            + f"""- GFI  = {fit.get('GFI', 'N/A')} (≥ 0.90)\n"""
+            + f"""- Chi-Square p = {fit.get('chi2_p', 'N/A')}\n\n"""
+            + f"""FACTOR LOADINGS (standardized):\n{load_str}\n\n"""
+            + f"""AVE={ave} (≥0.50), CR={cr} (≥0.70), HTMT={htmt} (<0.85)\n\n"""
+            + """Interpretasi Bahasa Indonesia (4-5 paragraf akademis):\n"""
+            + """1. Evaluasi fit model berdasarkan semua fit indices\n"""
+            + """2. Kualitas factor loadings (valid jika ≥ 0.50)\n"""
+            + """3. Convergent validity (AVE) dan composite reliability (CR)\n"""
+            + """4. Discriminant validity (HTMT)\n"""
+            + """5. Rekomendasi modifikasi model jika perlu\n"""
+            + """Referensi: Hair et al. (2019), Fornell & Larcker (1981), Henseler et al. (2015)."""
+        )
+
+
     system_prompt = MODULE_SYSTEM_PROMPTS.get(
         mod_key,
         f"Buat interpretasi {mod_label} dalam Bahasa Indonesia. Format akademis 3 paragraf."
