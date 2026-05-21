@@ -247,12 +247,9 @@ def handle_google_callback() -> bool:
     HARUS dipanggil di paling awal app.py, SEBELUM restore_supabase_session()
     dan SEBELUM st.set_page_config().
 
-    Alur:
-      - Supabase OAuth mengirim token via URL fragment (#access_token=...).
-      - Fragment tidak dikirim ke server — hanya ada di browser.
-      - JS snippet di app.py membaca fragment dan mengonversinya ke
-        query_params (?access_token=...) agar Streamlit bisa membacanya.
-      - Fungsi ini membaca query_params tersebut dan men-set session Supabase.
+    Juga mendeteksi token recovery (reset password) dari email Supabase:
+    - type=recovery → simpan ke session_state["_recovery_token"], JANGAN login
+    - type=lainnya  → proses sebagai login OAuth biasa
 
     Return True jika berhasil set session dari callback Google.
     """
@@ -262,8 +259,18 @@ def handle_google_callback() -> bool:
     params        = st.query_params
     access_token  = params.get("access_token")
     refresh_token = params.get("refresh_token", "")
+    token_type    = params.get("type", "")
 
     if not access_token:
+        return False
+
+    # Token recovery (dari link "Reset Password" email Supabase)
+    # Jangan login — simpan token dan arahkan ke form ganti password
+    if token_type == "recovery":
+        st.session_state["_recovery_access_token"]  = access_token
+        st.session_state["_recovery_refresh_token"] = refresh_token
+        st.session_state["modal_tab"]               = "reset_password"
+        st.query_params.clear()
         return False
 
     sb = get_supabase()
@@ -274,15 +281,55 @@ def handle_google_callback() -> bool:
         resp = sb.auth.set_session(access_token, refresh_token)
         if resp and resp.user:
             save_supabase_session(resp.user, resp.session)
-            # Bersihkan token dari URL agar tidak tampil di address bar
             st.query_params.clear()
             return True
-    except Exception as e:
-        # Token tidak valid atau expired — bersihkan saja
+    except Exception:
         pass
 
     st.query_params.clear()
     return False
+
+
+def supabase_update_password(new_password: str) -> tuple[bool, str]:
+    """
+    Update password user yang sedang dalam sesi recovery.
+
+    Dipanggil dari tab 'reset_password' di app.py setelah user
+    klik link reset dari email dan mengisi password baru.
+
+    Alur:
+      1. handle_google_callback() mendeteksi type=recovery →
+         simpan token ke session_state, set modal_tab = 'reset_password'
+      2. app.py render tab 'reset_password' dengan form input password baru
+      3. Saat submit, fungsi ini dipanggil:
+         a. Set Supabase session dengan recovery token
+         b. Update password via sb.auth.update_user()
+         c. Bersihkan token recovery dari session_state
+    """
+    if len(new_password) < 6:
+        return False, "❌ Password minimal 6 karakter."
+
+    access_token  = st.session_state.get("_recovery_access_token", "")
+    refresh_token = st.session_state.get("_recovery_refresh_token", "")
+
+    if not access_token:
+        return False, "❌ Sesi reset tidak valid. Minta link reset baru."
+
+    sb = get_supabase()
+    if not sb:
+        return False, "Koneksi ke Supabase gagal."
+
+    try:
+        # Set sesi dengan recovery token terlebih dahulu
+        sb.auth.set_session(access_token, refresh_token)
+        # Update password
+        sb.auth.update_user({"password": new_password})
+        # Bersihkan token recovery
+        st.session_state.pop("_recovery_access_token", None)
+        st.session_state.pop("_recovery_refresh_token", None)
+        return True, "✅ Password berhasil diperbarui. Silakan masuk dengan password baru."
+    except Exception as e:
+        return False, f"❌ Gagal memperbarui password: {e}"
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -342,11 +389,12 @@ def _sign_in_via_pro_licenses(sb, email: str, password: str) -> tuple[bool, str]
     if not row:
         return False, "❌ Email atau password salah."
 
-    if row.get("password", "") != password:
-        return False, "❌ Email atau password salah."
-
+    # Cek aktif dulu sebelum cek password (urutan penting)
     if not row.get("is_active", True):
         return False, "❌ Akun kamu sudah dinonaktifkan. Hubungi admin."
+
+    if row.get("password", "") != password:
+        return False, "❌ Email atau password salah."
 
     expires_str = row.get("expires_at")
     if expires_str:
