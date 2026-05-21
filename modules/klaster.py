@@ -111,10 +111,9 @@ def _plot_elbow(ks: list, inertias: list, sil_scores: list, k_opt: int) -> go.Fi
     fig.update_layout(
         title="Elbow Method & Silhouette Score",
         xaxis=dict(title="Jumlah Klaster (k)", dtick=1),
-        yaxis=dict(title="Inertia (WSS)", titlefont=dict(color="#185FA5")),
+        yaxis=dict(title=dict(text="Inertia (WSS)", font=dict(color="#185FA5"))),
         yaxis2=dict(
-            title="Silhouette Score",
-            titlefont=dict(color="#3B6D11"),
+            title=dict(text="Silhouette Score", font=dict(color="#3B6D11")),
             overlaying="y", side="right",
             range=[0, 1],
         ),
