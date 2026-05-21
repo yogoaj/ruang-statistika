@@ -681,9 +681,7 @@ if menu == "Beranda":
                 # ── State: email reset sudah terkirim ────────────────────────
                 _sent_to = st.session_state.get("_lupa_email_sent", "")
                 st.success(
-                    f"📧 Link reset password telah dikirim ke **{_sent_to}**.
-
-"
+                    f"📧 Link reset password telah dikirim ke **{_sent_to}**.\n\n"
                     "Cek inbox kamu (dan folder **Spam** jika tidak ada). "
                     "Klik link di email, lalu kamu akan diarahkan ke halaman "
                     "untuk membuat password baru."
