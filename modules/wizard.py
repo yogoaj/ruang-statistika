@@ -1,10 +1,18 @@
 """
 modules/wizard.py — Wizard Pemilihan Metode Analisis (Free)
-Ruang Statistika v4.8 - Wizard v2.4.2
+Ruang Statistika v4.8 - Wizard v2.5.0
 
 Panduan interaktif 4 langkah untuk membantu pengguna memilih
 uji statistik yang tepat berdasarkan tujuan, data, dan jumlah variabel.
 Tidak memerlukan AI, tidak menyentuh database.
+
+Changelog v2.5.0:
+- [New] Tambah tujuan "Menganalisis data deret waktu" → Time Series
+- [New] Tambah menu_key "Time Series" di DECISION_TREE & KONTEKS_OPTIONS
+- [Fix] Tambah entry "Reliabilitas antar rater" → Reliabilitas ICC (gap coverage)
+- [Fix] Tambah badge ★ Pro di tombol alternatif yang mengarah ke modul Pro
+- [Fix] SKALA_PER_TUJUAN untuk Time Series hanya Interval/Rasio
+- [Fix] KONTEKS_OPTIONS untuk "Menguji kualitas instrumen" diperluas
 
 Changelog v2.4.2:
 - [Fix] Tombol 'Ubah jawaban terakhir' sekarang berfungsi (tambah _pause_auto)
@@ -37,6 +45,22 @@ Changelog v2.2:
 """
 
 import streamlit as st
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# MODUL PRO — digunakan untuk badge di tombol navigasi
+# ══════════════════════════════════════════════════════════════════════════════
+
+PRO_MENU_KEYS = {
+    "OLS Plus", "OLS Robust", "Mediasi", "Moderasi",
+    "EFA", "SEM", "CFA", "Reliabilitas ICC",
+    "Scraping", "Time Series",
+}
+
+
+def _pro_label(menu_key: str, label: str) -> str:
+    """Tambahkan badge ★ Pro jika menu_key adalah modul Pro."""
+    return f"{label} ★ Pro" if menu_key in PRO_MENU_KEYS else label
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -114,7 +138,7 @@ DECISION_TREE = {
         "menu_key":         "Regresi",
         "deskripsi":        "Memprediksi variabel dependen numerik dari satu prediktor numerik.",
         "syarat":           "Residual normal, homoskedastis, tidak ada autokorelasi, hubungan linier.",
-        "alternatif":       "Regresi Robust / RLM (jika ada outlier berpengaruh)",
+        "alternatif":       "Regresi Robust / RLM (jika ada outlier berpengaruh) ★ Pro",
         "alt_key":          "OLS Robust",
         "tips":             "Selalu cek uji asumsi klasik (VIF, Glejser, Durbin-Watson) setelah regresi — gunakan modul OLS+ untuk pemeriksaan lengkap.",
         "normal_sensitive": True,
@@ -125,7 +149,7 @@ DECISION_TREE = {
         "menu_key":         "Regresi",
         "deskripsi":        "Memprediksi variabel dependen dari beberapa prediktor sekaligus.",
         "syarat":           "Tidak ada multikolinearitas (VIF < 10), residual normal dan homoskedastis.",
-        "alternatif":       "Regresi Robust / WLS (jika heteroskedastisitas tidak bisa diatasi)",
+        "alternatif":       "Regresi Robust / WLS (jika heteroskedastisitas tidak bisa diatasi) ★ Pro",
         "alt_key":          "OLS Robust",
         "tips":             "Gunakan modul OLS+ untuk pemeriksaan asumsi klasik lengkap. Jika VIF > 10, pertimbangkan menghapus atau menggabungkan prediktor yang berkorelasi tinggi.",
         "normal_sensitive": True,
@@ -138,7 +162,7 @@ DECISION_TREE = {
         "syarat":           "Variabel dependen biner (0/1), tidak ada multikolinearitas antar prediktor.",
         "alternatif":       "Regresi Logistik Multinomial (jika kategori > 2)",
         "alt_key":          "Regresi Logistik",
-        "tips":             "Perhatikan odds ratio (OR) — OR > 1 berarti prediktor meningkatkan peluang kejadian. Gunakan ROC-AUC untuk evaluasi model (fitur Pro).",
+        "tips":             "Perhatikan odds ratio (OR) — OR > 1 berarti prediktor meningkatkan peluang kejadian. Gunakan ROC-AUC untuk evaluasi model.",
         "normal_sensitive": False,
     },
     ("Memprediksi nilai variabel", "Nominal / Kategorikal", "2+ prediktor"):
@@ -230,7 +254,7 @@ DECISION_TREE = {
         "syarat":           "Data normal di setiap kelompok, varians homogen (uji Levene).",
         "alternatif":       "Kruskal-Wallis (jika tidak normal atau ordinal)",
         "alt_key":          "ANOVA",
-        "tips":             "Jika ANOVA signifikan, lakukan uji post-hoc (Tukey HSD) untuk mengetahui pasangan kelompok mana yang berbeda — tersedia di modul ANOVA Pro.",
+        "tips":             "Jika ANOVA signifikan, lakukan uji post-hoc (Tukey HSD) untuk mengetahui pasangan kelompok mana yang berbeda — tersedia di modul ANOVA.",
         "normal_sensitive": True,
     },
     ("Membandingkan kelompok", "Interval / Rasio", "3+ kelompok berpasangan"):
@@ -299,7 +323,7 @@ DECISION_TREE = {
         "tips":             "Lanjutkan dengan uji post-hoc Wilcoxon dengan koreksi Bonferroni.",
         "normal_sensitive": False,
     },
-    # [Fix #7] Entry baru: Ordinal 1 kelompok vs nilai acuan
+    # [Fix #7] Entry: Ordinal 1 kelompok vs nilai acuan
     ("Membandingkan kelompok", "Ordinal", "1 kelompok vs nilai acuan"):
     {
         "uji":              "Wilcoxon Signed-Rank (one-sample)",
@@ -322,7 +346,7 @@ DECISION_TREE = {
         "tips":             "Contoh: apakah proporsi lulus berbeda antara kelas A dan kelas B?",
         "normal_sensitive": False,
     },
-    # [Fix #7] Entry yang hilang: Nominal berpasangan → McNemar
+    # [Fix #7] Nominal berpasangan → McNemar
     ("Membandingkan kelompok", "Nominal / Kategorikal", "2 kelompok berpasangan"):
     {
         "uji":              "McNemar Test",
@@ -334,7 +358,7 @@ DECISION_TREE = {
         "tips":             "Contoh: apakah proporsi yang 'setuju' berubah sebelum dan sesudah pelatihan?",
         "normal_sensitive": False,
     },
-    # [Fix #7] Entry yang hilang: Nominal 3+ kelompok independen
+    # [Fix #7] Nominal 3+ kelompok independen
     ("Membandingkan kelompok", "Nominal / Kategorikal", "3+ kelompok independen"):
     {
         "uji":              "Chi-Square (tabel RxC)",
@@ -346,7 +370,7 @@ DECISION_TREE = {
         "tips":             "Gunakan Cramér's V untuk mengukur kekuatan asosiasi.",
         "normal_sensitive": False,
     },
-    # [Fix #7] Entry yang hilang: Nominal 1 kelompok vs nilai acuan → Binomial/GoF
+    # [Fix #7] Nominal 1 kelompok vs nilai acuan → Binomial/GoF
     ("Membandingkan kelompok", "Nominal / Kategorikal", "1 kelompok vs nilai acuan"):
     {
         "uji":              "Binomial Test / Chi-Square Goodness of Fit",
@@ -450,9 +474,69 @@ DECISION_TREE = {
         "menu_key":         "Validitas",
         "deskripsi":        "Menguji apakah item kuesioner valid (CITC ≥ r-tabel) dan reliabel (α ≥ 0.70).",
         "syarat":           "Minimal 10 responden untuk uji coba. Skala Likert atau sejenisnya.",
-        "alternatif":       "ICC — Intraclass Correlation (untuk reliabilitas antar rater)",
-        "alt_key":          "Validitas",
+        "alternatif":       "ICC — Intraclass Correlation (untuk reliabilitas antar rater) ★ Pro",
+        "alt_key":          "Reliabilitas ICC",
         "tips":             "Item dengan CITC < r-tabel perlu direvisi atau dihapus. Alpha if deleted menunjukkan dampak penghapusan setiap item.",
+        "normal_sensitive": False,
+    },
+    # [New v2.5.0] Entry reliabilitas antar rater → ICC
+    ("Menguji kualitas instrumen", "Interval / Rasio", "Reliabilitas antar rater"):
+    {
+        "uji":              "Intraclass Correlation Coefficient (ICC)",
+        "menu_key":         "Reliabilitas ICC",
+        "deskripsi":        "Mengukur konsistensi atau kesepakatan penilaian antara dua atau lebih rater/observer.",
+        "syarat":           "Data numerik kontinyu, minimal 2 rater, subjek yang sama dinilai semua rater.",
+        "alternatif":       "Cohen's Kappa (jika penilaian kategorikal/nominal)",
+        "alt_key":          "Uji Nonparametrik",
+        "tips":             "ICC > 0.75 = reliabilitas baik. Pilih ICC(2,1) untuk rater acak, ICC(3,1) untuk rater tetap.",
+        "normal_sensitive": False,
+    },
+
+    # ── TIME SERIES ────────────────────────────────────────────────────────────
+    # [New v2.5.0] Semua entry baru untuk modul Time Series (Pro)
+
+    ("Menganalisis data deret waktu", "Interval / Rasio", "Eksplorasi & dekomposisi"):
+    {
+        "uji":              "Dekomposisi Time Series (Trend + Seasonality)",
+        "menu_key":         "Time Series",
+        "deskripsi":        "Memisahkan komponen tren, musiman, dan residual dari data deret waktu untuk memahami pola dasar.",
+        "syarat":           "Data berurutan berdasarkan waktu, tidak ada gap besar di antara periode.",
+        "alternatif":       "EDA visual (plot sederhana jika belum yakin ada pola musiman)",
+        "alt_key":          "EDA",
+        "tips":             "Mulai selalu dengan plot time series dan ACF/PACF sebelum memilih model. Dekomposisi STL lebih robust untuk data dengan outlier musiman.",
+        "normal_sensitive": False,
+    },
+    ("Menganalisis data deret waktu", "Interval / Rasio", "Prediksi / Forecasting"):
+    {
+        "uji":              "ARIMA / SARIMA / Exponential Smoothing",
+        "menu_key":         "Time Series",
+        "deskripsi":        "Memprediksi nilai masa depan berdasarkan pola historis deret waktu menggunakan model statistik klasik.",
+        "syarat":           "Data stasioner (atau bisa distasionerkan), minimal 2× siklus musiman untuk SARIMA.",
+        "alternatif":       "Regresi Linier dengan variabel waktu (jika tren linier sederhana, tanpa musiman)",
+        "alt_key":          "Regresi",
+        "tips":             "Cek stasionaritas dengan uji ADF/KPSS dulu. Gunakan Auto-ARIMA untuk pemilihan parameter otomatis jika belum berpengalaman.",
+        "normal_sensitive": False,
+    },
+    ("Menganalisis data deret waktu", "Interval / Rasio", "Uji stasionaritas"):
+    {
+        "uji":              "Augmented Dickey-Fuller (ADF) / KPSS Test",
+        "menu_key":         "Time Series",
+        "deskripsi":        "Menguji apakah deret waktu bersifat stasioner (mean dan varians konstan) — prasyarat wajib sebelum ARIMA.",
+        "syarat":           "Data numerik berurutan waktu tanpa terlalu banyak gap.",
+        "alternatif":       "Phillips-Perron Test (lebih robust terhadap autokorelasi residual)",
+        "alt_key":          "Time Series",
+        "tips":             "Jika tidak stasioner, coba differencing (d=1 atau d=2). Jika masih tidak stasioner, pertimbangkan transformasi log.",
+        "normal_sensitive": False,
+    },
+    ("Menganalisis data deret waktu", "Interval / Rasio", "Hubungan antar deret waktu"):
+    {
+        "uji":              "Cross-Correlation / Granger Causality",
+        "menu_key":         "Time Series",
+        "deskripsi":        "Menguji apakah satu deret waktu mempengaruhi atau mendahului deret waktu lainnya (uji kausalitas Granger).",
+        "syarat":           "Kedua deret stasioner, periode waktu yang sama dan selaras.",
+        "alternatif":       "Korelasi Pearson/Spearman (jika hanya ingin hubungan statis, bukan temporal)",
+        "alt_key":          "Korelasi",
+        "tips":             "Granger causality bukan berarti kausalitas sejati — hanya menguji apakah satu variabel membantu prediksi variabel lain.",
         "normal_sensitive": False,
     },
 }
@@ -462,6 +546,7 @@ DECISION_TREE = {
 # OPSI PERTANYAAN
 # [Fix #6] Tujuan "Menguji perbedaan dengan nilai acuan" dihapus —
 #          sudah tercakup di "Membandingkan kelompok → 1 kelompok vs nilai acuan"
+# [New v2.5.0] Tambah tujuan "Menganalisis data deret waktu"
 # ══════════════════════════════════════════════════════════════════════════════
 
 TUJUAN_OPTIONS = [
@@ -471,6 +556,7 @@ TUJUAN_OPTIONS = [
     "Melihat struktur / pola data",
     "Menguji peran variabel ketiga",
     "Menguji kualitas instrumen",
+    "Menganalisis data deret waktu",
 ]
 
 KONTEKS_OPTIONS = {
@@ -501,8 +587,17 @@ KONTEKS_OPTIONS = {
         "Variabel moderator",
         "Mediator + Moderator",
     ],
+    # [Fix v2.5.0] Diperluas dengan reliabilitas antar rater
     "Menguji kualitas instrumen": [
         "Validitas & reliabilitas",
+        "Reliabilitas antar rater",
+    ],
+    # [New v2.5.0] Time Series
+    "Menganalisis data deret waktu": [
+        "Eksplorasi & dekomposisi",
+        "Prediksi / Forecasting",
+        "Uji stasionaritas",
+        "Hubungan antar deret waktu",
     ],
 }
 
@@ -518,7 +613,10 @@ SKALA_PER_TUJUAN = {
     "Membandingkan kelompok":           ["Interval / Rasio", "Ordinal", "Nominal / Kategorikal"],
     "Melihat struktur / pola data":     ["Interval / Rasio"],
     "Menguji peran variabel ketiga":    ["Interval / Rasio"],
-    "Menguji kualitas instrumen":       ["Ordinal"],
+    # [Fix v2.5.0] Diperluas: tambah Interval/Rasio untuk ICC
+    "Menguji kualitas instrumen":       ["Ordinal", "Interval / Rasio"],
+    # [New v2.5.0] Time Series hanya numerik
+    "Menganalisis data deret waktu":    ["Interval / Rasio"],
 }
 
 SKALA_HELP = {
@@ -545,7 +643,12 @@ KONTEKS_HELP = {
     "Variabel mediator":                "M menjelaskan mengapa X mempengaruhi Y",
     "Variabel moderator":               "W mengubah seberapa kuat pengaruh X terhadap Y",
     "Mediator + Moderator":             "Model kombinasi (moderated mediation)",
-    "Validitas & reliabilitas":         "Uji apakah item kuesioner valid dan konsisten",
+    "Validitas & reliabilitas":         "Uji apakah item kuesioner valid dan konsisten (Cronbach Alpha)",
+    "Reliabilitas antar rater":         "Dua atau lebih rater menilai subjek yang sama — ukur kesepakatan",
+    "Eksplorasi & dekomposisi":         "Lihat pola tren, musiman, dan residual dari data waktu",
+    "Prediksi / Forecasting":           "Ramalkan nilai masa depan berdasarkan data historis",
+    "Uji stasionaritas":                "Cek apakah mean/varians data stabil sepanjang waktu (prasyarat ARIMA)",
+    "Hubungan antar deret waktu":       "Apakah satu variabel waktu mempengaruhi variabel waktu lainnya?",
 }
 
 
@@ -660,6 +763,12 @@ def render(ctx: dict):
             st.markdown("#### Langkah 2 — Apa skala data variabel utama Anda?")
             st.caption(f"Tujuan: **{tujuan}**")
 
+            # Auto-skip jika hanya satu skala tersedia
+            if len(skala_valid) == 1 and not st.session_state.wizard_skala:
+                st.session_state.wizard_skala = skala_valid[0]
+                st.session_state.wizard_step  = 3
+                st.rerun()
+
             skala_cols = st.columns(len(skala_valid))
             for i, skala in enumerate(skala_valid):
                 with skala_cols[i]:
@@ -771,7 +880,7 @@ def render(ctx: dict):
                     st.session_state.wizard_done = True
                     st.rerun()
 
-        # ══════════════════════════════════════════════════════════════════════════
+    # ══════════════════════════════════════════════════════════════════════════
     # HASIL REKOMENDASI
     # ══════════════════════════════════════════════════════════════════════════
     if is_done:
@@ -796,6 +905,15 @@ def render(ctx: dict):
         st.divider()
 
         if hasil:
+            # ── Badge Pro di kartu jika modul Pro ─────────────────────────────
+            is_pro_module = hasil["menu_key"] in PRO_MENU_KEYS
+            pro_badge = (
+                "<span style='background:linear-gradient(90deg,#7c3aed,#4c1d95);"
+                "color:#fff;font-size:0.65rem;font-weight:700;letter-spacing:0.05em;"
+                "padding:2px 9px;border-radius:10px;margin-left:8px;vertical-align:middle;'>"
+                "★ PRO</span>"
+            ) if is_pro_module else ""
+
             # ── Kartu rekomendasi utama ────────────────────────────────────────
             st.markdown(f"""
             <div style='background:linear-gradient(135deg,#0c2340,#185FA5);
@@ -806,7 +924,7 @@ def render(ctx: dict):
                 </div>
                 <div style='font-family:"DM Serif Display",serif; font-size:1.6rem;
                             color:#ffffff; margin-bottom:8px;'>
-                    {hasil["uji"]}
+                    {hasil["uji"]}{pro_badge}
                 </div>
                 <div style='font-size:0.88rem; color:rgba(255,255,255,0.8); line-height:1.65;'>
                     {hasil["deskripsi"]}
@@ -849,7 +967,7 @@ def render(ctx: dict):
             sample_warning = ""
             if sample == "< 30" and any(
                 x in hasil["uji"].lower()
-                for x in ["sem", "cfa", "mediasi", "moderasi", "efa"]
+                for x in ["sem", "cfa", "mediasi", "moderasi", "efa", "arima", "sarima"]
             ):
                 sample_warning = """
                 <div style='background:#fef3c7; border:1px solid #f59e0b; border-radius:8px;
@@ -880,8 +998,12 @@ def render(ctx: dict):
             btn_col1, btn_col2 = st.columns([3, 2])
 
             with btn_col1:
+                main_label = _pro_label(
+                    hasil["menu_key"],
+                    f"🚀  Buka Modul {hasil['uji'].split('(')[0].strip()}"
+                )
                 if st.button(
-                    f"🚀  Buka Modul {hasil['uji'].split('(')[0].strip()}",
+                    main_label,
                     key="wiz_goto_main",
                     use_container_width=True,
                     type="primary",
@@ -891,20 +1013,23 @@ def render(ctx: dict):
                     st.rerun()
 
             with btn_col2:
-                if hasil.get("alt_key") and hasil["alt_key"] != hasil["menu_key"]:
+                alt_key = hasil.get("alt_key")
+                if alt_key and alt_key != hasil["menu_key"]:
+                    alt_label = _pro_label(alt_key, "↗  Buka Alternatif")
                     if st.button(
-                        "↗  Buka Alternatif",
+                        alt_label,
                         key="wiz_goto_alt",
                         use_container_width=True,
                     ):
-                        st.session_state.active_menu = hasil["alt_key"]
+                        st.session_state.active_menu = alt_key
                         _reset_wizard()
                         st.rerun()
 
             # Baris kedua untuk koreksi
             btn_col3, btn_col4 = st.columns(2)
             with btn_col3:
-                if st.button("↶  Ubah jawaban terakhir", key="wiz_undo", use_container_width=True, help="Kembali ke Langkah 4 untuk memperbaiki normalitas/sampel"):
+                if st.button("↶  Ubah jawaban terakhir", key="wiz_undo", use_container_width=True,
+                             help="Kembali ke Langkah 4 untuk memperbaiki normalitas/sampel"):
                     st.session_state.wizard_done = False
                     st.session_state.wizard_step = 4
                     st.session_state._pause_auto = True
@@ -979,13 +1104,18 @@ def _render_quick_reference():
         ("Repeated Measures ANOVA",         "Interval/Rasio",    "Beda berpasangan",  "Normal, sphericity",        "ANOVA"),
         ("Kruskal-Wallis",                  "Ordinal",            "Beda 3+ kelompok",  "Bebas distribusi",          "ANOVA"),
         ("Friedman Test",                   "Ordinal",            "Beda berpasangan",  "Bebas distribusi",          "ANOVA"),
-        ("EFA",                             "Interval/Rasio",    "Struktur faktor",   "KMO > 0.5",                 "EFA"),
-        ("CFA",                             "Interval/Rasio",    "Validasi model",    "Hipotesis sudah ada",       "CFA"),
-        ("Mediasi Bootstrap",               "Interval/Rasio",    "Peran mediator",    "Sampel ≥ 200",              "Mediasi"),
-        ("Moderasi / Interaksi",            "Interval/Rasio",    "Peran moderator",   "Mean-centered",             "Moderasi"),
-        ("Moderated Mediation (SEM)",       "Interval/Rasio",    "Mediator+Moderator","Sampel besar, teori kuat",  "SEM"),
+        ("EFA",                             "Interval/Rasio",    "Struktur faktor",   "KMO > 0.5",                 "EFA ★ Pro"),
+        ("CFA",                             "Interval/Rasio",    "Validasi model",    "Hipotesis sudah ada",       "CFA ★ Pro"),
+        ("Mediasi Bootstrap",               "Interval/Rasio",    "Peran mediator",    "Sampel ≥ 200",              "Mediasi ★ Pro"),
+        ("Moderasi / Interaksi",            "Interval/Rasio",    "Peran moderator",   "Mean-centered",             "Moderasi ★ Pro"),
+        ("Moderated Mediation (SEM)",       "Interval/Rasio",    "Mediator+Moderator","Sampel besar, teori kuat",  "SEM ★ Pro"),
         ("Analisis Klaster",                "Interval/Rasio",    "Segmentasi",        "Standardisasi diperlukan",  "Klaster"),
         ("Validitas CITC + Cronbach Alpha", "Ordinal",            "Kualitas instrumen","Min 10 responden",          "Validitas"),
+        ("Reliabilitas ICC",                "Interval/Rasio",    "Kesepakatan rater", "≥ 2 rater, numerik",        "Reliabilitas ICC ★ Pro"),
+        ("ARIMA / SARIMA",                  "Interval/Rasio",    "Forecasting",       "Data stasioner",            "Time Series ★ Pro"),
+        ("ADF / KPSS Test",                 "Interval/Rasio",    "Stasionaritas",     "Data deret waktu",          "Time Series ★ Pro"),
+        ("Granger Causality",               "Interval/Rasio",    "Kausalitas temporal","Kedua deret stasioner",    "Time Series ★ Pro"),
+        ("Dekomposisi Time Series",         "Interval/Rasio",    "Eksplorasi waktu",  "Data periodik",             "Time Series ★ Pro"),
     ]
 
     df = pd.DataFrame(data, columns=["Uji Statistik", "Skala Data", "Tujuan", "Syarat Utama", "Modul"])
