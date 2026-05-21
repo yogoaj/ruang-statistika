@@ -142,7 +142,6 @@ def collect_session_results() -> dict:
         "reliabilitas_result":("reliabilitas_icc", "Reliabilitas ICC"),
         "asumsi_result":      ("uji_asumsi",       "Uji Asumsi Pra-Analisis"),
         "assumption_result":  ("uji_asumsi",       "Uji Asumsi Pra-Analisis"),
-        "power_result":       ("power_analysis",   "Power Analysis"),
         # Modul baru v4.2
         "cluster_result":     ("klaster",          "Analisis Klaster"),
         "clustering_result":  ("klaster",          "Analisis Klaster"),
