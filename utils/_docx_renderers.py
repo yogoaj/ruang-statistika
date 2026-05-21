@@ -17,6 +17,7 @@ from utils._docx_primitives import (
     _tbl_caption, _fmt_val, _clean_ai_text,
 )
 from utils._docx_narasi import _fallback_narasi
+from utils._export_normalize import _first_valid_df
 import pandas as pd
 import numpy as np
 
