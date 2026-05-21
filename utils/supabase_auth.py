@@ -469,6 +469,33 @@ def supabase_sign_in(email: str, password: str) -> tuple[bool, str]:
             )
 
         if "invalid login credentials" in msg_lower:
+            # Cek apakah email ini adalah user Pro dari Lynk.id yang belum Sign Up
+            _is_pro_lynk = False
+            try:
+                _pl = (
+                    sb.table("pro_licenses")
+                    .select("email")
+                    .eq("email", email)
+                    .maybeSingle()
+                    .execute()
+                )
+                _is_pro_lynk = bool(_pl and _pl.data)
+            except Exception:
+                pass
+
+            if _is_pro_lynk:
+                return False, (
+                    "👋 Kamu belum punya akun Ruang Statistika.\n\n"
+                    "Kamu sudah terdaftar sebagai pengguna **Pro**, "
+                    "tapi belum membuat akun di aplikasi ini.\n\n"
+                    "**Langkah selanjutnya:**\n"
+                    "1. Klik tab **Daftar** di atas\n"
+                    "2. Daftar menggunakan **email yang sama**\n"
+                    "3. Buat password baru sesukamu\n"
+                    "4. Konfirmasi email, lalu **Masuk**\n\n"
+                    "Status Pro kamu akan otomatis aktif setelah login. ✅"
+                )
+
             return False, (
                 "❌ Password salah. "
                 "Gunakan tombol **Lupa password?** jika lupa password kamu."
@@ -635,11 +662,19 @@ def supabase_sign_out() -> None:
             pass
 
     keys_to_clear = [
+        # identitas & session user
         "user_logged_in", "user_name", "username",
         "_user_data", "_supabase_uid", "_supabase_email",
         "_supabase_access_token", "_supabase_refresh_token",
-        "_auth_provider", "_modal_license_key", "sidebar_license_key",
-        "_login_error", "modal_tab",
+        "_auth_provider",
+        # lisensi
+        "_modal_license_key", "sidebar_license_key",
+        # token recovery (reset password)
+        "_recovery_access_token", "_recovery_refresh_token", "_recovery_token",
+        # state UI auth
+        "modal_tab", "_lupa_email_sent",
+        "_auth_msg_error", "_auth_msg_success",
+        "_login_error",
     ]
     for key in keys_to_clear:
         st.session_state.pop(key, None)
