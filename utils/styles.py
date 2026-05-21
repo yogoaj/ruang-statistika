@@ -490,7 +490,7 @@ def inject_nav_locked_css() -> None:
 # ─────────────────────────────────────────────────────────────────────────────
 
 def render_greeting(user_name: str, is_pro: bool) -> None:
-    """Render greeting bar personalisasi di atas hero header."""
+    """Render greeting bar. user_name boleh kosong (mode gratis)."""
     import datetime as _dt
     hour = _dt.datetime.now().hour
     salam = (
@@ -507,10 +507,13 @@ def render_greeting(user_name: str, is_pro: bool) -> None:
         "<span style='background:rgba(255,255,255,.1);color:#85b7eb;"
         "font-size:.6rem;padding:2px 8px;border-radius:8px;margin-left:5px;'>GRATIS</span>"
     )
+    # Fallback: mode gratis tanpa nama
+    display_name = user_name if user_name else "Pengguna"
+    greeting_text = f"{salam}, {display_name}! 👋" if user_name else f"{salam}! 👋"
     st.markdown(
         f"<div class='rs-greeting'>"
         f"<div>"
-        f"<div class='rs-greeting-text'>{salam}, {user_name}! 👋</div>"
+        f"<div class='rs-greeting-text'>{greeting_text}</div>"
         f"<div class='rs-greeting-sub'>Siap membantu analisis statistik Anda hari ini.</div>"
         f"</div>"
         f"<div class='rs-greeting-badge'>{tier_badge}</div>"
@@ -586,23 +589,20 @@ def render_cta_wizard(on_click_key: str = "cta_wizard_btn") -> bool:
             st.session_state.active_menu = "Wizard"
             st.rerun()
     """
-    col1, col2 = st.columns([3, 1])
-    with col1:
-        st.markdown(
-            '<div class="rs-cta-wizard">'
-            '<div><div class="rs-cta-title">🧭 Bingung pilih uji statistik?</div>'
-            '<div class="rs-cta-desc">Jawab 3 pertanyaan singkat — Wizard akan '
-            'merekomendasikan uji yang tepat dan langsung membuka modulnya.</div></div>'
-            '</div>',
-            unsafe_allow_html=True,
-        )
-    with col2:
-        return st.button(
-            "🚀 Mulai Wizard",
-            key=on_click_key,
-            type="primary",
-            use_container_width=True,
-        )
+    st.markdown(
+        '<div class="rs-cta-wizard">'
+        '<div class="rs-cta-title">🧭 Bingung pilih uji statistik?</div>'
+        '<div class="rs-cta-desc">Jawab 3 pertanyaan singkat — Wizard akan '
+        'merekomendasikan uji yang tepat dan langsung membuka modulnya.</div>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
+    return st.button(
+        "🚀 Mulai Wizard",
+        key=on_click_key,
+        type="primary",
+        use_container_width=True,
+    )
 
 
 def render_changelog() -> None:
