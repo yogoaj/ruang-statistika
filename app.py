@@ -24,6 +24,27 @@ warnings.filterwarnings("ignore")
 # Urutan PENTING: handle_google_callback dulu, baru restore_supabase_session
 # Keduanya harus dipanggil SEBELUM apapun di-render, termasuk sidebar
 from utils.supabase_auth import handle_google_callback, restore_supabase_session, supabase_update_password
+
+# ── Tangkap fragment URL (#access_token=...&type=recovery) dari Supabase ─────
+# Supabase mengirim token reset password / OAuth lewat URL fragment (#),
+# tapi st.query_params hanya bisa baca query string (?).
+# Script ini membaca window.location.hash dan redirect ke URL yang sama
+# dengan fragment diubah menjadi query string, sehingga handle_google_callback
+# bisa membacanya via st.query_params.
+if not st.query_params.get("access_token"):
+    components.html("""
+    <script>
+    (function() {
+        var hash = window.location.hash;
+        if (hash && hash.includes('access_token')) {
+            var params = hash.replace(/^#/, '');
+            var newUrl = window.location.pathname + '?' + params;
+            window.location.replace(newUrl);
+        }
+    })();
+    </script>
+    """, height=0)
+
 handle_google_callback()        # tangkap token dari Google OAuth redirect
 restore_supabase_session()      # restore session jika token masih valid
 
