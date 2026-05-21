@@ -75,12 +75,40 @@ def render(ctx: dict):
 
     # Validasi biner
     y_vals = df[dep_var].dropna().unique()
-    if not set(y_vals).issubset({0, 1, 0.0, 1.0}):
-        st.error(
-            f"❌ Variabel **{dep_var}** bukan biner. "
-            f"Nilai unik: {sorted(y_vals)}. Pastikan hanya bernilai 0 dan 1."
+    is_binary = set(int(v) for v in y_vals).issubset({0, 1})
+    if not is_binary:
+        y_min = float(df[dep_var].min())
+        y_max = float(df[dep_var].max())
+        y_med = float(df[dep_var].median())
+        st.warning(
+            f"⚠️ **Variabel `{dep_var}` bukan biner.** "
+            f"Ditemukan {len(y_vals)} nilai unik ({int(y_min)}–{int(y_max)}). "
+            f"Regresi logistik membutuhkan variabel dependen bernilai **0 dan 1** saja."
         )
-        st.stop()
+        st.markdown("**Binarisasi otomatis:** nilai ≥ threshold → 1, nilai < threshold → 0")
+        col_thr, col_apply = st.columns([2, 1])
+        with col_thr:
+            threshold = st.number_input(
+                "Threshold binarisasi", min_value=y_min, max_value=y_max,
+                value=y_med, step=1.0, key="log_binarize_threshold"
+            )
+        with col_apply:
+            apply_bin = st.checkbox("Terapkan binarisasi", key="log_apply_bin")
+        if not apply_bin:
+            st.info(
+                f"💡 **Solusi alternatif:** Gunakan modul **Compute Variabel** "
+                f"untuk membuat kolom biner baru, contoh:\n\n"
+                f"`{dep_var}_biner = ({dep_var} >= {int(y_med)}).astype(int)`"
+            )
+            st.stop()
+        df = df.copy()
+        df[dep_var] = (df[dep_var] >= threshold).astype(int)
+        n1 = int(df[dep_var].sum())
+        n0 = int((df[dep_var] == 0).sum())
+        st.success(
+            f"✅ Binarisasi diterapkan: nilai ≥ {threshold} → 1 ({n1} obs), "
+            f"< {threshold} → 0 ({n0} obs)"
+        )
 
     if st.button("▶ Jalankan Regresi Logistik", type="primary"):
         try:
@@ -227,7 +255,7 @@ def _display_results(res, dep_var, indep_vars, alpha_level,
         template="plotly_white", height=360,
         margin=dict(l=30, r=30, t=30, b=30)
     )
-    st.plotly_chart(fig_cm, use_container_width=True)
+    st.plotly_chart(fig_cm, use_container_width=True, key="log_confusion_matrix")
 
     # ── Export Excel (semua tier) ─────────────────────────────────────────
     buf = io.BytesIO()
@@ -273,7 +301,7 @@ def _display_results(res, dep_var, indep_vars, alpha_level,
         template="plotly_white", height=380,
         margin=dict(l=30, r=30, t=30, b=30)
     )
-    st.plotly_chart(fig_roc, use_container_width=True)
+    st.plotly_chart(fig_roc, use_container_width=True, key="log_roc_curve")
 
     # ── PRO ONLY: Classification Report ──────────────────────────────────
     st.markdown("#### Classification Report (Pro)")
