@@ -674,9 +674,10 @@ if menu == "Beranda":
                 <div style='font-weight:700; font-size:0.82rem; margin-bottom:4px;'>
                     🎫 Sudah membeli Pro?
                 </div>
-                Kamu tidak perlu daftar. Gunakan tab <b>Masuk</b> dan login dengan
-                <b>email</b> serta <b>password</b> yang dikirim ke emailmu
-                setelah pembelian.
+                Coba gunakan tab <b>Masuk</b> terlebih dahulu dengan <b>email</b>
+                dan <b>password</b> yang dikirim ke emailmu setelah pembelian.<br/>
+                Jika belum berhasil, daftar di sini menggunakan <b>email yang sama</b>
+                untuk membuat akun baru.
             </div>
             """, unsafe_allow_html=True)
 
