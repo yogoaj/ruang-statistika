@@ -677,27 +677,59 @@ if menu == "Beranda":
         # ── Tab lupa, pro, gratis: navigasi via session_state ────────────────
 
         elif tab == "lupa":
-            st.markdown(
-                "<p style='font-size:0.82rem;color:#5f8ab5;margin:0 0 12px;'>"
-                "Masukkan email saat daftar, kami kirimkan link reset.</p>",
-                unsafe_allow_html=True)
-            with st.form("form_lupa", clear_on_submit=True):
-                _lupa_email = st.text_input("Email", placeholder="email@domain.com")
-                if st.form_submit_button("Kirim Link Reset →", use_container_width=True,
-                                         type="primary"):
-                    if not _lupa_email.strip():
-                        st.error("Masukkan email kamu.")
-                    else:
-                        from utils.supabase_auth import supabase_forgot_password
-                        _app_url = st.secrets.get("app_url", "http://localhost:8501")
-                        _ok, _msg = supabase_forgot_password(_lupa_email.strip(), _app_url)
-                        st.session_state["_auth_msg_success" if _ok else "_auth_msg_error"] = _msg
-                        st.rerun()
-            st.markdown('<div class="signin-link-btn">', unsafe_allow_html=True)
-            if st.button("← Kembali ke Masuk", key="go_masuk_from_lupa", use_container_width=True):
-                st.session_state.modal_tab = "masuk"
-                st.rerun()
-            st.markdown('</div>', unsafe_allow_html=True)
+            if st.session_state.get("_lupa_email_sent"):
+                # ── State: email reset sudah terkirim ────────────────────────
+                _sent_to = st.session_state.get("_lupa_email_sent", "")
+                st.success(
+                    f"📧 Link reset password telah dikirim ke **{_sent_to}**.
+
+"
+                    "Cek inbox kamu (dan folder **Spam** jika tidak ada). "
+                    "Klik link di email, lalu kamu akan diarahkan ke halaman "
+                    "untuk membuat password baru."
+                )
+                st.info(
+                    "⏱ Link berlaku selama **1 jam**. "
+                    "Jika sudah expired, kamu bisa minta link baru di bawah."
+                )
+                st.markdown('<div class="signin-link-btn">', unsafe_allow_html=True)
+                if st.button("Kirim Ulang Link Reset", key="btn_resend_reset",
+                             use_container_width=True):
+                    st.session_state.pop("_lupa_email_sent", None)
+                    st.rerun()
+                if st.button("← Kembali ke Masuk", key="go_masuk_from_lupa_sent",
+                             use_container_width=True):
+                    st.session_state.pop("_lupa_email_sent", None)
+                    st.session_state.modal_tab = "masuk"
+                    st.rerun()
+                st.markdown('</div>', unsafe_allow_html=True)
+            else:
+                # ── State: form input email ───────────────────────────────────
+                st.markdown(
+                    "<p style='font-size:0.82rem;color:#5f8ab5;margin:0 0 12px;'>"
+                    "Masukkan email saat daftar, kami kirimkan link reset.</p>",
+                    unsafe_allow_html=True)
+                with st.form("form_lupa", clear_on_submit=True):
+                    _lupa_email = st.text_input("Email", placeholder="email@domain.com")
+                    if st.form_submit_button("Kirim Link Reset →", use_container_width=True,
+                                             type="primary"):
+                        if not _lupa_email.strip():
+                            st.error("Masukkan email kamu.")
+                        else:
+                            from utils.supabase_auth import supabase_forgot_password
+                            _app_url = st.secrets.get("app_url", "http://localhost:8501")
+                            _ok, _msg = supabase_forgot_password(_lupa_email.strip(), _app_url)
+                            if _ok:
+                                st.session_state["_lupa_email_sent"] = _lupa_email.strip().lower()
+                            else:
+                                st.session_state["_auth_msg_error"] = _msg
+                            st.rerun()
+                st.markdown('<div class="signin-link-btn">', unsafe_allow_html=True)
+                if st.button("← Kembali ke Masuk", key="go_masuk_from_lupa",
+                             use_container_width=True):
+                    st.session_state.modal_tab = "masuk"
+                    st.rerun()
+                st.markdown('</div>', unsafe_allow_html=True)
 
         elif tab == "reset_password":
             # Tab ini hanya muncul setelah user klik link reset dari email Supabase.
