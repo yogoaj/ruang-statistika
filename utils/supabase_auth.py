@@ -619,11 +619,15 @@ def supabase_forgot_password(email: str, redirect_url: str = "") -> tuple[bool, 
 
     if _in_pro_licenses and _in_supabase_auth is False:
         return False, (
-            "⚠️ Email ini terdaftar sebagai akun Pro dari pembelian Lynk.id, "
-            "bukan sebagai akun Ruang Statistika biasa.\n\n"
-            "Gunakan **password yang ada di email konfirmasi pembelian** dari Lynk.id. "
-            "Jika tidak punya email tersebut, hubungi admin via "
-            "**WhatsApp 087887533149**."
+            "👋 Email ini terdaftar sebagai pengguna **Pro**, "
+            "tapi belum punya akun Ruang Statistika.\n\n"
+            "Reset password tidak bisa dilakukan sebelum akun dibuat.\n\n"
+            "**Langkah selanjutnya:**\n"
+            "1. Klik tab **Daftar** di atas\n"
+            "2. Daftar menggunakan **email yang sama**\n"
+            "3. Buat password baru sesukamu\n"
+            "4. Konfirmasi email, lalu **Masuk**\n\n"
+            "Status Pro kamu akan otomatis aktif setelah login. ✅"
         )
 
     try:
