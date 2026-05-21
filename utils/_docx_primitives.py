@@ -676,10 +676,23 @@ def _add_title_page(doc: Document, p: StyleProfile,
 # REFERENCES
 # =============================================================================
 
+def _add_ref_run(para, text: str, italic: bool, font_name: str, font_size):
+    """Tambahkan run ke paragraf referensi dengan format italic jika perlu."""
+    run = para.add_run(text)
+    run.font.name  = font_name
+    run.font.size  = font_size
+    run.font.italic = italic
+
+
 def _add_references_section(doc: Document, p: StyleProfile, apa_refs):
+    import re
     _add_heading(doc, p, p.ref_label, level=1)
-    refs = apa_refs if isinstance(apa_refs, list) else \
-           [l for l in str(apa_refs).split("\n") if l.strip()]
+
+    # Pisahkan menjadi baris, buang header ## dan baris kosong
+    raw_lines = apa_refs if isinstance(apa_refs, list) else str(apa_refs).split("\n")
+    refs = [l.strip() for l in raw_lines
+            if l.strip() and not l.strip().startswith("## ")]
+
     for idx, ref in enumerate(refs, 1):
         para = doc.add_paragraph()
         para.alignment = WD_ALIGN_PARAGRAPH.LEFT
@@ -687,16 +700,24 @@ def _add_references_section(doc: Document, p: StyleProfile, apa_refs):
         fmt.line_spacing      = p.line_spacing
         fmt.line_spacing_rule = WD_LINE_SPACING.MULTIPLE
         fmt.space_before      = Pt(0)
-        fmt.space_after       = Pt(0)
+        fmt.space_after       = Pt(4)
         if p.ref_hanging_indent:
             fmt.first_line_indent = -Cm(1.27)
             fmt.left_indent       = Cm(1.27)
-            run_text = str(ref).strip()
+            run_text = ref
         else:
             fmt.first_line_indent = Pt(0)
-            run_text = f"{idx}. {str(ref).strip()}"
-        run = para.add_run(run_text)
-        run.font.name = p.font; run.font.size = p.font_size
+            run_text = f"{idx}. {ref}"
+
+        # Parse *italic* spans dan tambahkan sebagai run terpisah
+        parts = re.split(r"(\*[^*]+\*)", run_text)
+        for part in parts:
+            if part.startswith("*") and part.endswith("*") and len(part) > 2:
+                _add_ref_run(para, part[1:-1], italic=True,
+                             font_name=p.font, font_size=p.font_size)
+            elif part:
+                _add_ref_run(para, part, italic=False,
+                             font_name=p.font, font_size=p.font_size)
 
 
 # =============================================================================
