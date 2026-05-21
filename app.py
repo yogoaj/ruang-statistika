@@ -358,6 +358,10 @@ with st.sidebar:
     # Hapus emoji + strip untuk selector yang aman
     _active_text_clean = active_label.strip()
 
+    # Hitung indeks 0-based posisi menu aktif dalam flat list (untuk CSS nth-child)
+    _flat_keys = [key for key, _label, _is_pro in _iter_menu_items()]
+    active_idx = _flat_keys.index(menu) if menu in _flat_keys else 0
+
     inject_nav_highlight_css(active_idx)
 
     # ── Parameter ─────────────────────────────────────────────────────────────
