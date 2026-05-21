@@ -40,6 +40,7 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_LINE_SPACING
 from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
+from utils._docx_narasi import _fallback_narasi
 
 
 def _first_valid_df(*candidates):

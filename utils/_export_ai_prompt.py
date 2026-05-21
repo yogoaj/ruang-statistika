@@ -122,6 +122,13 @@ def _build_module_ai_prompt(mod_key: str, mod_data: dict, mod_label: str) -> str
             "Format: 3 paragraf akademis."
         )
 
+    # Definisikan system_prompt default (digunakan untuk semua modul, termasuk CFA)
+    # PERBAIKAN: dipindah ke atas agar tersedia untuk blok time_series dan CFA
+    system_prompt = MODULE_SYSTEM_PROMPTS.get(
+        mod_key,
+        f"Buat interpretasi {mod_label} dalam Bahasa Indonesia. Format akademis 3 paragraf."
+    )
+
     # ── Time Series Analysis ─────────────────────────────────────────────────
     if mod_key == "time_series":
         col_name    = mod_data.get("col_name", "deret waktu")
@@ -158,12 +165,6 @@ def _build_module_ai_prompt(mod_key: str, mod_data: dict, mod_label: str) -> str
             + """4. Rekomendasi penggunaan hasil untuk pengambilan keputusan\n"""
             + """Referensi: Box & Jenkins (1976), Hyndman & Athanasopoulos (2021)."""
         )
-
-    # Definisikan system_prompt default (digunakan untuk semua modul, termasuk CFA)
-    system_prompt = MODULE_SYSTEM_PROMPTS.get(
-        mod_key,
-        f"Buat interpretasi {mod_label} dalam Bahasa Indonesia. Format akademis 3 paragraf."
-    )
 
     # ── CFA (Confirmatory Factor Analysis) ──────────────────────────────────
     # Blok ini DIPINDAHKAN ke sini (setelah system_prompt didefinisikan)

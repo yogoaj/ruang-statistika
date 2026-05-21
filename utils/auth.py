@@ -12,7 +12,7 @@ Perubahan v4.4:
 
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Optional
 
@@ -229,7 +229,6 @@ def render_license_sidebar() -> dict:
 
     if _session_is_pro:
         # Cek masa berlaku dari session jika ada
-        from datetime import datetime, timezone
         expires_str = _session_user.get("expires_at")
         _expired = False
         exp_txt = ""
@@ -323,8 +322,6 @@ def require_tier(min_tier: str, feature_name: str = "Fitur ini") -> bool:
         if not require_tier("premium", "SEM & CFA"):
             st.stop()
     """
-    from datetime import datetime, timezone
-
     user_data  = st.session_state.get("_user_data", {})
     user_role  = user_data.get("role", "free")
     user_tier  = user_data.get("tier", "starter") if user_role == "pro" else "free"
@@ -393,7 +390,6 @@ def require_pro(license_info: dict, feature_name: str = "Fitur ini") -> bool:
     # Cek dari session state dulu (semua tier pro lolos di sini)
     user_data = st.session_state.get("_user_data", {})
     if user_data.get("role") == "pro":
-        from datetime import datetime, timezone
         expires_at = user_data.get("expires_at")
         if expires_at:
             try:

@@ -67,6 +67,11 @@ def save_supabase_session(user_obj, session_obj=None) -> None:
     """
     Simpan data user Supabase ke st.session_state setelah login berhasil.
     Kompatibel dengan format ctx["user_name"] yang sudah ada di app.py.
+
+    PERBAIKAN: Setelah login Supabase Auth berhasil, cek tabel pro_licenses
+    untuk mendapatkan role, tier, dan expires_at yang benar.
+    Sebelumnya role selalu di-hardcode 'free' sehingga user Pro yang login
+    via Supabase Auth (Google OAuth / email konfirmasi) tidak dikenali sebagai Pro.
     """
     meta      = getattr(user_obj, "user_metadata", {}) or {}
     full_name = (
@@ -76,6 +81,43 @@ def save_supabase_session(user_obj, session_obj=None) -> None:
     )
     email   = getattr(user_obj, "email", "")
     user_id = str(getattr(user_obj, "id", ""))
+
+    # Default: free
+    role        = "free"
+    tier        = "starter"
+    license_key = ""
+    expires_at  = None
+
+    # Cek pro_licenses untuk status Pro
+    try:
+        sb = get_supabase()
+        if sb:
+            from datetime import datetime, timezone
+            resp = (
+                sb.table("pro_licenses")
+                .select("license_key, expires_at, is_active, tier")
+                .eq("email", email.strip().lower())
+                .maybeSingle()
+                .execute()
+            )
+            row = resp.data if resp else None
+            if row and row.get("is_active", True):
+                expires_str = row.get("expires_at")
+                _expired = False
+                if expires_str:
+                    try:
+                        exp_dt = datetime.fromisoformat(expires_str.replace("Z", "+00:00"))
+                        if datetime.now(timezone.utc) > exp_dt:
+                            _expired = True
+                    except Exception:
+                        pass
+                if not _expired:
+                    role        = "pro"
+                    tier        = row.get("tier") or "starter"
+                    license_key = row.get("license_key", "")
+                    expires_at  = expires_str
+    except Exception:
+        pass  # Gagal cek pro_licenses → tetap free, tidak crash
 
     st.session_state["user_logged_in"]   = True
     st.session_state["user_name"]        = full_name
@@ -87,10 +129,14 @@ def save_supabase_session(user_obj, session_obj=None) -> None:
         "username":    email,
         "name":        full_name,
         "email":       email,
-        "role":        "free",
-        "license_key": "",
+        "role":        role,
+        "tier":        tier,
+        "license_key": license_key,
+        "expires_at":  expires_at,
         "active":      True,
     }
+    if license_key:
+        st.session_state["_modal_license_key"] = license_key
 
     if session_obj:
         st.session_state["_supabase_access_token"]  = session_obj.access_token

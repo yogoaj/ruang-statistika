@@ -13,6 +13,10 @@ Diimport oleh: utils/docx_helpers.py
 JANGAN diimport langsung dari modul lain — gunakan docx_helpers.py.
 """
 
+import pandas as pd
+from utils._docx_primitives import _first_valid_df
+
+
 def _fallback_narasi(mod_key: str, data: dict) -> str:
     """
     Buat narasi interpretasi otomatis berstandar paper ilmiah dari data statistik,
