@@ -335,14 +335,6 @@ with st.sidebar:
             is_locked   = needs_pro and not is_pro
             display_lbl = label + (LOCK if is_locked else "")
 
-            # Render button dengan st.button; aktif diindikasikan via label styling
-            st.markdown(
-                f"""<style>
-                div[data-testid="stButton"] > button[kind="secondary"]
-                    {{ /* reset */ }}
-                </style>""",
-                unsafe_allow_html=True,
-            )
 
             # Guard Python: klik diabaikan saat nav terkunci
             _clicked = st.button(
@@ -366,56 +358,24 @@ with st.sidebar:
     # Hapus emoji + strip untuk selector yang aman
     _active_text_clean = active_label.strip()
 
-    # Inject override CSS untuk semua nav button + highlight aktif
-    nav_css_parts = []
-    for group in MENU_GROUPS:
-        for item in group["items"]:
-            if not (isinstance(item, (tuple, list)) and len(item) == 3):
-                continue
-            key, label, needs_pro = item
-            is_active = (key == menu)
-            is_locked = needs_pro and not is_pro
-            disp      = label + (LOCK if is_locked else "")
-            if is_active:
-                # Escaping minimal untuk CSS attribute selector
-                safe = disp.replace('"', '\\"')
-                nav_css_parts.append(
-                    f"""[data-testid="stSidebar"] button[kind="secondary"]:has(p:-webkit-any(p)):not(:disabled)"""
-                )
-
-    # Inject via simpler approach: target berdasarkan urutan button di sidebar
-    # Hitung posisi button dalam flat list
-    flat_items = [
-        (key, label + (LOCK if (needs_pro and not is_pro) else ""))
-        for group in MENU_GROUPS
-        for item in group["items"]
-        if isinstance(item, (tuple, list)) and len(item) == 3
-        for key, label, needs_pro in [item]
-    ]
-    active_idx = next(
-        (i for i, (k, _) in enumerate(flat_items) if k == menu), 0
-    )
-
     inject_nav_highlight_css(active_idx)
 
     # ── Parameter ─────────────────────────────────────────────────────────────
     st.markdown("---")
     st.markdown(
-        "<p style='font-size:0.7rem;letter-spacing:0.08em;text-transform:uppercase;"
-        "color:#5f8ab5;'>Parameter</p>",
+        "<p class='nav-group-label'>⚙️ Parameter</p>",
         unsafe_allow_html=True,
     )
     alpha_level = st.slider("Signifikansi (α)", 0.01, 0.10, 0.05, 0.01)
     r_tab       = st.number_input("r-tabel Validitas", 0.10, 0.50, 0.30, 0.01)
 
     st.markdown("---")
-    st.markdown("""
-    <div style='font-size:0.72rem; color:#3a6080; text-align:center; line-height:1.6;'>
-        <a href='https://yogoaj.github.io/#aplikasi' target='_blank' style='color:#378add;'>
-            Ruang Statistika</a><br/>
-        © 2026 Ruang Statistika v4.8
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown(
+        "<div class='rs-footer' style='margin-top:1rem;padding-top:.75rem;font-size:.68rem;'>"
+        "<a href='https://yogoaj.github.io/#aplikasi' target='_blank'>Ruang Statistika</a>"
+        "<br/>© 2026 v4.8</div>",
+        unsafe_allow_html=True,
+    )
 
 
 # ── Context dict — diteruskan ke setiap modul ────────────────────────────────
@@ -501,7 +461,7 @@ if menu == "Beranda":
         <div class="signin-card">
           <div class="signin-card-header">
             <div class="signin-header-logo">
-              <img src="https://i.imgur.com/tESt5qg.png" alt="logo Ruang Statistika">
+              <img src="https://i.imgur.com/RF4mzxf.png" alt="logo Ruang Statistika">
             </div>
             <div class="signin-header-title">Ruang Statistika</div>
             <div class="signin-header-sub">AI-Powered Research &amp; Stats Reporting</div>
@@ -786,8 +746,7 @@ if menu == "Beranda":
 
     # ── Beranda ────────────────────────────────────────────────────────────────
     _user = st.session_state.get("user_name", "")
-    if _user:
-        render_greeting(_user, is_pro)
+    render_greeting(_user, is_pro)
 
     render_hero_header()
     render_metrics_row()
