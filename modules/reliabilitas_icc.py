@@ -683,13 +683,13 @@ correlation coefficients for reliability research. Journal of Chiropractic Medic
         st.markdown("#### Visualisasi Reliabilitas ICC")
 
         # Forest plot
-        st.plotly_chart(plot_icc_forest(icc_df), use_container_width=True)
+        st.plotly_chart(plot_icc_forest(icc_df), use_container_width=True, key="icc_forest")
 
         vis_col1, vis_col2 = st.columns(2)
 
         with vis_col1:
             # Heatmap data
-            st.plotly_chart(plot_icc_heatmap(df_icc), use_container_width=True)
+            st.plotly_chart(plot_icc_heatmap(df_icc), use_container_width=True, key="icc_heatmap")
 
         with vis_col2:
             # Bland-Altman (pasangan pertama)
@@ -697,7 +697,7 @@ correlation coefficients for reliability research. Journal of Chiropractic Medic
                 ba_result = plot_bland_altman(df_icc, 0, 1)
                 if ba_result:
                     fig_ba, *_ = ba_result
-                    st.plotly_chart(fig_ba, use_container_width=True)
+                    st.plotly_chart(fig_ba, use_container_width=True, key="ba_main")
 
                     # Jika lebih dari 2 rater, tampilkan pilihan pasangan
                     if n_rater > 2:
@@ -713,13 +713,13 @@ correlation coefficients for reliability research. Journal of Chiropractic Medic
                         ci_i, ci_j = pairs[ci_idx]
                         ba2 = plot_bland_altman(df_icc, ci_i, ci_j)
                         if ba2:
-                            st.plotly_chart(ba2[0], use_container_width=True)
+                            st.plotly_chart(ba2[0], use_container_width=True, key="ba2_0")
 
         # Scatter matrix
         if n_rater >= 2:
             fig_scatter = plot_rater_agreement(df_icc)
             if fig_scatter:
-                st.plotly_chart(fig_scatter, use_container_width=True)
+                st.plotly_chart(fig_scatter, use_container_width=True, key="icc_scatter")
 
     # ── Tab 3: ANOVA Tabel ────────────────────────────────────────────────────
     with tab3:
