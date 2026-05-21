@@ -538,6 +538,21 @@ if menu == "Beranda":
                 st.rerun()
             st.markdown('</div>', unsafe_allow_html=True)
 
+            # ── Info: sudah beli Pro, tidak perlu daftar ulang ──────────────
+            st.markdown("""
+            <div style='background:linear-gradient(135deg,#f5f0ff,#ede9fe);
+                        border:1px solid #c4b5fd; border-radius:10px;
+                        padding:10px 14px; margin:14px 0 4px;
+                        font-size:0.80rem; color:#4c1d95; line-height:1.7;'>
+                <div style='font-weight:700; font-size:0.82rem; margin-bottom:4px;'>
+                    🎫 Sudah membeli Pro?
+                </div>
+                Tidak perlu daftar ulang. Kamu bisa langsung aktifkan Pro dengan
+                <b>License Key</b> yang dikirim ke email pembelian.
+                Klik <b>Aktivasi Pro →</b> di bawah.
+            </div>
+            """, unsafe_allow_html=True)
+
             # ── Tombol Google OAuth — SEMENTARA DINONAKTIFKAN (error callback) ──
             # st.markdown('<div class="signin-divider">atau masuk dengan</div>', unsafe_allow_html=True)
             # if st.button("🔵  Lanjutkan dengan Google", key="btn_google_login",
@@ -626,6 +641,20 @@ if menu == "Beranda":
                 st.query_params.clear()
                 st.rerun()
 
+            # ── Info: sudah beli Pro, tidak perlu daftar ────────────────────
+            st.markdown("""
+            <div style='background:linear-gradient(135deg,#f5f0ff,#ede9fe);
+                        border:1px solid #c4b5fd; border-radius:10px;
+                        padding:10px 14px; margin:12px 0 4px;
+                        font-size:0.80rem; color:#4c1d95; line-height:1.7;'>
+                <div style='font-weight:700; font-size:0.82rem; margin-bottom:4px;'>
+                    🎫 Sudah membeli Pro?
+                </div>
+                Kamu tidak perlu daftar akun baru. Langsung klik
+                <b>Aktivasi Pro →</b> dan masukkan License Key dari email pembelian.
+            </div>
+            """, unsafe_allow_html=True)
+
             st.markdown('<div class="signin-footer">Sudah punya akun?</div>', unsafe_allow_html=True)
             _dc1, _dc2 = st.columns([1, 1])
             with _dc1:
@@ -667,6 +696,19 @@ if menu == "Beranda":
             st.markdown('</div>', unsafe_allow_html=True)
 
         elif tab == "pro":
+            # ── Info: tidak perlu daftar akun ───────────────────────────────
+            st.markdown("""
+            <div style='background:linear-gradient(135deg,#f0fdf4,#dcfce7);
+                        border:1px solid #86efac; border-radius:10px;
+                        padding:10px 14px; margin-bottom:14px;
+                        font-size:0.80rem; color:#14532d; line-height:1.7;'>
+                <div style='font-weight:700; font-size:0.82rem; margin-bottom:4px;'>
+                    ✅ Tidak perlu daftar atau masuk akun
+                </div>
+                Cukup masukkan <b>License Key</b> yang kamu terima di email setelah
+                pembelian. Akses Pro langsung aktif tanpa proses registrasi.
+            </div>
+            """, unsafe_allow_html=True)
             with st.form("form_pro", clear_on_submit=False):
                 _key_inp  = st.text_input("License Key", placeholder="XXXX-XXXX-XXXX",
                                           type="password")
