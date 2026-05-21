@@ -592,7 +592,7 @@ def render_cta_wizard(on_click_key: str = "cta_wizard_btn") -> bool:
     st.markdown(
         '<div class="rs-cta-wizard">'
         '<div class="rs-cta-title">🧭 Bingung pilih uji statistik?</div>'
-        '<div class="rs-cta-desc">Jawab 3 pertanyaan singkat — Wizard akan '
+        '<div class="rs-cta-desc">Jawab 3 sampai 4 pertanyaan singkat dan Wizard akan '
         'merekomendasikan uji yang tepat dan langsung membuka modulnya.</div>'
         '</div>',
         unsafe_allow_html=True,
