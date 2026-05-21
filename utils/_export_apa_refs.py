@@ -279,12 +279,16 @@ def generate_apa_references(
         if selected:
             ref_keys.update(MODULE_REFERENCES.get(mod_key, []))
 
-    # Ambil teks referensi dan urutkan alfabetis
-    ref_texts = []
-    for key in sorted(ref_keys):
-        text = APA_REFERENCES.get(key)
-        if text:
-            ref_texts.append(text)
+    # Ambil teks referensi dan urutkan berdasarkan nama belakang penulis pertama (APA)
+    import re as _re
+
+    def _apa_sort_key(ref_text: str) -> str:
+        clean = _re.sub(r"\*", "", ref_text).strip()
+        first_token = _re.split(r"[,.]", clean)[0].strip().lower()
+        return first_token
+
+    ref_pairs = [APA_REFERENCES[k] for k in ref_keys if k in APA_REFERENCES]
+    ref_texts = sorted(ref_pairs, key=_apa_sort_key)
 
     if not ref_texts:
         return ""
@@ -300,23 +304,43 @@ def generate_apa_references(
     lines = [f"## {header}\n"]
     for i, ref in enumerate(ref_texts, 1):
         if "Vancouver" in report_style:
-            # Vancouver: numbered
             lines.append(f"{i}. {ref}\n")
         else:
-            # APA / Skripsi Indonesia: hanging indent simulation
             lines.append(f"{ref}\n")
 
     return "\n".join(lines)
 
 
+def _strip_markdown_italics(text: str) -> str:
+    """Hapus tanda asterisks Markdown: '*Psychometrika*' -> 'Psychometrika'."""
+    import re
+    return re.sub(r"\*([^*]+)\*", r"\1", text)
+
+
 def render_apa_preview(apa_text: str):
-    """Tampilkan preview referensi di Streamlit."""
+    """Tampilkan preview referensi di Streamlit dengan hanging indent dan italics."""
     if not apa_text:
         return
     st.markdown("---")
     st.markdown("#### 📚 Preview Daftar Referensi (APA 7th)")
     with st.expander("Lihat daftar referensi yang akan disertakan dalam laporan"):
-        st.markdown(apa_text)
+        lines = apa_text.split("\n")
+        for line in lines:
+            stripped = line.strip()
+            if not stripped:
+                continue
+            if stripped.startswith("## "):
+                st.markdown(stripped)
+            elif stripped[0].isdigit() and ". " in stripped[:4]:
+                # Vancouver numbered
+                st.markdown(stripped)
+            else:
+                # APA entry — hanging indent via HTML, asterisks render as italic
+                st.markdown(
+                    f'<p style="padding-left:2em; text-indent:-2em; '
+                    f'margin-bottom:0.4em; font-size:0.93rem;">{stripped}</p>',
+                    unsafe_allow_html=True,
+                )
 
 
 # ─────────────────────────────────────────────────────────────────────────────
