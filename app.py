@@ -23,7 +23,7 @@ warnings.filterwarnings("ignore")
 # ── Supabase: tangkap Google callback + restore session ──────────────────────
 # Urutan PENTING: handle_google_callback dulu, baru restore_supabase_session
 # Keduanya harus dipanggil SEBELUM apapun di-render, termasuk sidebar
-from utils.supabase_auth import handle_google_callback, restore_supabase_session
+from utils.supabase_auth import handle_google_callback, restore_supabase_session, supabase_update_password
 handle_google_callback()        # tangkap token dari Google OAuth redirect
 restore_supabase_session()      # restore session jika token masih valid
 
@@ -474,26 +474,29 @@ if menu == "Beranda":
         </div>
         """, unsafe_allow_html=True)
 
-        # ── JS: baca URL fragment dari Google OAuth callback ─────────────────
-        # SEMENTARA DINONAKTIFKAN — tombol Google OAuth sedang diperbaiki
-        # components.html("""
-        # <script>
-        # (function() {
-        #     var hash = window.location.hash.substring(1);
-        #     if (!hash || hash.indexOf('access_token') === -1) return;
-        #     var params = new URLSearchParams(hash);
-        #     var at = params.get('access_token');
-        #     var rt = params.get('refresh_token') || '';
-        #     if (!at) return;
-        #     // Konversi fragment ke query params dan reload
-        #     var url = new URL(window.parent.location.href);
-        #     url.hash = '';
-        #     url.searchParams.set('access_token', at);
-        #     if (rt) url.searchParams.set('refresh_token', rt);
-        #     window.parent.location.replace(url.toString());
-        # })();
-        # </script>
-        # """, height=0)
+        # ── JS: baca URL fragment dari Supabase callback ────────────────────
+        # Diperlukan untuk: Google OAuth callback DAN link reset password.
+        # Supabase mengirim token via URL fragment (#access_token=...&type=recovery)
+        # yang tidak dikirim ke server — dibaca JS lalu dikonversi ke query_params.
+        components.html("""
+        <script>
+        (function() {
+            var hash = window.location.hash.substring(1);
+            if (!hash || hash.indexOf('access_token') === -1) return;
+            var params = new URLSearchParams(hash);
+            var at = params.get('access_token');
+            var rt = params.get('refresh_token') || '';
+            var tp = params.get('type') || '';
+            if (!at) return;
+            var url = new URL(window.parent.location.href);
+            url.hash = '';
+            url.searchParams.set('access_token', at);
+            if (rt) url.searchParams.set('refresh_token', rt);
+            if (tp) url.searchParams.set('type', tp);
+            window.parent.location.replace(url.toString());
+        })();
+        </script>
+        """, height=0)
 
         # ── Tab strip — st.button (tetap di halaman sama) ─────────────────
         st.markdown('<div class="signin-tab-row">', unsafe_allow_html=True)
@@ -695,6 +698,45 @@ if menu == "Beranda":
                 st.session_state.modal_tab = "masuk"
                 st.rerun()
             st.markdown('</div>', unsafe_allow_html=True)
+
+        elif tab == "reset_password":
+            # Tab ini hanya muncul setelah user klik link reset dari email Supabase.
+            # handle_google_callback() mendeteksi type=recovery lalu set modal_tab = 'reset_password'.
+            st.markdown(
+                "<p style='font-size:0.82rem;color:#5f8ab5;margin:0 0 12px;'>"
+                "Masukkan password baru kamu di bawah ini.</p>",
+                unsafe_allow_html=True)
+            if not st.session_state.get("_recovery_access_token"):
+                st.warning("⚠️ Sesi reset sudah tidak berlaku. Minta link reset baru.")
+                st.markdown('<div class="signin-link-btn">', unsafe_allow_html=True)
+                if st.button("← Minta Link Reset Baru", key="go_lupa_from_reset",
+                             use_container_width=True):
+                    st.session_state.modal_tab = "lupa"
+                    st.rerun()
+                st.markdown('</div>', unsafe_allow_html=True)
+            else:
+                with st.form("form_reset_password", clear_on_submit=True):
+                    _new_pw  = st.text_input("Password Baru", placeholder="Minimal 6 karakter…",
+                                             type="password")
+                    _new_pw2 = st.text_input("Konfirmasi Password Baru",
+                                             placeholder="Ulangi password baru…",
+                                             type="password")
+                    if st.form_submit_button("Simpan Password Baru →",
+                                             use_container_width=True, type="primary"):
+                        if not _new_pw:
+                            st.error("Password tidak boleh kosong.")
+                        elif _new_pw != _new_pw2:
+                            st.error("❌ Password dan konfirmasi tidak cocok.")
+                        elif len(_new_pw) < 6:
+                            st.error("❌ Password minimal 6 karakter.")
+                        else:
+                            _ok, _msg = supabase_update_password(_new_pw)
+                            if _ok:
+                                st.session_state["_auth_msg_success"] = _msg
+                                st.session_state.modal_tab = "masuk"
+                                st.rerun()
+                            else:
+                                st.error(_msg)
 
         elif tab == "pro":
             with st.form("form_pro", clear_on_submit=False):
