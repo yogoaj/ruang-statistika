@@ -1445,3 +1445,35 @@ def _fallback_narasi(mod_key: str, data: dict) -> str:
         "(Field, 2018; Cohen, 1988)."
     )
 
+    if mod_key == "time_series":
+        col_name    = data.get("col_name", "deret waktu")
+        model_label = data.get("model_label", "ARIMA")
+        mape        = data.get("mape", "—")
+        adf_ok      = data.get("adf_stationary")
+        kpss_ok     = data.get("kpss_stationary")
+        n_forecast  = data.get("n_forecast", 0)
+        decompose_t = data.get("decompose_type", "—")
+        if adf_ok and kpss_ok:
+            stat_ket = "berdistribusi stasioner berdasarkan kedua uji (ADF dan KPSS)"
+        elif not adf_ok and not kpss_ok:
+            stat_ket = "tidak stasioner, sehingga dilakukan differencing"
+        else:
+            stat_ket = "menunjukkan hasil berbeda antara uji ADF dan KPSS"
+        mape_ket = ""
+        if mape != "—":
+            try:
+                mf = float(mape)
+                if mf < 10:   mape_ket = f"MAPE {mape}% menunjukkan akurasi sangat baik."
+                elif mf < 20: mape_ket = f"MAPE {mape}% menunjukkan akurasi baik."
+                else:         mape_ket = f"MAPE {mape}% menunjukkan akurasi lemah — pertimbangkan penyesuaian order."
+            except Exception:
+                mape_ket = f"MAPE = {mape}%."
+        return (
+            f"Analisis deret waktu pada variabel {col_name} menunjukkan bahwa data {stat_ket}. "
+            f"Dekomposisi musiman model {decompose_t} digunakan untuk memisahkan komponen "
+            f"tren, musiman, dan residu. Model {model_label} dipilih berdasarkan AIC/BIC terkecil. "
+            f"{mape_ket} Forecast {n_forecast} periode ke depan disajikan beserta "
+            f"confidence interval 95% sebagai dasar pengambilan keputusan "
+            f"(Box & Jenkins, 1976; Hyndman & Athanasopoulos, 2021)."
+        )
+

@@ -988,6 +988,93 @@ def _render_scraping(doc, pr, data, figs_png, fig_no, bab, ai_texts):
                    mod_key="scraping", data=data)
     return fig_no
 
+def _render_time_series(doc, pr, data, figs_png, fig_no, bab, ai_texts):
+    """Render hasil Time Series Analysis ke Word document."""
+    col_name    = data.get("col_name", "Deret Waktu")
+    n_obs       = data.get("n_obs", "—")
+    model_label = data.get("model_label", data.get("order", "ARIMA"))
+    metrics     = data.get("metrics", {})
+    rmse        = data.get("rmse", metrics.get("RMSE", "—"))
+    mae         = data.get("mae",  metrics.get("MAE",  "—"))
+    mape        = data.get("mape", metrics.get("MAPE", "—"))
+    aic         = data.get("aic", "—")
+    bic         = data.get("bic", "—")
+
+    # Stasioneritas
+    stat_data   = data.get("stasioner", {})
+    adf_p       = stat_data.get("adf_p", "—")
+    kpss_p      = stat_data.get("kpss_p", "—")
+    adf_stat_ok = stat_data.get("adf_stationary")
+    kpss_stat_ok= stat_data.get("kpss_stationary")
+    conclusion  = stat_data.get("conclusion", "—")
+
+    # Forecast preview
+    fc_preview  = data.get("forecast_preview", [])
+    n_forecast  = data.get("n_forecast", 0)
+    decompose_t = data.get("decompose_type", "—")
+
+    # AI narasi
+    ai_text = (ai_texts or {}).get("time_series", "") or data.get("ai_text", "")
+
+    # ── Heading ──────────────────────────────────────────────────────────────
+    _add_heading(doc, pr, f"{bab}. Time Series Analysis — {col_name}", level=1)
+    _add_para(doc, pr, f"Analisis deret waktu dilakukan pada variabel {col_name} "
+              f"(N = {n_obs} observasi) menggunakan metode ARIMA/SARIMA "
+              f"dari Box & Jenkins (1976).", style="body")
+
+    # ── Stasioneritas ─────────────────────────────────────────────────────────
+    _add_heading(doc, pr, f"{bab}.1 Uji Stasioneritas", level=2)
+    stat_rows = [
+        ["Uji", "Statistik", "p-value", "Kesimpulan"],
+        ["ADF", str(stat_data.get("adf_stat", "—")), str(adf_p),
+         "Stasioner ✓" if adf_stat_ok else "Tidak Stasioner"],
+        ["KPSS", str(stat_data.get("kpss_stat", "—")), str(kpss_p),
+         "Stasioner ✓" if kpss_stat_ok else "Tidak Stasioner"],
+    ]
+    tbl = doc.add_table(rows=len(stat_rows), cols=4)
+    _style_table(tbl, pr)
+    for r, row in enumerate(stat_rows):
+        for c, cell in enumerate(row):
+            tbl.rows[r].cells[c].text = str(cell)
+    doc.add_paragraph()
+    _add_para(doc, pr, f"Kesimpulan: {conclusion}", style="body")
+
+    # ── Model ─────────────────────────────────────────────────────────────────
+    _add_heading(doc, pr, f"{bab}.2 Model {model_label}", level=2)
+    model_rows = [
+        ["Metrik", "Nilai"],
+        ["Model",   str(model_label)],
+        ["AIC",     str(aic)],
+        ["BIC",     str(bic)],
+        ["RMSE",    str(rmse)],
+        ["MAE",     str(mae)],
+        ["MAPE",    f"{mape}%" if mape != "—" else "—"],
+        ["Dekomposisi", str(decompose_t)],
+    ]
+    tbl2 = doc.add_table(rows=len(model_rows), cols=2)
+    _style_table(tbl2, pr)
+    for r, row in enumerate(model_rows):
+        for c, cell in enumerate(row):
+            tbl2.rows[r].cells[c].text = str(cell)
+    doc.add_paragraph()
+
+    # ── Forecast Preview ──────────────────────────────────────────────────────
+    if fc_preview:
+        _add_heading(doc, pr, f"{bab}.3 Preview Forecast ({n_forecast} Periode)", level=2)
+        fc_rows = [["Periode ke-", "Forecast"]] + [
+            [str(i+1), str(round(v, 4))] for i, v in enumerate(fc_preview)
+        ]
+        tbl3 = doc.add_table(rows=len(fc_rows), cols=2)
+        _style_table(tbl3, pr)
+        for r, row in enumerate(fc_rows):
+            for c, cell in enumerate(row):
+                tbl3.rows[r].cells[c].text = str(cell)
+        doc.add_paragraph()
+
+    # ── AI / Fallback narasi ──────────────────────────────────────────────────
+    _add_ai_narasi(doc, pr, ai_text, "time_series", data)
+
+    return fig_no
 
 _MODULE_RENDERERS = {
     "regresi": _render_regresi,
@@ -1013,6 +1100,7 @@ _MODULE_RENDERERS = {
     "eda":                   _render_eda,
     "cfa":                   _render_cfa,
     "scraping":              _render_scraping,
+    "time_series":           _render_time_series,
     "power_analysis":       _render_power_analysis,
 }
 

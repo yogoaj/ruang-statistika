@@ -122,6 +122,43 @@ def _build_module_ai_prompt(mod_key: str, mod_data: dict, mod_label: str) -> str
             "Format: 3 paragraf akademis."
         )
 
+    # ── Time Series Analysis ─────────────────────────────────────────────────
+    if mod_key == "time_series":
+        col_name    = mod_data.get("col_name", "deret waktu")
+        model_label = mod_data.get("model_label", mod_data.get("order", "ARIMA"))
+        metrics     = mod_data.get("metrics", {})
+        rmse  = mod_data.get("rmse", metrics.get("RMSE", "—"))
+        mae   = mod_data.get("mae",  metrics.get("MAE",  "—"))
+        mape  = mod_data.get("mape", metrics.get("MAPE", "—"))
+        aic   = mod_data.get("aic", "—")
+        bic   = mod_data.get("bic", "—")
+        adf_p = mod_data.get("stasioner", {}).get("adf_p", "—")
+        kpss_p= mod_data.get("stasioner", {}).get("kpss_p", "—")
+        conclusion = mod_data.get("stasioner", {}).get("conclusion", "—")
+        n_forecast = mod_data.get("n_forecast", 0)
+        fc_preview = mod_data.get("forecast_preview", [])
+        decompose_t= mod_data.get("decompose_type", "—")
+
+        return (
+            system_prompt
+            + f"""\n\nHasil Time Series Analysis — {col_name}:\n\n"""
+            + f"""UJI STASIONERITAS:\n"""
+            + f"""- ADF p-value  = {adf_p} | KPSS p-value = {kpss_p}\n"""
+            + f"""- Kesimpulan   = {conclusion}\n\n"""
+            + f"""DEKOMPOSISI: Model {decompose_t}\n\n"""
+            + f"""MODEL: {model_label}\n"""
+            + f"""- AIC = {aic}, BIC = {bic}\n"""
+            + f"""- RMSE = {rmse}, MAE = {mae}, MAPE = {mape}%\n\n"""
+            + f"""FORECAST {n_forecast} PERIODE:\n"""
+            + f"""{fc_preview}\n\n"""
+            + """Interpretasi Bahasa Indonesia (4 paragraf akademis):\n"""
+            + """1. Evaluasi stasioneritas — apakah data perlu differencing?\n"""
+            + """2. Kualitas model — interpretasi AIC/BIC dan MAPE\n"""
+            + """3. Pola forecast — tren naik/turun/stabil? Ada seasonal?\n"""
+            + """4. Rekomendasi penggunaan hasil untuk pengambilan keputusan\n"""
+            + """Referensi: Box & Jenkins (1976), Hyndman & Athanasopoulos (2021)."""
+        )
+
     # Definisikan system_prompt default (digunakan untuk semua modul, termasuk CFA)
     system_prompt = MODULE_SYSTEM_PROMPTS.get(
         mod_key,

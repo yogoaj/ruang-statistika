@@ -16,6 +16,16 @@ import streamlit as st
 
 APA_REFERENCES: dict[str, str] = {
 
+    # ── Time Series ──────────────────────────────────────────────────────────
+    "box_1976": (
+        "Box, G. E. P., & Jenkins, G. M. (1976). *Time series analysis: "
+        "Forecasting and control*. Holden-Day."
+    ),
+    "hyndman_2021": (
+        "Hyndman, R. J., & Athanasopoulos, G. (2021). *Forecasting: Principles "
+        "and practice* (3rd ed.). OTexts. https://otexts.com/fpp3"
+    ),
+
     # ── Statistik Umum ───────────────────────────────────────────────────────
     "field_2018": (
         "Field, A. (2018). *Discovering statistics using IBM SPSS statistics* "

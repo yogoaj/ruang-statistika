@@ -342,6 +342,30 @@ def _normalize_mod_data(mod_key: str, raw: dict) -> dict:
             if raw.get(field) is not None and out.get(field) is None:
                 out[field] = raw[field]
 
+    # ── Time Series ──────────────────────────────────────────────────────────
+    elif mod_key == "time_series":
+        order    = out.get("order", (0, 0, 0))
+        seas_ord = out.get("seasonal_order", (0, 0, 0, 0))
+        metrics  = out.get("metrics", {})
+        p, d, q  = order if len(order) == 3 else (0, 0, 0)
+        P, D, Q, S = seas_ord if len(seas_ord) == 4 else (0, 0, 0, 0)
+        use_seasonal = out.get("use_seasonal", False)
+        model_label  = f"ARIMA({p},{d},{q})"
+        if use_seasonal and any([P, D, Q]):
+            model_label += f"×({P},{D},{Q})[{S}]"
+
+        out["model_label"]     = model_label
+        out["rmse"]            = metrics.get("RMSE", "—")
+        out["mae"]             = metrics.get("MAE",  "—")
+        out["mape"]            = metrics.get("MAPE", "—")
+        out["adf_stationary"]  = out.get("stasioner", {}).get("adf_stationary")
+        out["kpss_stationary"] = out.get("stasioner", {}).get("kpss_stationary")
+        out["d_suggest"]       = out.get("stasioner", {}).get("d_suggest", 0)
+        out["decompose_type"]  = out.get("decompose", {}).get("model_type", "—")
+        fc = out.get("forecast_mean", [])
+        out["forecast_preview"] = fc[:6] if fc else []
+
+
     return out
 
 
