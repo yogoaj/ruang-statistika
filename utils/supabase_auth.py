@@ -469,7 +469,14 @@ def supabase_sign_in(email: str, password: str) -> tuple[bool, str]:
             )
 
         if "invalid login credentials" in msg_lower:
-            # Cek apakah email ini adalah user Pro dari Lynk.id yang belum Sign Up
+            # PERBAIKAN: Coba fallback ke pro_licenses terlebih dahulu.
+            # User Lynk.id memiliki password di kolom pro_licenses.password,
+            # bukan di Supabase Auth (karena belum pernah sign up mandiri).
+            _ok_pl, _msg_pl = _sign_in_via_pro_licenses(sb, email, password)
+            if _ok_pl:
+                return True, ""
+
+            # Fallback gagal → cek apakah email ada di pro_licenses (password salah)
             _is_pro_lynk = False
             try:
                 _pl = (
@@ -484,16 +491,11 @@ def supabase_sign_in(email: str, password: str) -> tuple[bool, str]:
                 pass
 
             if _is_pro_lynk:
+                # Ada di pro_licenses tapi password salah
                 return False, (
-                    "👋 Kamu belum punya akun Ruang Statistika.\n\n"
-                    "Kamu sudah terdaftar sebagai pengguna **Pro**, "
-                    "tapi belum membuat akun di aplikasi ini.\n\n"
-                    "**Langkah selanjutnya:**\n"
-                    "1. Klik tab **Daftar** di atas\n"
-                    "2. Daftar menggunakan **email yang sama**\n"
-                    "3. Buat password baru sesukamu\n"
-                    "4. Konfirmasi email, lalu **Masuk**\n\n"
-                    "Status Pro kamu akan otomatis aktif setelah login. ✅"
+                    "❌ Password salah.\n\n"
+                    "Gunakan **password yang tertulis di email konfirmasi pembelian** "
+                    "dari Lynk.id. Atau klik **Lupa password?** untuk reset."
                 )
 
             return False, (
@@ -618,16 +620,19 @@ def supabase_forgot_password(email: str, redirect_url: str = "") -> tuple[bool, 
     _in_supabase_auth = _email_exists_in_supabase_auth(sb, email)
 
     if _in_pro_licenses and _in_supabase_auth is False:
+        # PERBAIKAN: User Lynk.id yang belum sign up tidak bisa reset via Supabase,
+        # tapi password mereka ada di pro_licenses.
+        # Berikan panduan yang jelas tanpa menyuruh sign up (karena mereka tidak tahu).
         return False, (
-            "👋 Email ini terdaftar sebagai pengguna **Pro**, "
-            "tapi belum punya akun Ruang Statistika.\n\n"
-            "Reset password tidak bisa dilakukan sebelum akun dibuat.\n\n"
-            "**Langkah selanjutnya:**\n"
+            "⚠️ Email ini terdaftar dari pembelian di **Lynk.id**, "
+            "tapi belum memiliki akun di aplikasi ini.\n\n"
+            "**Untuk bisa login, kamu perlu membuat akun dulu:**\n"
             "1. Klik tab **Daftar** di atas\n"
-            "2. Daftar menggunakan **email yang sama**\n"
+            "2. Daftar menggunakan **email yang sama** dengan pembelian\n"
             "3. Buat password baru sesukamu\n"
-            "4. Konfirmasi email, lalu **Masuk**\n\n"
-            "Status Pro kamu akan otomatis aktif setelah login. ✅"
+            "4. Cek email dan klik link konfirmasi, lalu **Masuk**\n\n"
+            "Status Pro kamu akan otomatis aktif setelah berhasil masuk. ✅\n\n"
+            "Butuh bantuan? Hubungi admin via WhatsApp **087887533149**."
         )
 
     try:
