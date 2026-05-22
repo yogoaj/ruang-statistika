@@ -125,8 +125,8 @@ body:not(.rs-logged-in) [data-testid="stSidebarCollapsedControl"] {{ display:non
 .rs-greeting-text {{ font-size:.92rem; color:{WHITE}; font-weight:600; }}
 .rs-greeting-sub  {{ font-size:.75rem; color:{MUTED}; margin-top:1px; }}
 .rs-greeting-badge {{
-    background:rgba(255,255,255,.1); border-radius:6px;
-    padding:4px 12px; font-size:.72rem; color:{LIGHT};
+    background:linear-gradient(90deg,#F5B800,#d4980a); border-radius:6px;
+    padding:4px 12px; font-size:.72rem; color:#0c2340; font-weight:700;
 }}
 
 /* Metric card */
@@ -504,8 +504,8 @@ def render_greeting(user_name: str, is_pro: bool) -> None:
         "color:#fff;font-size:.6rem;font-weight:600;letter-spacing:.04em;"
         "padding:2px 8px;border-radius:8px;margin-left:5px;'>PRO</span>"
         if is_pro else
-        "<span style='background:rgba(255,255,255,.1);color:#85b7eb;"
-        "font-size:.6rem;padding:2px 8px;border-radius:8px;margin-left:5px;'>GRATIS</span>"
+        "<span style='background:linear-gradient(90deg,#F5B800,#d4980a);color:#0c2340;"
+        "font-size:.6rem;font-weight:700;padding:2px 8px;border-radius:8px;margin-left:5px;'>GRATIS</span>"
     )
     # Fallback: mode gratis tanpa nama
     display_name = user_name if user_name else "Pengguna"
