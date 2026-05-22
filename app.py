@@ -205,7 +205,7 @@ with st.sidebar:
             f"padding:2px 8px;border-radius:10px;margin-left:6px;'>"
             f"{_user_tier.upper()}</span>"
             if _is_pro_user else
-            "<span style='background:rgba(255,255,255,0.12);color:#85b7eb;"
+            "<span style='background:linear-gradient(90deg,#F5B800,#d4980a);color:#0c2340;font-weight:700;"
             "font-size:0.65rem;padding:2px 8px;border-radius:10px;margin-left:6px;'>"
             "GRATIS</span>"
         )
