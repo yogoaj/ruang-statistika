@@ -35,11 +35,11 @@ if not st.query_params.get("access_token"):
     components.html("""
     <script>
     (function() {
-        var hash = window.location.hash;
+        var hash = window.parent.location.hash;
         if (hash && hash.includes('access_token')) {
             var params = hash.replace(/^#/, '');
-            var newUrl = window.location.pathname + '?' + params;
-            window.location.replace(newUrl);
+            var newUrl = window.parent.location.origin + window.parent.location.pathname + '?' + params;
+            window.parent.location.replace(newUrl);
         }
     })();
     </script>
@@ -502,7 +502,7 @@ if menu == "Beranda":
         components.html("""
         <script>
         (function() {
-            var hash = window.location.hash.substring(1);
+            var hash = window.parent.location.hash.substring(1);
             if (!hash || hash.indexOf('access_token') === -1) return;
             var params = new URLSearchParams(hash);
             var at = params.get('access_token');
