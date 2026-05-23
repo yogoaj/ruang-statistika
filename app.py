@@ -205,8 +205,8 @@ with st.sidebar:
             f"padding:2px 8px;border-radius:10px;margin-left:6px;'>"
             f"{_user_tier.upper()}</span>"
             if _is_pro_user else
-            "<span style='background:linear-gradient(90deg,#F5B800,#d4980a);color:#0c2340;font-weight:700;"
-            "font-size:0.65rem;padding:2px 8px;border-radius:10px;margin-left:6px;'>"
+            "<span style='background:linear-gradient(90deg,#F5B800,#d4980a);color:#000;font-weight:800;"
+            "font-size:0.68rem;padding:2px 9px;border-radius:10px;margin-left:6px;letter-spacing:.3px;'>"
             "GRATIS</span>"
         )
         _sb_init  = "".join(w[0].upper() for w in _display_name.split()[:2]) if _display_name else "?"
