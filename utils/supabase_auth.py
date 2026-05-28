@@ -96,7 +96,7 @@ def save_supabase_session(user_obj, session_obj=None) -> None:
             resp = (
                 sb.table("pro_licenses")
                 .select("license_key, expires_at, is_active, tier")
-                .eq("email", email.strip().lower())
+                .ilike("email", email.strip())
                 .maybeSingle()
                 .execute()
             )
@@ -378,8 +378,8 @@ def _sign_in_via_pro_licenses(sb, email: str, password: str) -> tuple[bool, str]
         resp = (
             sb.table("pro_licenses")
             .select("email, name, password, license_key, expires_at, is_active, tier")
-            .eq("email", email.strip().lower())
-            .single()
+            .ilike("email", email.strip())
+            .maybeSingle()
             .execute()
         )
     except Exception:
@@ -482,7 +482,7 @@ def supabase_sign_in(email: str, password: str) -> tuple[bool, str]:
                 _pl = (
                     sb.table("pro_licenses")
                     .select("email")
-                    .eq("email", email)
+                    .ilike("email", email)
                     .maybeSingle()
                     .execute()
                 )
@@ -499,8 +499,11 @@ def supabase_sign_in(email: str, password: str) -> tuple[bool, str]:
                 )
 
             return False, (
-                "❌ Password salah. "
-                "Gunakan tombol **Lupa password?** jika lupa password kamu."
+                "❌ Email atau password tidak dikenali.\n\n"
+                "**Sudah beli di Lynk.id?** Kemungkinan akunmu belum terdaftar di sistem. Coba:\n"
+                "1. Klik tab **Daftar** → buat akun dengan **email yang sama** dengan pembelian\n"
+                "2. Konfirmasi email, lalu **Masuk** — status Pro otomatis aktif\n\n"
+                "Atau hubungi admin via WhatsApp **087887533149** untuk bantuan aktivasi."
             )
 
         # Error lain → user kemungkinan tidak ada di Supabase Auth
@@ -535,7 +538,7 @@ def supabase_sign_up(email: str, password: str, full_name: str) -> tuple[bool, s
         _pl = (
             sb.table("pro_licenses")
             .select("email")
-            .eq("email", email)
+            .ilike("email", email)
             .maybeSingle()
             .execute()
         )
@@ -609,7 +612,7 @@ def supabase_forgot_password(email: str, redirect_url: str = "") -> tuple[bool, 
         _pl = (
             sb.table("pro_licenses")
             .select("email")
-            .eq("email", email)
+            .ilike("email", email)
             .maybeSingle()
             .execute()
         )
