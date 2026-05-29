@@ -521,7 +521,10 @@ def inject_nav_locked_css() -> None:
 def render_greeting(user_name: str, is_pro: bool) -> None:
     """Render greeting bar. user_name boleh kosong (mode gratis)."""
     import datetime as _dt
-    hour = _dt.datetime.now().hour
+    import zoneinfo
+
+    tz_wib = zoneinfo.ZoneInfo("Asia/Jakarta")
+    hour = _dt.datetime.now(tz_wib).hour
     salam = (
         "Selamat pagi"   if hour < 11 else
         "Selamat siang"  if hour < 15 else
