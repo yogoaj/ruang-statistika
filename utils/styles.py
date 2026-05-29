@@ -370,9 +370,12 @@ section[data-testid="stMain"] .block-container {{
     letter-spacing: -.03em;
     line-height: 1;
 }}
-.rs-metric-sub {{ font-size: .72rem; color: {GREEN2}; margin-top: 6px; font-weight: 500; }}
+.rs-metric-sub {{ font-size: .72rem; color: {SLATE}; margin-top: 6px; font-weight: 400; }}
 
 /* Step card — clean numbered list */
+.rs-step-full {{
+    margin-bottom: 8px;
+}}
 .rs-step {{
     background: {BG_CARD};
     border: 1px solid {BORDER};
@@ -483,15 +486,13 @@ section[data-testid="stMain"] .block-container {{
     background: linear-gradient(135deg, #EEF2FF 0%, #E8F0FE 100%);
     border: 1px solid #C7D2FE;
     border-radius: var(--radius-md);
-    padding: 18px 20px;
-    display: grid;
-    grid-template-columns: 1fr auto;
-    gap: 16px;
-    align-items: center;
+    padding: 20px 22px 16px;
+    display: block;
     box-shadow: 0 2px 8px rgba(99,102,241,.08);
+    margin-bottom: 10px;
 }}
-.rs-cta-title {{ font-size: .92rem; font-weight: 700; color: #3730A3; margin-bottom: 4px; letter-spacing: -.01em; }}
-.rs-cta-desc  {{ font-size: .78rem; color: #4338CA; line-height: 1.5; }}
+.rs-cta-title {{ font-size: .92rem; font-weight: 700; color: #3730A3; margin-bottom: 5px; letter-spacing: -.01em; }}
+.rs-cta-desc  {{ font-size: .78rem; color: #4338CA; line-height: 1.55; margin-bottom: 0; }}
 
 /* Chat bubbles */
 .chat-container {{
@@ -885,11 +886,17 @@ section[data-testid="stMain"] .stTextInput input {{
     letter-spacing: .01em !important;
 }}
 section[data-testid="stMain"] .stTextInput input:focus {{
-    border-color: rgba(33,150,243,.6) !important;
-    background: rgba(255,255,255,.1) !important;
-    box-shadow: 0 0 0 3px rgba(33,150,243,.12) !important;
+    border-color: rgba(33,150,243,.7) !important;
+    background: rgba(13,31,60,.85) !important;
+    box-shadow: 0 0 0 3px rgba(33,150,243,.15) !important;
     color: {WHITE} !important;
     -webkit-text-fill-color: {WHITE} !important;
+    caret-color: {BLUE2} !important;
+    outline: none !important;
+}}
+/* Paksa dark background saat browser autocomplete fill */
+section[data-testid="stMain"] .stTextInput input:focus-within {{
+    background: rgba(13,31,60,.85) !important;
 }}
 section[data-testid="stMain"] .stTextInput input:-webkit-autofill,
 section[data-testid="stMain"] .stTextInput input:-webkit-autofill:hover,
@@ -1109,13 +1116,10 @@ def render_greeting(user_name: str, is_pro: bool) -> None:
     )
     tier_badge = (
         "<span style='background:linear-gradient(135deg,#FFB300,#F57F17);"
-        "color:#1a1000;font-size:.65rem;font-weight:800;letter-spacing:.06em;"
-        "padding:3px 10px;border-radius:6px;margin-left:6px;"
+        "color:#1a1000;font-size:.62rem;font-weight:800;letter-spacing:.06em;"
+        "padding:2px 9px;border-radius:5px;margin-left:7px;"
         "box-shadow:0 2px 8px rgba(255,179,0,.35);vertical-align:middle;'>✦ PRO</span>"
-        if is_pro else
-        "<span style='background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.55);"
-        "font-size:.65rem;font-weight:600;padding:2px 9px;border-radius:6px;margin-left:6px;"
-        "letter-spacing:.05em;vertical-align:middle;'>GRATIS</span>"
+        if is_pro else ""
     )
     display_name = user_name if user_name else "Pengguna"
     greeting_text = f"{salam}, {display_name}! 👋" if user_name else f"{salam}! 👋"
@@ -1179,11 +1183,16 @@ def render_steps_grid() -> None:
         ("Jalankan Analisis",     "Modul terbuka otomatis dari Wizard"),
         ("Generate Laporan",      "Export .docx / .md — satu klik"),
     ]
-    cols = st.columns(2)
-    for i, (title, desc) in enumerate(steps, 1):
-        with cols[(i - 1) % 2]:
+    # Render pasangan 2 kolom, item terakhir full-width jika ganjil
+    pairs = [(steps[i], steps[i+1] if i+1 < len(steps) else None)
+             for i in range(0, len(steps), 2)]
+    for pair_idx, (left, right) in enumerate(pairs):
+        base_num = pair_idx * 2 + 1
+        if right is None:
+            # Satu item terakhir — full width
+            i, (title, desc) = base_num, left
             st.markdown(
-                f'<div class="rs-step">'
+                f'<div class="rs-step rs-step-full">'
                 f'<div class="rs-step-num">{i}</div>'
                 f'<div>'
                 f'<div style="font-weight:600;color:#0a1628;font-size:.85rem;letter-spacing:-.01em;">{title}</div>'
@@ -1191,6 +1200,19 @@ def render_steps_grid() -> None:
                 f'</div></div>',
                 unsafe_allow_html=True,
             )
+        else:
+            cols = st.columns(2)
+            for ci, (i, (title, desc)) in enumerate([(base_num, left), (base_num+1, right)]):
+                with cols[ci]:
+                    st.markdown(
+                        f'<div class="rs-step">'
+                        f'<div class="rs-step-num">{i}</div>'
+                        f'<div>'
+                        f'<div style="font-weight:600;color:#0a1628;font-size:.85rem;letter-spacing:-.01em;">{title}</div>'
+                        f'<div style="font-size:.76rem;color:#64748b;margin-top:3px;line-height:1.45;">{desc}</div>'
+                        f'</div></div>',
+                        unsafe_allow_html=True,
+                    )
 
 
 def render_cta_wizard(on_click_key: str = "cta_wizard_btn") -> bool:
