@@ -35,11 +35,24 @@ if not st.query_params.get("access_token"):
     components.html("""
     <script>
     (function() {
-        var hash = window.parent.location.hash;
-        if (hash && hash.includes('access_token')) {
-            var params = hash.replace(/^#/, '');
-            var newUrl = window.parent.location.origin + window.parent.location.pathname + '?' + params;
-            window.parent.location.replace(newUrl);
+        function convertFragment() {
+            try {
+                var hash = window.parent.location.hash;
+                if (hash && hash.includes('access_token')) {
+                    var params = hash.replace(/^#/, '');
+                    var newUrl = window.parent.location.origin +
+                                 window.parent.location.pathname + '?' + params;
+                    window.parent.location.replace(newUrl);
+                    return true;
+                }
+            } catch(e) {}
+            return false;
+        }
+        // Coba langsung, lalu retry bertingkat untuk atasi race condition
+        if (!convertFragment()) {
+            setTimeout(convertFragment, 300);
+            setTimeout(convertFragment, 800);
+            setTimeout(convertFragment, 1500);
         }
     })();
     </script>
@@ -502,19 +515,31 @@ if menu == "Beranda":
         components.html("""
         <script>
         (function() {
-            var hash = window.parent.location.hash.substring(1);
-            if (!hash || hash.indexOf('access_token') === -1) return;
-            var params = new URLSearchParams(hash);
-            var at = params.get('access_token');
-            var rt = params.get('refresh_token') || '';
-            var tp = params.get('type') || '';
-            if (!at) return;
-            var url = new URL(window.parent.location.href);
-            url.hash = '';
-            url.searchParams.set('access_token', at);
-            if (rt) url.searchParams.set('refresh_token', rt);
-            if (tp) url.searchParams.set('type', tp);
-            window.parent.location.replace(url.toString());
+            function convertFragment() {
+                try {
+                    var hash = window.parent.location.hash.substring(1);
+                    if (!hash || hash.indexOf('access_token') === -1) return false;
+                    var params = new URLSearchParams(hash);
+                    var at = params.get('access_token');
+                    var rt = params.get('refresh_token') || '';
+                    var tp = params.get('type') || '';
+                    if (!at) return false;
+                    var url = new URL(window.parent.location.href);
+                    url.hash = '';
+                    url.searchParams.set('access_token', at);
+                    if (rt) url.searchParams.set('refresh_token', rt);
+                    if (tp) url.searchParams.set('type', tp);
+                    window.parent.location.replace(url.toString());
+                    return true;
+                } catch(e) {}
+                return false;
+            }
+            // Coba langsung, lalu retry bertingkat untuk atasi race condition
+            if (!convertFragment()) {
+                setTimeout(convertFragment, 300);
+                setTimeout(convertFragment, 800);
+                setTimeout(convertFragment, 1500);
+            }
         })();
         </script>
         """, height=0)
@@ -737,7 +762,10 @@ if menu == "Beranda":
                             st.error("Masukkan email kamu.")
                         else:
                             from utils.supabase_auth import supabase_forgot_password
-                            _app_url = st.secrets.get("app_url", "http://localhost:8501")
+                            try:
+                                _app_url = st.secrets["app_url"]
+                            except Exception:
+                                _app_url = "https://ruang-statistika.streamlit.app"
                             _ok, _msg = supabase_forgot_password(_lupa_email.strip(), _app_url)
                             if _ok:
                                 st.session_state["_lupa_email_sent"] = _lupa_email.strip().lower()
