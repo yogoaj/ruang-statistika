@@ -14,7 +14,7 @@ JANGAN diimport langsung dari modul lain — gunakan docx_helpers.py.
 """
 
 import pandas as pd
-from utils._docx_primitives import _first_valid_df
+from utils._docx_utils import _first_valid_df
 
 
 def _fallback_narasi(mod_key: str, data: dict) -> str:
@@ -1439,17 +1439,9 @@ def _fallback_narasi(mod_key: str, data: dict) -> str:
         return "\n\n".join(p for p in [paragraf1, paragraf2] if p.strip())
 
     # ══════════════════════════════════════════════════════════════════════════
-    # Fallback generik
+    # TIME SERIES — diperbaiki: dipindahkan ke atas return generik
     # ══════════════════════════════════════════════════════════════════════════
-    return (
-        "Analisis statistik telah dilakukan sesuai dengan prosedur yang ditetapkan. "
-        "Interpretasi hasil disajikan pada tabel dan visualisasi yang menyertai bagian ini. "
-        "Pembaca disarankan merujuk pada nilai statistik uji, tingkat signifikansi, "
-        "dan ukuran efek yang dilaporkan untuk menarik kesimpulan yang tepat "
-        "(Field, 2018; Cohen, 1988)."
-    )
-
-    if mod_key == "time_series":
+    elif mod_key == "time_series":
         col_name    = data.get("col_name", "deret waktu")
         model_label = data.get("model_label", "ARIMA")
         mape        = data.get("mape", "—")
@@ -1481,3 +1473,13 @@ def _fallback_narasi(mod_key: str, data: dict) -> str:
             f"(Box & Jenkins, 1976; Hyndman & Athanasopoulos, 2021)."
         )
 
+    # ══════════════════════════════════════════════════════════════════════════
+    # Fallback generik
+    # ══════════════════════════════════════════════════════════════════════════
+    return (
+        "Analisis statistik telah dilakukan sesuai dengan prosedur yang ditetapkan. "
+        "Interpretasi hasil disajikan pada tabel dan visualisasi yang menyertai bagian ini. "
+        "Pembaca disarankan merujuk pada nilai statistik uji, tingkat signifikansi, "
+        "dan ukuran efek yang dilaporkan untuk menarik kesimpulan yang tepat "
+        "(Field, 2018; Cohen, 1988)."
+    )
