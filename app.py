@@ -1,3 +1,16 @@
+# DEBUG SEMENTARA — hapus setelah selesai
+sb = get_supabase()
+if sb:
+    try:
+        resp = (
+            sb.table("pro_licenses")
+            .select("email, name, is_active")
+            .eq("email", "ruangstatistika1@gmail.com")
+            .execute()
+        )
+        st.write("🔍 DEBUG query result:", resp.data)
+    except Exception as e:
+        st.write("🔍 DEBUG error:", str(e))
 """
 Ruang Statistika — Automated Research & Stats Reporting
 Oleh: Yogo Aryo Jatmiko | yogoaj.github.io
