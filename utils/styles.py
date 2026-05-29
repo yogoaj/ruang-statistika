@@ -930,32 +930,88 @@ body.rs-light [data-testid="stMetricValue"],
 def inject_global_css() -> None:
     """Inject CSS global. Konten di-cache — aman dipanggil tiap rerun."""
     st.markdown(_global_css(), unsafe_allow_html=True)
-    # JS: deteksi tema Streamlit via warna background, tambahkan class ke body
-    # Ini lebih reliable dari [data-theme] yang tidak selalu aktif
+    # JS: deteksi tema Streamlit via localStorage (paling reliable),
+    # fallback ke warna background stApp, fallback ke prefers-color-scheme
     st.markdown("""<script>
 (function() {
     function applyThemeClass() {
         try {
-            var app = document.querySelector('[data-testid="stAppViewContainer"]') || document.body;
-            var bg = window.getComputedStyle(app).backgroundColor;
-            var m = bg.match(/rgb\\((\\d+),(\\s*)(\\d+),(\\s*)(\\d+)\\)/);
-            if (!m) { m = bg.replace(/\\s/g,'').match(/rgb\\((\\d+),(\\d+),(\\d+)\\)/); }
-            var isDark = true;
-            if (m) {
-                var r = parseInt(m[1]), g = parseInt(m[3]||m[2]), b = parseInt(m[5]||m[4]);
-                var lum = (0.299*r + 0.587*g + 0.114*b);
-                isDark = lum < 128;
+            var isDark = null;
+
+            // 1. Cek localStorage Streamlit (kunci resmi yang digunakan Streamlit)
+            try {
+                var stored = localStorage.getItem('streamlit:theme');
+                if (!stored) stored = localStorage.getItem('stTheme');
+                if (stored) {
+                    var parsed = JSON.parse(stored);
+                    var base = (parsed.base || parsed.theme || '').toLowerCase();
+                    if (base === 'dark')  { isDark = true; }
+                    if (base === 'light') { isDark = false; }
+                }
+            } catch(e) {}
+
+            // 2. Fallback: cek warna teks body (Streamlit set --text-color via CSS var)
+            if (isDark === null) {
+                try {
+                    var bodyColor = window.getComputedStyle(document.body).color;
+                    var cm = bodyColor.replace(/\\s/g,'').match(/rgb[a]?\\((\\d+),(\\d+),(\\d+)/);
+                    if (cm) {
+                        var lum = 0.299*parseInt(cm[1]) + 0.587*parseInt(cm[2]) + 0.114*parseInt(cm[3]);
+                        isDark = lum > 128; // teks terang = background gelap
+                    }
+                } catch(e) {}
             }
+
+            // 3. Fallback: cek stApp background-color (bukan transparent)
+            if (isDark === null) {
+                try {
+                    var targets = [
+                        document.querySelector('.stApp'),
+                        document.querySelector('[data-testid="stApp"]'),
+                        document.querySelector('body')
+                    ];
+                    for (var i = 0; i < targets.length; i++) {
+                        if (!targets[i]) continue;
+                        var bg = window.getComputedStyle(targets[i]).backgroundColor;
+                        var bm = bg.replace(/\\s/g,'').match(/rgb[a]?\\((\\d+),(\\d+),(\\d+)/);
+                        if (!bm) continue;
+                        var r=parseInt(bm[1]),g=parseInt(bm[2]),b=parseInt(bm[3]);
+                        if (r===0&&g===0&&b===0) continue; // skip rgba(0,0,0,0) transparan
+                        var lum2 = 0.299*r + 0.587*g + 0.114*b;
+                        isDark = lum2 < 128;
+                        break;
+                    }
+                } catch(e) {}
+            }
+
+            // 4. Final fallback: OS preference
+            if (isDark === null) {
+                isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            }
+
             document.body.classList.remove('rs-light','rs-dark');
             document.body.classList.add(isDark ? 'rs-dark' : 'rs-light');
         } catch(e) {}
     }
+
     applyThemeClass();
-    setTimeout(applyThemeClass, 300);
-    setTimeout(applyThemeClass, 800);
-    setTimeout(applyThemeClass, 1500);
-    var obs = new MutationObserver(function() { applyThemeClass(); });
-    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    setTimeout(applyThemeClass, 200);
+    setTimeout(applyThemeClass, 600);
+    setTimeout(applyThemeClass, 1200);
+    setTimeout(applyThemeClass, 2500);
+
+    // Watch localStorage changes (user ganti tema)
+    var origSetItem = localStorage.setItem.bind(localStorage);
+    try {
+        localStorage.setItem = function(k, v) {
+            origSetItem(k, v);
+            if (k === 'streamlit:theme' || k === 'stTheme') { setTimeout(applyThemeClass, 50); }
+        };
+    } catch(e) {}
+
+    // Watch DOM attribute changes
+    var obs = new MutationObserver(applyThemeClass);
+    obs.observe(document.documentElement, { attributes: true });
 })();
 </script>""", unsafe_allow_html=True)
 
