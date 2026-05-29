@@ -32,19 +32,17 @@ from utils.supabase_auth import handle_google_callback, restore_supabase_session
 # dengan fragment diubah menjadi query string, sehingga handle_google_callback
 # bisa membacanya via st.query_params.
 if not st.query_params.get("access_token") and not st.query_params.get("token_hash"):
-    components.html("""
+    st.markdown("""
     <script>
     (function() {
         function convertFragment() {
             try {
-                var hash = window.parent.location.hash;
-                if (hash && hash.includes('access_token')) {
-                    var params = hash.replace(/^#/, '');
-                    var newUrl = window.parent.location.origin +
-                                 window.parent.location.pathname + '?' + params;
-                    window.parent.location.replace(newUrl);
-                    return true;
-                }
+                var hash = window.location.hash;
+                if (!hash || hash.indexOf('access_token') === -1) return false;
+                var params = hash.replace(/^#/, '');
+                var newUrl = window.location.origin + window.location.pathname + '?' + params;
+                window.location.replace(newUrl);
+                return true;
             } catch(e) {}
             return false;
         }
@@ -54,7 +52,7 @@ if not st.query_params.get("access_token") and not st.query_params.get("token_ha
         setTimeout(convertFragment, 1200);
     })();
     </script>
-    """, height=1)
+    """, unsafe_allow_html=True)
 
 handle_google_callback()        # tangkap token dari Google OAuth redirect
 restore_supabase_session()      # restore session jika token masih valid
@@ -522,32 +520,30 @@ if menu == "Beranda":
         """, unsafe_allow_html=True)
 
         # ── JS: baca URL fragment dari Supabase callback ────────────────────
-        # Diperlukan untuk: Google OAuth callback DAN link reset password.
-        # Supabase mengirim token via URL fragment (#access_token=...&type=recovery)
-        # yang tidak dikirim ke server — dibaca JS lalu dikonversi ke query_params.
-        components.html("""
+        # Pakai st.markdown (bukan components.html) agar script jalan di main document,
+        # bukan di dalam iframe sandbox yang tidak bisa akses window.location parent.
+        st.markdown("""
         <script>
         (function() {
             function convertFragment() {
                 try {
-                    var hash = window.parent.location.hash.substring(1);
+                    var hash = window.location.hash.substring(1);
                     if (!hash || hash.indexOf('access_token') === -1) return false;
                     var params = new URLSearchParams(hash);
                     var at = params.get('access_token');
                     var rt = params.get('refresh_token') || '';
                     var tp = params.get('type') || '';
                     if (!at) return false;
-                    var url = new URL(window.parent.location.href);
+                    var url = new URL(window.location.href);
                     url.hash = '';
                     url.searchParams.set('access_token', at);
                     if (rt) url.searchParams.set('refresh_token', rt);
                     if (tp) url.searchParams.set('type', tp);
-                    window.parent.location.replace(url.toString());
+                    window.location.replace(url.toString());
                     return true;
                 } catch(e) {}
                 return false;
             }
-            // Jalankan langsung + retry bertingkat — height=1 agar iframe tidak di-skip browser
             convertFragment();
             setTimeout(convertFragment, 100);
             setTimeout(convertFragment, 400);
@@ -555,7 +551,7 @@ if menu == "Beranda":
             setTimeout(convertFragment, 1800);
         })();
         </script>
-        """, height=1)
+        """, unsafe_allow_html=True)
 
         # ── Tab strip — st.button (tetap di halaman sama) ─────────────────
         st.markdown('<div class="signin-tab-row">', unsafe_allow_html=True)
