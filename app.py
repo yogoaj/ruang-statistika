@@ -48,15 +48,15 @@ if not st.query_params.get("access_token"):
             } catch(e) {}
             return false;
         }
-        // Coba langsung, lalu retry bertingkat untuk atasi race condition
-        if (!convertFragment()) {
-            setTimeout(convertFragment, 300);
-            setTimeout(convertFragment, 800);
-            setTimeout(convertFragment, 1500);
-        }
+        // Jalankan langsung + retry bertingkat
+        convertFragment();
+        setTimeout(convertFragment, 100);
+        setTimeout(convertFragment, 400);
+        setTimeout(convertFragment, 900);
+        setTimeout(convertFragment, 1800);
     })();
     </script>
-    """, height=0)
+    """, height=1)
 
 handle_google_callback()        # tangkap token dari Google OAuth redirect
 restore_supabase_session()      # restore session jika token masih valid
@@ -492,6 +492,21 @@ if menu == "Beranda":
             st.session_state.modal_tab = "masuk"
         tab = st.session_state.modal_tab
 
+        # ── Intercept: jika ada access_token di query_params tapi belum diproses ──
+        # Ini terjadi saat JS sudah berhasil konversi fragment → query params,
+        # tapi handle_google_callback() di atas belum berjalan (rerun belum terjadi).
+        # Paksa rerun supaya handle_google_callback() membaca token yang baru masuk.
+        if st.query_params.get("access_token") and not st.session_state.get("_recovery_access_token") and not st.session_state.get("user_logged_in"):
+            _token_type = st.query_params.get("type", "")
+            if _token_type == "recovery":
+                from utils.supabase_auth import handle_google_callback
+                handle_google_callback()
+                st.rerun()
+            else:
+                from utils.supabase_auth import handle_google_callback
+                handle_google_callback()
+                st.rerun()
+
         # ── CSS: halaman login (utils/styles.py) ────────────────────────────
         inject_login_css()
 
@@ -534,15 +549,15 @@ if menu == "Beranda":
                 } catch(e) {}
                 return false;
             }
-            // Coba langsung, lalu retry bertingkat untuk atasi race condition
-            if (!convertFragment()) {
-                setTimeout(convertFragment, 300);
-                setTimeout(convertFragment, 800);
-                setTimeout(convertFragment, 1500);
-            }
+            // Jalankan langsung + retry bertingkat — height=1 agar iframe tidak di-skip browser
+            convertFragment();
+            setTimeout(convertFragment, 100);
+            setTimeout(convertFragment, 400);
+            setTimeout(convertFragment, 900);
+            setTimeout(convertFragment, 1800);
         })();
         </script>
-        """, height=0)
+        """, height=1)
 
         # ── Tab strip — st.button (tetap di halaman sama) ─────────────────
         st.markdown('<div class="signin-tab-row">', unsafe_allow_html=True)
