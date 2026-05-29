@@ -601,15 +601,15 @@ if menu == "Beranda":
 
             # ── Info: sudah beli Pro, login langsung pakai email + password ──
             st.markdown("""
-            <div style='background:linear-gradient(135deg,#f5f0ff,#ede9fe);
-                        border:1px solid #c4b5fd; border-radius:10px;
-                        padding:10px 14px; margin:14px 0 4px;
-                        font-size:0.80rem; color:#4c1d95; line-height:1.7;'>
-                <div style='font-weight:700; font-size:0.82rem; margin-bottom:4px;'>
+            <div style='background:rgba(21,101,192,.08);
+                        border:1px solid rgba(21,101,192,.2); border-radius:10px;
+                        padding:11px 15px; margin:14px 0 4px;
+                        font-size:0.80rem; color:#0d2a4e; line-height:1.7;'>
+                <div style='font-weight:700; font-size:0.82rem; margin-bottom:3px; color:#0a1628;'>
                     🎫 Sudah membeli Pro?
                 </div>
-                Langsung masuk menggunakan <b>email</b> dan <b>password</b> yang
-                dikirim ke email kamu setelah pembelian. Tidak perlu daftar ulang.
+                Masuk dengan <b>email</b> dan <b>password</b> yang dikirim ke emailmu
+                setelah pembelian. Tidak perlu daftar ulang.
             </div>
             """, unsafe_allow_html=True)
 
@@ -703,17 +703,15 @@ if menu == "Beranda":
 
             # ── Info: sudah beli Pro, tidak perlu daftar ────────────────────
             st.markdown("""
-            <div style='background:linear-gradient(135deg,#f5f0ff,#ede9fe);
-                        border:1px solid #c4b5fd; border-radius:10px;
-                        padding:10px 14px; margin:12px 0 4px;
-                        font-size:0.80rem; color:#4c1d95; line-height:1.7;'>
-                <div style='font-weight:700; font-size:0.82rem; margin-bottom:4px;'>
+            <div style='background:rgba(21,101,192,.08);
+                        border:1px solid rgba(21,101,192,.2); border-radius:10px;
+                        padding:11px 15px; margin:12px 0 4px;
+                        font-size:0.80rem; color:#0d2a4e; line-height:1.7;'>
+                <div style='font-weight:700; font-size:0.82rem; margin-bottom:3px; color:#0a1628;'>
                     🎫 Sudah membeli Pro?
                 </div>
-                Coba gunakan tab <b>Masuk</b> terlebih dahulu dengan <b>email</b>
-                dan <b>password</b> yang dikirim ke emailmu setelah pembelian.<br/>
-                Jika belum berhasil, daftar di sini menggunakan <b>email yang sama</b>
-                untuk membuat akun baru.
+                Coba tab <b>Masuk</b> dengan email &amp; password yang dikirim setelah
+                pembelian. Jika belum berhasil, daftar dengan <b>email yang sama</b>.
             </div>
             """, unsafe_allow_html=True)
 
@@ -896,12 +894,12 @@ if menu == "Beranda":
 
         elif tab == "gratis":
             st.markdown("""
-            <div style='background:#f0f7ff;border:1px solid #cce3f8;border-radius:10px;
-                        padding:12px 14px;margin-bottom:14px;font-size:0.83rem;
-                        color:#0c2340;line-height:1.75;'>
+            <div style='background:rgba(21,101,192,.07);border:1px solid rgba(21,101,192,.18);
+                        border-radius:10px;padding:12px 15px;margin-bottom:14px;
+                        font-size:0.82rem;color:#0d2a4e;line-height:1.8;'>
               ✅ Semua modul analisis dasar tersedia<br/>
               📄 Generate Laporan: <b>1×/hari</b><br/>
-              🔒 Fitur Pro → butuh lisensi
+              🔒 Fitur lanjutan → butuh lisensi Pro
             </div>
             """, unsafe_allow_html=True)
             with st.form("form_gratis", clear_on_submit=False):
@@ -966,7 +964,14 @@ if menu == "Beranda":
         st.session_state.active_menu = "Wizard"
         st.rerun()
 
-    st.info("💡 Baru di v4.8: Mulai dari **🧭 Wizard Analisis** untuk dipandu memilih uji.")
+    st.markdown(
+        """<div style='background:rgba(21,101,192,.07);border:1px solid rgba(21,101,192,.18);
+            border-radius:10px;padding:10px 16px;font-size:.84rem;color:#0d2a4e;
+            margin:8px 0;line-height:1.6;'>
+            💡 <b>Baru di v4.8:</b> Mulai dari <b>🧭 Wizard Analisis</b> untuk dipandu memilih uji statistik yang tepat.
+        </div>""",
+        unsafe_allow_html=True,
+    )
     render_changelog()
 
 elif menu == "Wizard":
