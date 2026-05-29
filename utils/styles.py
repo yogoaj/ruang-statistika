@@ -1,5 +1,5 @@
 """
-utils/styles.py — Ruang Statistika v4.9
+utils/styles.py — Ruang Statistika v5.0
 CSS terpusat, dipecah per concern untuk performa optimal.
 
 Penggunaan di app.py:
@@ -12,25 +12,38 @@ from __future__ import annotations
 import streamlit as st
 
 # ── Design tokens ─────────────────────────────────────────────────────────────
-NAVY    = "#0c2340"
-NAVY2   = "#0f2d52"
-BLUE    = "#185FA5"
-BLUE2   = "#378add"
-BLUE3   = "#1e73c8"
-LIGHT   = "#b5d4f4"
-MUTED   = "#7aabda"
-MUTED2  = "#4a7aaa"
-MUTED3  = "#2d5a87"
-GREEN   = "#3b6d11"
-GREEN2  = "#639922"
-RED     = "#a32d2d"
-INDIGO  = "#6366f1"
-VIOLET  = "#8b5cf6"
-AMBER   = "#ba7517"
-BORDER  = "#d0e4f7"
-BG_SOFT = "#f0f6ff"
-BG_AI   = "#f0f4ff"
+# Core palette — refined navy + slate + electric blue
+NAVY    = "#0a1628"
+NAVY2   = "#0d1f3c"
+NAVY3   = "#112244"
+BLUE    = "#1565C0"
+BLUE2   = "#2196F3"
+BLUE3   = "#42A5F5"
+BLUE4   = "#90CAF9"
+LIGHT   = "#BBDEFB"
+MUTED   = "#78909C"
+MUTED2  = "#546E7A"
+MUTED3  = "#37474F"
+SLATE   = "#64748b"
+SLATE2  = "#94a3b8"
+GREEN   = "#2E7D32"
+GREEN2  = "#43A047"
+GREEN3  = "#A5D6A7"
+RED     = "#C62828"
+RED2    = "#EF5350"
+INDIGO  = "#3F51B5"
+VIOLET  = "#7C3AED"
+AMBER   = "#F57F17"
+AMBER2  = "#FFB300"
+TEAL    = "#00897B"
+BORDER  = "#E3EBF6"
+BORDER2 = "#CBD5E1"
+BG_SOFT = "#F8FAFD"
+BG_AI   = "#EEF2FF"
+BG_CARD = "#FFFFFF"
 WHITE   = "#ffffff"
+SHADOW  = "rgba(10, 22, 40, 0.08)"
+SHADOW2 = "rgba(10, 22, 40, 0.14)"
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -40,9 +53,43 @@ WHITE   = "#ffffff"
 @st.cache_data(show_spinner=False)
 def _global_css() -> str:
     return f"""<style>
-/* ── Font ── */
-@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap');
-html, body, [class*="css"] {{ font-family:'DM Sans',sans-serif; }}
+/* ── Fonts ── */
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=DM+Serif+Display:ital@0;1&display=swap');
+
+:root {{
+    --font-display: 'DM Serif Display', Georgia, serif;
+    --font-body: 'Plus Jakarta Sans', 'Sora', sans-serif;
+    --nav-bg: {NAVY};
+    --nav-border: rgba(255,255,255,.05);
+    --nav-text: #94A3B8;
+    --nav-text-hover: #E2E8F0;
+    --nav-active-bg: rgba(33,150,243,.12);
+    --nav-active-border: {BLUE2};
+    --nav-active-text: #F0F9FF;
+    --accent: {BLUE2};
+    --accent2: {BLUE3};
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+    --shadow-sm: 0 1px 3px {SHADOW}, 0 1px 2px {SHADOW};
+    --shadow-md: 0 4px 12px {SHADOW}, 0 2px 6px {SHADOW};
+    --shadow-lg: 0 10px 30px {SHADOW2}, 0 4px 12px {SHADOW};
+    --shadow-card: 0 2px 8px rgba(10,22,40,.07), 0 0 0 1px rgba(10,22,40,.04);
+    --transition: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}}
+
+html, body, [class*="css"] {{
+    font-family: var(--font-body) !important;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+}}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {{ width: 5px; height: 5px; }}
+::-webkit-scrollbar-track {{ background: transparent; }}
+::-webkit-scrollbar-thumb {{ background: rgba(100,116,139,.3); border-radius: 10px; }}
+::-webkit-scrollbar-thumb:hover {{ background: rgba(100,116,139,.5); }}
 
 /* ── Sidebar toggle: sembunyikan saat belum login ── */
 body:not(.rs-logged-in) [data-testid="collapsedControl"],
@@ -51,205 +98,531 @@ body:not(.rs-logged-in) [data-testid="stSidebarCollapsedControl"] {{ display:non
 /* ══ SIDEBAR ════════════════════════════════════════════════════════════════ */
 [data-testid="stSidebar"] {{
     background: {NAVY} !important;
-    border-right: 1px solid rgba(255,255,255,.06) !important;
+    border-right: 1px solid rgba(255,255,255,.05) !important;
 }}
-[data-testid="stSidebar"] * {{ color: {MUTED} !important; }}
+[data-testid="stSidebar"] * {{ color: var(--nav-text) !important; }}
 [data-testid="stSidebar"] .stMarkdown h1,
 [data-testid="stSidebar"] .stMarkdown h2,
 [data-testid="stSidebar"] .stMarkdown h3 {{ color: {WHITE} !important; }}
 
+/* Sidebar scrollbar */
+[data-testid="stSidebar"]::-webkit-scrollbar {{ width: 3px; }}
+[data-testid="stSidebar"]::-webkit-scrollbar-thumb {{ background: rgba(255,255,255,.1); }}
+
 /* Group label */
 .nav-group-label {{
-    font-size:.6rem; font-weight:700; letter-spacing:.1em;
-    text-transform:uppercase; color:{MUTED3} !important;
-    padding:10px 4px 3px; margin-top:4px; display:block;
+    font-size: .6rem;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: rgba(148,163,184,.45) !important;
+    padding: 14px 14px 4px;
+    margin: 0;
+    display: block;
 }}
 
 /* Nav buttons */
 [data-testid="stSidebar"] .stButton > button {{
-    background: transparent !important; border: none !important;
-    color: {MUTED} !important; text-align: left !important;
-    padding: 5px 12px !important; border-radius: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    color: var(--nav-text) !important;
+    text-align: left !important;
+    padding: 6px 14px 6px 16px !important;
+    border-radius: 0 !important;
     border-left: 2px solid transparent !important;
-    font-size: .79rem !important; width: 100% !important;
-    font-weight: 400 !important; margin: 0 !important;
-    line-height: 1.4 !important; min-height: 0 !important;
-    height: auto !important; transition: background .15s, color .15s, transform .15s, border-left-color .15s !important;
+    font-size: .8rem !important;
+    width: 100% !important;
+    font-weight: 400 !important;
+    margin: 0 !important;
+    line-height: 1.5 !important;
+    min-height: 0 !important;
+    height: auto !important;
+    letter-spacing: .01em !important;
+    transition: all var(--transition) !important;
 }}
 [data-testid="stSidebar"] .stButton > button:hover {{
-    background: rgba(255,255,255,.07) !important;
-    color: {LIGHT} !important;
-    border-left-color: rgba(55,138,221,.5) !important;
-    transform: translateX(2px) !important;
+    background: rgba(255,255,255,.05) !important;
+    color: var(--nav-text-hover) !important;
+    border-left-color: rgba(33,150,243,.4) !important;
+    padding-left: 18px !important;
 }}
 [data-testid="stSidebar"] .stButton > button:focus {{
-    box-shadow: none !important; outline: none !important;
+    box-shadow: none !important;
+    outline: none !important;
 }}
 [data-testid="stSidebar"] .stButton {{ margin-bottom:0 !important; margin-top:0 !important; }}
 [data-testid="stSidebar"] .element-container {{ margin-bottom:0 !important; margin-top:0 !important; }}
 [data-testid="stSidebar"] [data-testid="stVerticalBlock"] {{ gap:0 !important; }}
 
+/* Sidebar divider */
+[data-testid="stSidebar"] hr {{
+    border: none !important;
+    border-top: 1px solid rgba(255,255,255,.06) !important;
+    margin: 8px 14px !important;
+}}
+
+/* Sidebar selectbox */
+[data-testid="stSidebar"] .stSelectbox label {{
+    font-size: .68rem !important;
+    font-weight: 600 !important;
+    letter-spacing: .06em !important;
+    text-transform: uppercase !important;
+    color: rgba(148,163,184,.55) !important;
+}}
+[data-testid="stSidebar"] .stSelectbox > div > div {{
+    background: rgba(255,255,255,.05) !important;
+    border: 1px solid rgba(255,255,255,.1) !important;
+    border-radius: var(--radius-sm) !important;
+    color: #CBD5E1 !important;
+    font-size: .8rem !important;
+}}
+
+/* Sidebar text inputs */
+[data-testid="stSidebar"] .stTextInput label {{
+    font-size: .68rem !important;
+    font-weight: 600 !important;
+    letter-spacing: .06em !important;
+    text-transform: uppercase !important;
+    color: rgba(148,163,184,.55) !important;
+}}
+[data-testid="stSidebar"] .stTextInput input {{
+    background: rgba(255,255,255,.05) !important;
+    border: 1px solid rgba(255,255,255,.1) !important;
+    border-radius: var(--radius-sm) !important;
+    color: #CBD5E1 !important;
+    font-size: .8rem !important;
+}}
+[data-testid="stSidebar"] .stTextInput input:focus {{
+    border-color: rgba(33,150,243,.5) !important;
+    box-shadow: 0 0 0 3px rgba(33,150,243,.08) !important;
+}}
+
+/* Sidebar sliders */
+[data-testid="stSidebar"] .stSlider label {{
+    font-size: .68rem !important;
+    font-weight: 600 !important;
+    letter-spacing: .06em !important;
+    text-transform: uppercase !important;
+    color: rgba(148,163,184,.55) !important;
+}}
+
+/* Sidebar number input */
+[data-testid="stSidebar"] .stNumberInput label {{
+    font-size: .68rem !important;
+    font-weight: 600 !important;
+    letter-spacing: .06em !important;
+    text-transform: uppercase !important;
+    color: rgba(148,163,184,.55) !important;
+}}
+[data-testid="stSidebar"] .stNumberInput input {{
+    background: rgba(255,255,255,.05) !important;
+    border: 1px solid rgba(255,255,255,.1) !important;
+    border-radius: var(--radius-sm) !important;
+    color: #CBD5E1 !important;
+    font-size: .8rem !important;
+}}
+
+/* ══ MAIN CONTENT AREA ═══════════════════════════════════════════════════════ */
+section[data-testid="stMain"] .block-container {{
+    padding-top: 1.5rem !important;
+    padding-bottom: 3rem !important;
+    max-width: 1100px !important;
+}}
+
 /* ══ KOMPONEN BERSAMA ════════════════════════════════════════════════════════ */
 
-/* Hero header */
+/* Hero header — more refined with subtle mesh gradient */
 .rs-header {{
-    background: linear-gradient(135deg, {NAVY} 0%, {BLUE} 100%);
-    padding: 1.5rem 2rem; border-radius: 12px;
-    margin-bottom: 1.25rem; position: relative; overflow: hidden;
-    display: flex; align-items: center; gap: 20px;
+    background: linear-gradient(135deg, {NAVY3} 0%, {NAVY2} 30%, {BLUE} 100%);
+    padding: 1.75rem 2rem;
+    border-radius: var(--radius-lg);
+    margin-bottom: 1.5rem;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    box-shadow: 0 4px 24px rgba(10,22,40,.25), 0 0 0 1px rgba(255,255,255,.06);
 }}
 .rs-header::before {{
-    content:''; position:absolute; left:-30px; bottom:-40px;
-    width:140px; height:140px; border-radius:50%;
-    background:rgba(255,255,255,.03); pointer-events:none;
+    content:'';
+    position:absolute;
+    left: -60px; bottom: -80px;
+    width: 220px; height: 220px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(33,150,243,.15) 0%, transparent 70%);
+    pointer-events: none;
 }}
 .rs-header::after {{
-    content:''; position:absolute; right:-50px; top:-50px;
-    width:180px; height:180px; border-radius:50%;
-    background:rgba(255,255,255,.06); pointer-events:none;
+    content:'';
+    position:absolute;
+    right: -60px; top: -60px;
+    width: 240px; height: 240px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,255,255,.06) 0%, transparent 70%);
+    pointer-events: none;
+}}
+/* Subtle grid texture */
+.rs-header .rs-header-texture {{
+    position: absolute;
+    inset: 0;
+    background-image:
+        linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+    background-size: 32px 32px;
+    pointer-events: none;
 }}
 .rs-header-icon {{
-    background: rgba(255,255,255,.1); border-radius:12px;
-    width:56px; height:56px; display:flex; align-items:center;
-    justify-content:center; flex-shrink:0; position:relative; z-index:1;
-    font-size:28px; color:{WHITE};
+    background: rgba(255,255,255,.1);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,.15);
+    border-radius: var(--radius-md);
+    width: 60px; height: 60px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    position: relative; z-index: 1;
+    font-size: 28px; color:{WHITE};
+    box-shadow: 0 2px 10px rgba(0,0,0,.2);
 }}
 .rs-header h1 {{
-    font-family:'DM Serif Display',serif;
-    font-size:1.8rem; color:{WHITE}; margin:0 0 .2rem;
-    position:relative; z-index:1;
+    font-family: var(--font-display);
+    font-size: 1.9rem;
+    color: {WHITE};
+    margin: 0 0 .25rem;
+    position: relative; z-index: 1;
+    letter-spacing: -.02em;
+    text-shadow: 0 1px 8px rgba(0,0,0,.2);
 }}
-.rs-header p {{ color:#85b7eb; font-size:.82rem; margin:0; position:relative; z-index:1; }}
-.rs-logo-link {{ text-decoration:none; color:{BLUE2} !important; font-size:.8rem; }}
+.rs-header p {{
+    color: rgba(187,222,251,.8);
+    font-size: .82rem;
+    margin: 0;
+    position: relative; z-index: 1;
+    font-weight: 400;
+    letter-spacing: .01em;
+}}
+.rs-logo-link {{ text-decoration:none; color:{BLUE3} !important; font-size:.8rem; }}
 
-/* Greeting bar */
+/* Greeting bar — glass morphism style */
 .rs-greeting {{
-    background: {NAVY}; border-radius:10px;
-    padding:12px 18px; display:flex; align-items:center;
-    justify-content:space-between; margin-bottom:14px;
+    background: linear-gradient(135deg, {NAVY2} 0%, {NAVY3} 100%);
+    border: 1px solid rgba(255,255,255,.07);
+    border-radius: var(--radius-md);
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+    box-shadow: var(--shadow-sm);
 }}
-.rs-greeting-text {{ font-size:.92rem; color:{WHITE}; font-weight:600; }}
-.rs-greeting-sub  {{ font-size:.75rem; color:{MUTED}; margin-top:1px; }}
+.rs-greeting-text {{ font-size: .9rem; color: {WHITE}; font-weight: 600; letter-spacing: -.01em; }}
+.rs-greeting-sub  {{ font-size: .74rem; color: {SLATE2}; margin-top: 2px; }}
 .rs-greeting-badge {{
-    background:linear-gradient(90deg,#F5B800,#d4980a); border-radius:6px;
-    padding:4px 12px; font-size:.72rem; color:#000; font-weight:800; letter-spacing:.3px;
+    background: linear-gradient(135deg, {AMBER2}, {AMBER});
+    border-radius: var(--radius-sm);
+    padding: 4px 12px;
+    font-size: .7rem;
+    color: #1a1000;
+    font-weight: 800;
+    letter-spacing: .04em;
+    box-shadow: 0 2px 8px rgba(255,179,0,.35);
 }}
 
-/* Metric card */
+/* Metric card — glass card style */
 .rs-metric {{
-    background: var(--background-color, #f7faff);
-    border: .5px solid {BORDER}; border-radius:8px;
-    padding:12px 14px; text-align:center;
-    transition: box-shadow .2s, transform .2s;
+    background: {BG_CARD};
+    border: 1px solid {BORDER};
+    border-radius: var(--radius-md);
+    padding: 16px 18px;
+    text-align: center;
+    transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
+    box-shadow: var(--shadow-card);
+    position: relative;
+    overflow: hidden;
+}}
+.rs-metric::before {{
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, {BLUE}, {BLUE3});
+    opacity: 0;
+    transition: opacity var(--transition);
 }}
 .rs-metric:hover {{
-    transform: translateY(-2px);
-    box-shadow: 0 4px 16px rgba(12,35,64,.09);
-    border-color: {MUTED};
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+    border-color: {BORDER2};
 }}
+.rs-metric:hover::before {{ opacity: 1; }}
 .rs-metric-label {{
-    font-size:.72rem; color:#5f8ab5; text-transform:uppercase;
-    letter-spacing:.06em; margin-bottom:5px;
+    font-size: .68rem;
+    color: {SLATE};
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    margin-bottom: 8px;
+    font-weight: 600;
 }}
-.rs-metric-value {{ font-size:1.5rem; font-weight:600; color:{NAVY}; }}
-.rs-metric-sub   {{ font-size:.72rem; color:{GREEN}; margin-top:2px; }}
+.rs-metric-value {{
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: {NAVY};
+    letter-spacing: -.03em;
+    line-height: 1;
+}}
+.rs-metric-sub {{ font-size: .72rem; color: {GREEN2}; margin-top: 6px; font-weight: 500; }}
 
-/* Step card — 2 col layout */
+/* Step card — clean numbered list */
 .rs-step {{
-    background: var(--background-color, #f7faff);
-    border: .5px solid {BORDER}; border-radius:8px;
-    padding:10px 12px; display:flex; align-items:flex-start; gap:10px;
+    background: {BG_CARD};
+    border: 1px solid {BORDER};
+    border-radius: var(--radius-md);
+    padding: 14px 16px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    transition: transform var(--transition), box-shadow var(--transition);
+    box-shadow: var(--shadow-card);
+    margin-bottom: 8px;
+}}
+.rs-step:hover {{
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
 }}
 .rs-step-num {{
-    background:{BLUE}; color:{WHITE};
-    width:24px; height:24px; border-radius:50%;
-    display:flex; align-items:center; justify-content:center;
-    font-weight:600; font-size:.7rem; flex-shrink:0;
+    background: linear-gradient(135deg, {BLUE}, {BLUE3});
+    color: {WHITE};
+    width: 26px; height: 26px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700;
+    font-size: .7rem;
+    flex-shrink: 0;
+    box-shadow: 0 2px 6px rgba(33,150,243,.3);
 }}
 
-/* Narasi / AI */
+/* Narasi / AI blocks */
 .rs-narasi {{
-    background:#e6f1fb; border-left:3px solid {BLUE};
-    border-radius:0 8px 8px 0; padding:.9rem 1.1rem;
-    font-size:.88rem; color:{NAVY}; line-height:1.65; margin-top:.5rem;
-    box-shadow: 0 1px 6px rgba(12,35,64,.06);
+    background: linear-gradient(135deg, #EFF6FF 0%, #EEF2FF 100%);
+    border-left: 3px solid {BLUE};
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    padding: 1rem 1.2rem;
+    font-size: .88rem;
+    color: {NAVY};
+    line-height: 1.7;
+    margin-top: .5rem;
+    box-shadow: var(--shadow-sm);
 }}
 .rs-ai-narasi {{
-    background: linear-gradient(135deg, {BG_AI} 0%, #e8f0fe 100%);
-    border-left: 3px solid {INDIGO}; border-radius:0 8px 8px 0;
-    padding:.9rem 1.1rem; font-size:.88rem; color:#1e1b4b;
-    line-height:1.7; margin-top:.5rem;
-    box-shadow: 0 1px 6px rgba(12,35,64,.06);
+    background: linear-gradient(135deg, {BG_AI} 0%, #E8F5FF 100%);
+    border-left: 3px solid {INDIGO};
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    padding: 1rem 1.2rem;
+    font-size: .88rem;
+    color: #1E1B4B;
+    line-height: 1.75;
+    margin-top: .5rem;
+    box-shadow: var(--shadow-sm);
 }}
 .rs-ai-badge {{
-    display:inline-flex; align-items:center; gap:5px;
-    background:linear-gradient(90deg,{INDIGO},{VIOLET});
-    color:{WHITE}; font-size:.66rem; font-weight:600;
-    letter-spacing:.06em; padding:2px 10px; border-radius:20px;
-    margin-bottom:8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: linear-gradient(135deg, {INDIGO}, {VIOLET});
+    color: {WHITE};
+    font-size: .64rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    padding: 3px 10px;
+    border-radius: 20px;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    box-shadow: 0 2px 8px rgba(99,102,241,.25);
 }}
 
 /* Section typography */
 .rs-section-title {{
-    font-family:'DM Serif Display',serif; font-size:1.3rem;
-    color:{NAVY}; margin-bottom:.2rem;
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    color: {NAVY};
+    margin-bottom: .25rem;
+    letter-spacing: -.02em;
 }}
-.rs-section-sub {{ font-size:.8rem; color:#5f8ab5; margin-bottom:.9rem; }}
+.rs-section-sub {{ font-size: .8rem; color: {SLATE}; margin-bottom: 1rem; }}
 
 /* Badges */
-.badge-valid     {{ background:#eaf3de; color:{GREEN};  padding:2px 10px; border-radius:20px; font-size:.75rem; font-weight:500; }}
-.badge-invalid   {{ background:#fcebeb; color:{RED};    padding:2px 10px; border-radius:20px; font-size:.75rem; font-weight:500; }}
-.badge-reliable  {{ background:#eaf3de; color:{GREEN};  padding:3px 12px; border-radius:20px; font-size:.8rem;  font-weight:600; }}
-.badge-unreliable{{ background:#fcebeb; color:{RED};    padding:3px 12px; border-radius:20px; font-size:.8rem;  font-weight:600; }}
+.badge-valid     {{ background: #ECFDF5; color: {GREEN}; border: 1px solid #A7F3D0; padding: 3px 10px; border-radius: 20px; font-size: .73rem; font-weight: 600; }}
+.badge-invalid   {{ background: #FEF2F2; color: {RED};   border: 1px solid #FECACA; padding: 3px 10px; border-radius: 20px; font-size: .73rem; font-weight: 600; }}
+.badge-reliable  {{ background: #ECFDF5; color: {GREEN}; border: 1px solid #A7F3D0; padding: 3px 12px; border-radius: 20px; font-size: .78rem; font-weight: 600; }}
+.badge-unreliable{{ background: #FEF2F2; color: {RED};   border: 1px solid #FECACA; padding: 3px 12px; border-radius: 20px; font-size: .78rem; font-weight: 600; }}
 .pro-badge {{
-    background:linear-gradient(90deg,{BLUE},{NAVY});
-    color:{WHITE}; padding:3px 12px; border-radius:20px;
-    font-size:.72rem; font-weight:600; letter-spacing:.04em;
+    background: linear-gradient(135deg, {BLUE}, {NAVY});
+    color: {WHITE};
+    padding: 3px 12px;
+    border-radius: 20px;
+    font-size: .7rem;
+    font-weight: 700;
+    letter-spacing: .06em;
+    box-shadow: 0 2px 6px rgba(21,101,192,.25);
 }}
 .pro-lock-badge {{
-    background:linear-gradient(90deg,{INDIGO},{VIOLET});
-    color:{WHITE}; padding:2px 8px; border-radius:10px;
-    font-size:.62rem; font-weight:600; letter-spacing:.04em;
-    margin-left:4px; vertical-align:middle;
+    background: linear-gradient(135deg, {INDIGO}, {VIOLET});
+    color: {WHITE};
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: .62rem;
+    font-weight: 700;
+    letter-spacing: .06em;
+    margin-left: 4px;
+    vertical-align: middle;
+    box-shadow: 0 1px 4px rgba(99,102,241,.25);
 }}
 
 /* CTA wizard block */
 .rs-cta-wizard {{
-    background:#eef2ff; border:1px solid #c7d2fe;
-    border-radius:10px; padding:14px 16px;
-    display:grid; grid-template-columns:1fr auto; gap:16px; align-items:center;
+    background: linear-gradient(135deg, #EEF2FF 0%, #E8F0FE 100%);
+    border: 1px solid #C7D2FE;
+    border-radius: var(--radius-md);
+    padding: 18px 20px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 16px;
+    align-items: center;
+    box-shadow: 0 2px 8px rgba(99,102,241,.08);
 }}
-.rs-cta-title {{ font-size:.9rem; font-weight:600; color:#3730a3; margin-bottom:3px; }}
-.rs-cta-desc  {{ font-size:.78rem; color:#4338ca; line-height:1.45; }}
+.rs-cta-title {{ font-size: .92rem; font-weight: 700; color: #3730A3; margin-bottom: 4px; letter-spacing: -.01em; }}
+.rs-cta-desc  {{ font-size: .78rem; color: #4338CA; line-height: 1.5; }}
 
 /* Chat bubbles */
 .chat-container {{
-    max-height:420px; overflow-y:auto; padding:.5rem;
-    background:#f7faff; border:.5px solid {BORDER};
-    border-radius:10px; margin-bottom:1rem;
-    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 4%, black 96%, transparent 100%);
-    mask-image: linear-gradient(to bottom, transparent 0%, black 4%, black 96%, transparent 100%);
+    max-height: 420px;
+    overflow-y: auto;
+    padding: .75rem;
+    background: {BG_SOFT};
+    border: 1px solid {BORDER};
+    border-radius: var(--radius-md);
+    margin-bottom: 1rem;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%);
+    mask-image: linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%);
 }}
 .chat-bubble-user {{
-    background:{BLUE}; color:{WHITE}; padding:.55rem .95rem;
-    border-radius:14px 14px 3px 14px;
-    margin:.4rem 0 .4rem 20%; font-size:.86rem; line-height:1.5;
+    background: linear-gradient(135deg, {BLUE}, {BLUE3});
+    color: {WHITE};
+    padding: .6rem 1rem;
+    border-radius: 14px 14px 4px 14px;
+    margin: .5rem 0 .5rem 25%;
+    font-size: .86rem;
+    line-height: 1.55;
+    box-shadow: 0 2px 8px rgba(33,150,243,.2);
 }}
 .chat-bubble-ai {{
-    background:{WHITE}; border:.5px solid {BORDER}; color:{NAVY};
-    padding:.55rem .95rem; border-radius:14px 14px 14px 3px;
-    margin:.4rem 20% .4rem 0; font-size:.86rem; line-height:1.6;
+    background: {BG_CARD};
+    border: 1px solid {BORDER};
+    color: {NAVY};
+    padding: .6rem 1rem;
+    border-radius: 14px 14px 14px 4px;
+    margin: .5rem 25% .5rem 0;
+    font-size: .86rem;
+    line-height: 1.6;
+    box-shadow: var(--shadow-card);
 }}
-.chat-label {{ font-size:.68rem; color:#5f8ab5; margin-bottom:2px; letter-spacing:.04em; }}
+.chat-label {{ font-size: .67rem; color: {SLATE}; margin-bottom: 3px; letter-spacing: .04em; font-weight: 600; text-transform: uppercase; }}
+
+/* ══ TABLES ══════════════════════════════════════════════════════════════════ */
+.stDataFrame {{
+    border-radius: var(--radius-md) !important;
+    overflow: hidden !important;
+    box-shadow: var(--shadow-card) !important;
+    border: 1px solid {BORDER} !important;
+}}
+
+/* ══ EXPANDERS ═══════════════════════════════════════════════════════════════ */
+[data-testid="stExpander"] {{
+    border: 1px solid {BORDER} !important;
+    border-radius: var(--radius-md) !important;
+    box-shadow: var(--shadow-card) !important;
+    overflow: hidden !important;
+}}
+[data-testid="stExpander"] summary {{
+    font-weight: 600 !important;
+    font-size: .88rem !important;
+    color: {NAVY} !important;
+    padding: 10px 16px !important;
+}}
+
+/* ══ ALERTS / INFO / SUCCESS / ERROR ═════════════════════════════════════════ */
+[data-testid="stAlert"] {{
+    border-radius: var(--radius-md) !important;
+    border-width: 1px !important;
+    font-size: .85rem !important;
+}}
+
+/* ══ TABS ════════════════════════════════════════════════════════════════════ */
+[data-baseweb="tab-list"] {{
+    gap: 4px !important;
+    background: transparent !important;
+    border-bottom: 1px solid {BORDER} !important;
+    padding-bottom: 0 !important;
+}}
+[data-baseweb="tab"] {{
+    border-radius: var(--radius-sm) var(--radius-sm) 0 0 !important;
+    font-size: .84rem !important;
+    font-weight: 500 !important;
+    padding: 8px 16px !important;
+    color: {SLATE} !important;
+    background: transparent !important;
+    border: none !important;
+    transition: color var(--transition), background var(--transition) !important;
+}}
+[data-baseweb="tab"]:hover {{
+    color: {NAVY} !important;
+    background: rgba(10,22,40,.04) !important;
+}}
+[aria-selected="true"][data-baseweb="tab"] {{
+    color: {BLUE} !important;
+    font-weight: 600 !important;
+    background: transparent !important;
+    border-bottom: 2px solid {BLUE} !important;
+}}
+
+/* ══ PRIMARY BUTTONS ═════════════════════════════════════════════════════════ */
+[data-testid="stMain"] .stButton > button[kind="primary"],
+[data-testid="stMain"] .stButton > button[data-testid*="primary"] {{
+    background: linear-gradient(135deg, {BLUE} 0%, {BLUE3} 100%) !important;
+    color: {WHITE} !important;
+    border: none !important;
+    border-radius: var(--radius-sm) !important;
+    font-weight: 600 !important;
+    font-size: .86rem !important;
+    letter-spacing: .01em !important;
+    box-shadow: 0 2px 10px rgba(33,150,243,.3) !important;
+    transition: all var(--transition) !important;
+}}
+[data-testid="stMain"] .stButton > button[kind="primary"]:hover {{
+    box-shadow: 0 4px 16px rgba(33,150,243,.4) !important;
+    transform: translateY(-1px) !important;
+}}
+
+/* ══ METRICS (native) ════════════════════════════════════════════════════════ */
+[data-testid="stMetricValue"] {{
+    font-size: 1.7rem !important;
+    font-weight: 700 !important;
+    letter-spacing: -.03em !important;
+    color: {NAVY} !important;
+}}
 
 /* Footer */
 .rs-footer {{
-    margin-top:3rem; padding-top:1.25rem;
-    border-top:.5px solid #e0eaf5; text-align:center;
-    font-size:.78rem; color:#999;
+    margin-top: 3rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid {BORDER};
+    text-align: center;
+    font-size: .76rem;
+    color: {SLATE2};
 }}
-.rs-footer a {{ color:{BLUE}; text-decoration:none; }}
-.rs-footer a:hover {{ text-decoration:underline; }}
+.rs-footer a {{ color: {BLUE}; text-decoration: none; font-weight: 500; }}
+.rs-footer a:hover {{ color: {BLUE2}; text-decoration: underline; }}
+.rs-footer b {{ color: {NAVY}; }}
 </style>"""
 
 
@@ -269,194 +642,336 @@ header[data-testid="stHeader"] {{ display:none; }}
 [data-testid="collapsedControl"],
 [data-testid="stSidebarCollapsedControl"] {{ display:none !important; }}
 
+/* ── Page background — deep space gradient ── */
 [data-testid="stAppViewContainer"],
 [data-testid="stApp"] {{
-    background:linear-gradient(135deg,{NAVY} 0%,{NAVY2} 50%,{BLUE} 100%) !important;
+    background: linear-gradient(145deg, {NAVY} 0%, #0d1f3c 45%, #122a50 70%, #0e2244 100%) !important;
+    position: relative;
 }}
-section[data-testid="stMain"] .block-container {{
-    padding-top:5vh !important; max-width:440px !important;
-    margin:0 auto !important;
-    padding-left:1rem !important; padding-right:1rem !important;
-    padding-bottom:3rem !important;
+[data-testid="stAppViewContainer"]::before {{
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+        radial-gradient(ellipse at 20% 40%, rgba(33,150,243,.08) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 70%, rgba(99,102,241,.06) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 10%, rgba(255,255,255,.02) 0%, transparent 40%);
+    pointer-events: none;
+    z-index: 0;
+}}
+/* Subtle dot grid texture */
+[data-testid="stAppViewContainer"]::after {{
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: radial-gradient(rgba(255,255,255,.04) 1px, transparent 1px);
+    background-size: 24px 24px;
+    pointer-events: none;
+    z-index: 0;
 }}
 
-/* Kartu */
-.signin-card {{
-    background:rgba(255,255,255,.09); backdrop-filter:blur(20px);
-    -webkit-backdrop-filter:blur(20px);
-    border:1px solid rgba(255,255,255,.14); border-radius:16px;
-    overflow:hidden; box-shadow:0 8px 32px rgba(0,0,0,.3);
-    width:100%; max-width:420px;
+section[data-testid="stMain"] .block-container {{
+    padding-top: 6vh !important;
+    max-width: 440px !important;
+    margin: 0 auto !important;
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+    padding-bottom: 3rem !important;
+    position: relative;
+    z-index: 1;
 }}
+
+/* ── Login Card ── */
+.signin-card {{
+    background: rgba(255,255,255,.06);
+    backdrop-filter: blur(24px) saturate(1.4);
+    -webkit-backdrop-filter: blur(24px) saturate(1.4);
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow:
+        0 20px 60px rgba(0,0,0,.4),
+        0 0 0 1px rgba(255,255,255,.04),
+        inset 0 1px 0 rgba(255,255,255,.1);
+    width: 100%;
+    max-width: 440px;
+}}
+
+/* Card header */
 .signin-card-header {{
-    background:linear-gradient(135deg,{NAVY} 0%,{BLUE} 65%,{BLUE3} 100%);
-    padding:22px 22px 18px; text-align:center;
-    position:relative; overflow:hidden;
+    background: linear-gradient(135deg, {NAVY} 0%, {NAVY3} 40%, {BLUE} 100%);
+    padding: 28px 24px 22px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
 }}
 .signin-card-header::before {{
-    content:''; position:absolute; right:-40px; top:-40px;
-    width:150px; height:150px; border-radius:50%;
-    background:rgba(255,255,255,.05); pointer-events:none;
+    content: '';
+    position: absolute;
+    right: -50px; top: -50px;
+    width: 180px; height: 180px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(33,150,243,.15) 0%, transparent 70%);
+    pointer-events: none;
 }}
 .signin-card-header::after {{
-    content:''; position:absolute; left:-25px; bottom:-40px;
-    width:120px; height:120px; border-radius:50%;
-    background:rgba(255,255,255,.04); pointer-events:none;
+    content: '';
+    position: absolute;
+    left: -30px; bottom: -50px;
+    width: 150px; height: 150px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,255,255,.04) 0%, transparent 70%);
+    pointer-events: none;
+}}
+/* Grid lines on header */
+.signin-card-header .header-grid {{
+    position: absolute;
+    inset: 0;
+    background-image:
+        linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
+    background-size: 28px 28px;
+    pointer-events: none;
 }}
 .signin-header-logo {{
-    position:relative; z-index:1; margin-bottom:10px;
-    width:52px; height:52px; border-radius:12px;
-    background:rgba(255,255,255,.1);
-    display:flex; align-items:center; justify-content:center; margin:0 auto 10px;
+    position: relative; z-index: 1;
+    width: 56px; height: 56px;
+    border-radius: 14px;
+    background: rgba(255,255,255,.12);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,.18);
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 12px;
+    box-shadow: 0 4px 14px rgba(0,0,0,.2), 0 0 0 1px rgba(255,255,255,.08);
 }}
 .signin-header-logo img {{
-    width:34px; height:34px; object-fit:contain;
-    filter:drop-shadow(0 2px 8px rgba(0,0,0,.2));
+    width: 36px; height: 36px;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 8px rgba(0,0,0,.3));
 }}
 .signin-header-title {{
-    font-family:'DM Serif Display',serif; font-size:1.4rem;
-    color:{WHITE}; letter-spacing:-.2px;
-    position:relative; z-index:1; margin:0 0 4px;
+    font-family: 'DM Serif Display', Georgia, serif;
+    font-size: 1.5rem;
+    color: {WHITE};
+    letter-spacing: -.02em;
+    position: relative; z-index: 1;
+    margin: 0 0 5px;
+    text-shadow: 0 1px 8px rgba(0,0,0,.3);
 }}
-.signin-header-sub {{ font-size:.72rem; color:#85b7eb; position:relative; z-index:1; }}
+.signin-header-sub {{
+    font-size: .73rem;
+    color: rgba(187,222,251,.75);
+    position: relative; z-index: 1;
+    letter-spacing: .02em;
+    font-weight: 400;
+}}
+
+/* Card body */
+.signin-card-body {{
+    padding: 20px 22px 22px;
+}}
 
 /* Tab strip */
 .signin-tab-row {{
-    display:flex; border-bottom:1px solid rgba(255,255,255,.12);
-    margin-bottom:1.2rem; gap:0;
+    display: flex;
+    border-bottom: 1px solid rgba(255,255,255,.1);
+    margin-bottom: 1.4rem;
+    gap: 0;
 }}
-.signin-tab-row .stButton {{ flex:1; }}
+.signin-tab-row .stButton {{ flex: 1; }}
 .signin-tab-row .stButton > button {{
-    background:transparent !important; border:none !important;
-    border-bottom:2.5px solid transparent !important; border-radius:0 !important;
-    color:rgba(255,255,255,.45) !important; font-size:.82rem !important;
-    font-weight:500 !important; padding:8px 4px !important;
-    width:100% !important; margin-bottom:-1px !important;
-    transition:color .15s,border-color .15s !important;
+    background: transparent !important;
+    border: none !important;
+    border-bottom: 2px solid transparent !important;
+    border-radius: 0 !important;
+    color: rgba(255,255,255,.4) !important;
+    font-size: .83rem !important;
+    font-weight: 500 !important;
+    padding: 10px 4px !important;
+    width: 100% !important;
+    margin-bottom: -1px !important;
+    letter-spacing: .01em !important;
+    transition: color .2s, border-color .2s !important;
 }}
 .signin-tab-row .stButton > button:hover {{
-    color:rgba(255,255,255,.88) !important; background:transparent !important;
+    color: rgba(255,255,255,.8) !important;
+    background: transparent !important;
 }}
 .signin-tab-active .stButton > button {{
-    color:{WHITE} !important; font-weight:700 !important;
-    border-bottom-color:#F5B800 !important;
+    color: {WHITE} !important;
+    font-weight: 700 !important;
+    border-bottom-color: {BLUE2} !important;
 }}
 
-/* Inputs */
+/* Form inputs */
 section[data-testid="stMain"] .stTextInput label {{
-    font-size:.72rem !important; font-weight:600 !important;
-    color:rgba(255,255,255,.72) !important; margin-bottom:4px !important;
+    font-size: .7rem !important;
+    font-weight: 600 !important;
+    color: rgba(255,255,255,.6) !important;
+    letter-spacing: .06em !important;
+    text-transform: uppercase !important;
+    margin-bottom: 5px !important;
 }}
 section[data-testid="stMain"] .stTextInput input {{
-    border:1.5px solid rgba(255,255,255,.22) !important;
-    border-radius:8px !important; padding:9px 12px !important;
-    font-size:.85rem !important;
-    background:rgba(20,50,90,.55) !important;
-    color:{WHITE} !important;
-    -webkit-text-fill-color:{WHITE} !important;
-    caret-color:{WHITE} !important;
-    transition:border-color .15s,box-shadow .15s !important;
+    border: 1.5px solid rgba(255,255,255,.15) !important;
+    border-radius: var(--radius-sm) !important;
+    padding: 10px 13px !important;
+    font-size: .86rem !important;
+    background: rgba(255,255,255,.07) !important;
+    color: {WHITE} !important;
+    -webkit-text-fill-color: {WHITE} !important;
+    caret-color: {BLUE2} !important;
+    transition: border-color .2s, box-shadow .2s !important;
+    letter-spacing: .01em !important;
 }}
 section[data-testid="stMain"] .stTextInput input:focus {{
-    border-color:rgba(255,255,255,.48) !important;
-    background:rgba(20,50,90,.7) !important;
-    box-shadow:0 0 0 3px rgba(255,255,255,.07) !important;
-    color:{WHITE} !important;
-    -webkit-text-fill-color:{WHITE} !important;
+    border-color: rgba(33,150,243,.6) !important;
+    background: rgba(255,255,255,.1) !important;
+    box-shadow: 0 0 0 3px rgba(33,150,243,.12) !important;
+    color: {WHITE} !important;
+    -webkit-text-fill-color: {WHITE} !important;
 }}
 section[data-testid="stMain"] .stTextInput input:-webkit-autofill,
 section[data-testid="stMain"] .stTextInput input:-webkit-autofill:hover,
 section[data-testid="stMain"] .stTextInput input:-webkit-autofill:focus {{
-    -webkit-text-fill-color:{WHITE} !important;
-    -webkit-box-shadow:0 0 0 1000px rgba(20,50,90,.8) inset !important;
-    caret-color:{WHITE} !important;
+    -webkit-text-fill-color: {WHITE} !important;
+    -webkit-box-shadow: 0 0 0 1000px rgba(13,31,60,.85) inset !important;
+    caret-color: {WHITE} !important;
 }}
 section[data-testid="stMain"] .stTextInput input::placeholder {{
-    color:rgba(255,255,255,.38) !important;
-    -webkit-text-fill-color:rgba(255,255,255,.38) !important;
+    color: rgba(255,255,255,.3) !important;
+    -webkit-text-fill-color: rgba(255,255,255,.3) !important;
 }}
 
 /* Submit button */
 section[data-testid="stMain"] .stForm [data-testid="stFormSubmitButton"] > button {{
-    background:linear-gradient(135deg,{NAVY} 0%,{BLUE} 100%) !important;
-    color:{WHITE} !important; border:none !important;
-    border-radius:8px !important; padding:11px !important;
-    font-size:.88rem !important; font-weight:600 !important;
-    width:100% !important;
-    transition:opacity .15s,box-shadow .15s !important;
-    box-shadow:0 4px 14px rgba(24,95,165,.28) !important;
+    background: linear-gradient(135deg, {BLUE} 0%, {BLUE3} 100%) !important;
+    color: {WHITE} !important;
+    border: none !important;
+    border-radius: var(--radius-sm) !important;
+    padding: 11px !important;
+    font-size: .88rem !important;
+    font-weight: 600 !important;
+    width: 100% !important;
+    letter-spacing: .02em !important;
+    transition: opacity .2s, box-shadow .2s, transform .2s !important;
+    box-shadow: 0 4px 16px rgba(33,150,243,.35) !important;
 }}
 section[data-testid="stMain"] .stForm [data-testid="stFormSubmitButton"] > button:hover {{
-    opacity:.92 !important;
-    box-shadow:0 6px 18px rgba(24,95,165,.36) !important;
+    opacity: .92 !important;
+    box-shadow: 0 6px 20px rgba(33,150,243,.45) !important;
+    transform: translateY(-1px) !important;
 }}
 
-/* CTA Coba Gratis */
+/* CTA buttons */
 section[data-testid="stMain"] .stButton > button {{
-    background:rgba(255,255,255,.09) !important;
-    border:1.5px solid rgba(255,255,255,.22) !important;
-    border-radius:8px !important; color:{WHITE} !important;
-    font-size:.82rem !important; font-weight:600 !important;
-    padding:8px !important; width:100% !important;
-    transition:background .15s,border-color .15s !important;
+    background: rgba(255,255,255,.08) !important;
+    border: 1.5px solid rgba(255,255,255,.15) !important;
+    border-radius: var(--radius-sm) !important;
+    color: {WHITE} !important;
+    font-size: .83rem !important;
+    font-weight: 500 !important;
+    padding: 9px !important;
+    width: 100% !important;
+    letter-spacing: .01em !important;
+    transition: background .2s, border-color .2s !important;
 }}
 section[data-testid="stMain"] .stButton > button:hover {{
-    background:rgba(255,255,255,.16) !important;
-    border-color:rgba(255,255,255,.42) !important;
+    background: rgba(255,255,255,.14) !important;
+    border-color: rgba(255,255,255,.3) !important;
 }}
 
 /* Link buttons */
 .signin-link-btn-right {{ text-align:right; margin-top:-2px; margin-bottom:6px; }}
 .signin-link-btn-right .stButton > button {{
-    background:transparent !important; border:none !important;
-    color:{BLUE2} !important; font-size:.72rem !important;
-    font-weight:500 !important; padding:0 !important;
-    height:auto !important; min-height:0 !important; width:auto !important; float:right;
+    background: transparent !important;
+    border: none !important;
+    color: {BLUE3} !important;
+    font-size: .72rem !important;
+    font-weight: 500 !important;
+    padding: 0 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    width: auto !important;
+    float: right;
+    letter-spacing: .01em !important;
 }}
 .signin-link-btn-right .stButton > button:hover {{
-    background:transparent !important; text-decoration:underline !important;
+    background: transparent !important;
+    text-decoration: underline !important;
 }}
 .signin-link-btn .stButton > button {{
-    background:transparent !important; border:none !important;
-    color:{BLUE2} !important; font-size:.72rem !important; font-weight:600 !important;
-    padding:2px 6px !important; height:auto !important; min-height:0 !important;
+    background: transparent !important;
+    border: none !important;
+    color: {BLUE3} !important;
+    font-size: .72rem !important;
+    font-weight: 600 !important;
+    padding: 2px 6px !important;
+    height: auto !important;
+    min-height: 0 !important;
+    letter-spacing: .01em !important;
 }}
 .signin-link-btn .stButton > button:hover {{
-    background:transparent !important; text-decoration:underline !important;
+    background: transparent !important;
+    text-decoration: underline !important;
 }}
 .signin-link-btn-muted .stButton > button {{
-    color:#7aa8cc !important; font-weight:400 !important; font-size:.7rem !important;
+    color: rgba(148,163,184,.7) !important;
+    font-weight: 400 !important;
+    font-size: .7rem !important;
 }}
 
 /* Divider */
 .signin-divider {{
-    text-align:center; font-size:.7rem; color:rgba(255,255,255,.3);
-    margin:8px 0; position:relative;
+    text-align: center;
+    font-size: .68rem;
+    color: rgba(255,255,255,.25);
+    margin: 10px 0;
+    position: relative;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    font-weight: 600;
 }}
-.signin-divider::before,.signin-divider::after {{
-    content:''; position:absolute; top:50%;
-    width:38%; height:1px; background:rgba(255,255,255,.12);
+.signin-divider::before, .signin-divider::after {{
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 38%;
+    height: 1px;
+    background: rgba(255,255,255,.1);
 }}
-.signin-divider::before {{ left:0; }}
-.signin-divider::after  {{ right:0; }}
+.signin-divider::before {{ left: 0; }}
+.signin-divider::after  {{ right: 0; }}
 
 /* Footer */
 .signin-footer {{
-    text-align:center; margin-top:10px;
-    font-size:.72rem; color:#8aabcc;
+    text-align: center;
+    margin-top: 12px;
+    font-size: .72rem;
+    color: rgba(148,163,184,.6);
 }}
-.signin-footer a {{ color:{BLUE2}; font-weight:600; text-decoration:none; }}
-.signin-footer a:hover {{ text-decoration:underline; }}
+.signin-footer a {{ color: {BLUE3}; font-weight: 600; text-decoration: none; }}
+.signin-footer a:hover {{ text-decoration: underline; }}
 .signin-page-footer {{
-    text-align:center; margin-top:1.2rem;
-    font-size:.7rem; color:#9ab5cc; line-height:1.7;
+    text-align: center;
+    margin-top: 1.5rem;
+    font-size: .7rem;
+    color: rgba(148,163,184,.45);
+    line-height: 1.8;
 }}
-.signin-page-footer a {{ color:{BLUE2}; text-decoration:none; font-weight:500; }}
+.signin-page-footer a {{ color: rgba(66,165,245,.7); text-decoration: none; font-weight: 500; }}
+
+/* Alerts inside login */
+section[data-testid="stMain"] [data-testid="stAlert"] {{
+    border-radius: var(--radius-sm) !important;
+    font-size: .82rem !important;
+}}
+
 .forgot-link {{ text-align:right; margin:-4px 0 10px; font-size:.72rem; }}
-.forgot-link a {{ color:{BLUE2}; text-decoration:none; }}
+.forgot-link a {{ color:{BLUE3}; text-decoration:none; }}
 .forgot-link a:hover {{ text-decoration:underline; }}
-.activate-link {{ text-align:center; margin-top:8px; font-size:.7rem; color:#a0bcd8; }}
-.activate-link a {{ color:#7aa8cc; text-decoration:none; }}
+.activate-link {{ text-align:center; margin-top:8px; font-size:.7rem; color:rgba(148,163,184,.5); }}
+.activate-link a {{ color:rgba(100,153,204,.8); text-decoration:none; }}
 .activate-link a:hover {{ text-decoration:underline; }}
 </style>"""
 
@@ -481,12 +996,12 @@ def inject_nav_highlight_css(active_idx: int) -> None:
     > div:nth-child({active_idx + 1}) .stButton > button,
 [data-testid="stSidebar"] div[data-testid="stVerticalBlockBorderWrapper"]
     > div:nth-child({active_idx + 1}) .stButton > button {{
-    background: rgba(24,95,165,.2) !important;
-    color: {WHITE} !important;
-    font-weight: 500 !important;
+    background: rgba(33,150,243,.1) !important;
+    color: #E0F2FE !important;
+    font-weight: 600 !important;
     border-left-color: {BLUE2} !important;
-    box-shadow: inset 0 0 0 1px rgba(55,138,221,.18) !important;
-    transform: translateX(2px) !important;
+    letter-spacing: .01em !important;
+    padding-left: 18px !important;
 }}
 </style>""", unsafe_allow_html=True)
 
@@ -497,14 +1012,16 @@ def inject_nav_highlight_css(active_idx: int) -> None:
 
 _NAV_LOCKED_CSS: str = f"""<style>
 [data-testid="stSidebar"] .stButton > button {{
-    opacity: .28 !important;
+    opacity: .22 !important;
     pointer-events: none !important;
     cursor: not-allowed !important;
 }}
 </style>
-<div style='text-align:center;margin-top:8px;padding:6px 12px;
-            background:rgba(12,35,64,.55);border-radius:8px;
-            font-size:.7rem;color:{MUTED2};line-height:1.5;'>
+<div style='margin:10px 14px 4px;padding:10px 12px;
+            background:rgba(255,255,255,.04);
+            border:1px solid rgba(255,255,255,.07);
+            border-radius:8px;
+            font-size:.7rem;color:rgba(100,116,139,.7);line-height:1.6;text-align:center;'>
     🔒 Selesaikan langkah awal<br>di halaman utama dulu
 </div>"""
 
@@ -515,7 +1032,6 @@ def inject_nav_locked_css() -> None:
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 5. HELPER — render komponen beranda (greeting + header)
-#    Dipindah dari app.py agar app.py tetap bersih dari inline HTML panjang.
 # ─────────────────────────────────────────────────────────────────────────────
 
 def render_greeting(user_name: str, is_pro: bool) -> None:
@@ -532,24 +1048,23 @@ def render_greeting(user_name: str, is_pro: bool) -> None:
         "Selamat malam"
     )
     tier_badge = (
-        "<span style='background:linear-gradient(90deg,#F5B800,#e8a800);"
+        "<span style='background:linear-gradient(135deg,#FFB300,#F57F17);"
         "color:#1a1000;font-size:.65rem;font-weight:800;letter-spacing:.06em;"
-        "padding:3px 10px;border-radius:8px;margin-left:5px;"
-        "box-shadow:0 1px 6px rgba(245,184,0,.35);'>✦ PRO</span>"
+        "padding:3px 10px;border-radius:6px;margin-left:6px;"
+        "box-shadow:0 2px 8px rgba(255,179,0,.35);vertical-align:middle;'>✦ PRO</span>"
         if is_pro else
-        "<span style='background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.6);"
-        "font-size:.65rem;font-weight:600;padding:2px 9px;border-radius:8px;margin-left:5px;letter-spacing:.2px;'>GRATIS</span>"
+        "<span style='background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.55);"
+        "font-size:.65rem;font-weight:600;padding:2px 9px;border-radius:6px;margin-left:6px;"
+        "letter-spacing:.05em;vertical-align:middle;'>GRATIS</span>"
     )
-    # Fallback: mode gratis tanpa nama
     display_name = user_name if user_name else "Pengguna"
     greeting_text = f"{salam}, {display_name}! 👋" if user_name else f"{salam}! 👋"
     st.markdown(
         f"<div class='rs-greeting'>"
         f"<div>"
-        f"<div class='rs-greeting-text'>{greeting_text}</div>"
+        f"<div class='rs-greeting-text'>{greeting_text}{tier_badge}</div>"
         f"<div class='rs-greeting-sub'>Siap membantu analisis statistik Anda hari ini.</div>"
         f"</div>"
-        f"<div class='rs-greeting-badge'>{tier_badge}</div>"
         f"</div>",
         unsafe_allow_html=True,
     )
@@ -559,10 +1074,14 @@ def render_hero_header() -> None:
     """Render hero header Ruang Statistika dengan ikon."""
     st.markdown("""
 <div class="rs-header">
-    <div class="rs-header-icon"><img src="https://i.imgur.com/RF4mzxf.png" width="36" height="36" style="object-fit:contain;filter:drop-shadow(0 2px 6px rgba(0,0,0,.2));" alt="Ruang Statistika logo"></div>
+    <div class="rs-header-texture"></div>
+    <div class="rs-header-icon">
+        <img src="https://i.imgur.com/RF4mzxf.png" width="36" height="36"
+             style="object-fit:contain;filter:drop-shadow(0 2px 8px rgba(0,0,0,.25));" alt="logo">
+    </div>
     <div>
-        <h1 style="margin:0;font-size:1.8rem;">Ruang Statistika</h1>
-        <p style="margin:0;opacity:.85;">
+        <h1 style="margin:0;">Ruang Statistika</h1>
+        <p style="margin:0;">
             AI-Powered Research &amp; Stats Reporting —
             Data Anda Berbicara, AI Menjelaskan
         </p>
@@ -607,8 +1126,8 @@ def render_steps_grid() -> None:
                 f'<div class="rs-step">'
                 f'<div class="rs-step-num">{i}</div>'
                 f'<div>'
-                f'<div style="font-weight:500;color:#0c2340;font-size:.85rem;">{title}</div>'
-                f'<div style="font-size:.76rem;color:#5f8ab5;margin-top:2px;line-height:1.4;">{desc}</div>'
+                f'<div style="font-weight:600;color:#0a1628;font-size:.85rem;letter-spacing:-.01em;">{title}</div>'
+                f'<div style="font-size:.76rem;color:#64748b;margin-top:3px;line-height:1.45;">{desc}</div>'
                 f'</div></div>',
                 unsafe_allow_html=True,
             )
@@ -617,16 +1136,14 @@ def render_steps_grid() -> None:
 def render_cta_wizard(on_click_key: str = "cta_wizard_btn") -> bool:
     """
     Render CTA Wizard block. Return True jika tombol diklik.
-    Contoh pemakaian:
-        if render_cta_wizard():
-            st.session_state.active_menu = "Wizard"
-            st.rerun()
     """
     st.markdown(
         '<div class="rs-cta-wizard">'
+        '<div>'
         '<div class="rs-cta-title">🧭 Bingung pilih uji statistik?</div>'
         '<div class="rs-cta-desc">Jawab 3 sampai 4 pertanyaan singkat dan Wizard akan '
         'merekomendasikan uji yang tepat dan langsung membuka modulnya.</div>'
+        '</div>'
         '</div>',
         unsafe_allow_html=True,
     )
