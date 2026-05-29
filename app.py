@@ -822,8 +822,10 @@ if menu == "Beranda":
                         if _info.get("status") == "pro":
                             # Nama: dari input → dari pro_licenses → default
                             _dname = _pro_name.strip() or _info.get("name", "") or "Pengguna Pro"
-                            st.session_state["_modal_license_key"]  = _k
-                            st.session_state["sidebar_license_key"] = _k
+                            st.session_state["_modal_license_key"] = _k
+                            # sidebar_license_key adalah key widget st.text_input
+                            # tidak bisa di-set manual — render_license_sidebar()
+                            # otomatis baca dari _modal_license_key
                             st.session_state["user_logged_in"] = True
                             st.session_state["user_name"]      = _dname
                             st.session_state["_user_data"] = {
