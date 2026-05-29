@@ -203,19 +203,21 @@ with st.sidebar:
         _is_pro_user  = _user_data.get("role") == "pro"
         _user_tier    = _user_data.get("tier", "starter") if _is_pro_user else "free"
         _TIER_COLORS  = {
-            "starter":      ("#185FA5", "#0c2340"),
-            "premium":      ("#7c3aed", "#4c1d95"),
-            "professional": ("#b45309", "#78350f"),
+            "starter":      ("#378add", "#1a4a7a"),   # biru terang — kontras di navy
+            "premium":      ("#a78bfa", "#5b21b6"),   # ungu terang
+            "professional": ("#fbbf24", "#92400e"),   # amber terang
         }
-        _tc = _TIER_COLORS.get(_user_tier, ("#185FA5", "#0c2340"))
+        _tc = _TIER_COLORS.get(_user_tier, ("#378add", "#1a4a7a"))
         _tier_badge   = (
             f"<span style='background:linear-gradient(90deg,{_tc[0]},{_tc[1]});"
-            "color:#fff;font-size:0.65rem;font-weight:600;letter-spacing:0.04em;"
-            f"padding:2px 8px;border-radius:10px;margin-left:6px;'>"
+            "color:#fff;font-size:0.65rem;font-weight:700;letter-spacing:0.06em;"
+            f"padding:2px 8px;border-radius:10px;margin-left:6px;"
+            f"box-shadow:0 1px 4px rgba(0,0,0,.3);'>"
             f"{_user_tier.upper()}</span>"
             if _is_pro_user else
-            "<span style='background:linear-gradient(90deg,#F5B800,#d4980a);color:#000;font-weight:800;"
-            "font-size:0.68rem;padding:2px 9px;border-radius:10px;margin-left:6px;letter-spacing:.3px;'>"
+            "<span style='background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);"
+            "color:rgba(255,255,255,.65);font-weight:600;"
+            "font-size:0.65rem;padding:2px 8px;border-radius:10px;margin-left:6px;letter-spacing:.2px;'>"
             "GRATIS</span>"
         )
         _sb_init  = "".join(w[0].upper() for w in _display_name.split()[:2]) if _display_name else "?"
