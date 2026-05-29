@@ -330,13 +330,12 @@ section[data-testid="stMain"] .block-container {{
 
 /* Metric card — glass card style */
 .rs-metric {{
-    background: {BG_CARD};
-    border: 1px solid {BORDER};
+    background: rgba(255,255,255,.07);
+    border: 1px solid rgba(255,255,255,.1);
     border-radius: var(--radius-md);
     padding: 16px 18px;
     text-align: center;
     transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
-    box-shadow: var(--shadow-card);
     position: relative;
     overflow: hidden;
 }}
@@ -352,12 +351,12 @@ section[data-testid="stMain"] .block-container {{
 .rs-metric:hover {{
     transform: translateY(-3px);
     box-shadow: var(--shadow-md);
-    border-color: {BORDER2};
+    border-color: rgba(255,255,255,.18);
 }}
 .rs-metric:hover::before {{ opacity: 1; }}
 .rs-metric-label {{
     font-size: .68rem;
-    color: {SLATE};
+    color: {SLATE2};
     text-transform: uppercase;
     letter-spacing: .08em;
     margin-bottom: 8px;
@@ -366,31 +365,31 @@ section[data-testid="stMain"] .block-container {{
 .rs-metric-value {{
     font-size: 1.6rem;
     font-weight: 700;
-    color: {NAVY};
+    color: {WHITE};
     letter-spacing: -.03em;
     line-height: 1;
 }}
-.rs-metric-sub {{ font-size: .72rem; color: {SLATE}; margin-top: 6px; font-weight: 400; }}
+.rs-metric-sub {{ font-size: .72rem; color: {SLATE2}; margin-top: 6px; font-weight: 400; }}
 
 /* Step card — clean numbered list */
 .rs-step-full {{
     margin-bottom: 8px;
 }}
 .rs-step {{
-    background: {BG_CARD};
-    border: 1px solid {BORDER};
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.1);
     border-radius: var(--radius-md);
     padding: 14px 16px;
     display: flex;
     align-items: flex-start;
     gap: 12px;
     transition: transform var(--transition), box-shadow var(--transition);
-    box-shadow: var(--shadow-card);
     margin-bottom: 8px;
 }}
 .rs-step:hover {{
     transform: translateY(-1px);
     box-shadow: var(--shadow-md);
+    border-color: rgba(255,255,255,.16);
 }}
 .rs-step-num {{
     background: linear-gradient(135deg, {BLUE}, {BLUE3});
@@ -405,13 +404,13 @@ section[data-testid="stMain"] .block-container {{
 }}
 .rs-step-title {{
     font-weight: 600;
-    color: {NAVY};
+    color: {WHITE};
     font-size: .85rem;
     letter-spacing: -.01em;
 }}
 .rs-step-desc {{
     font-size: .76rem;
-    color: {SLATE};
+    color: {SLATE2};
     margin-top: 3px;
     line-height: 1.45;
 }}
@@ -420,26 +419,22 @@ section[data-testid="stMain"] .block-container {{
 
 /* Narasi / AI blocks */
 .rs-narasi {{
-    background: linear-gradient(135deg, #EFF6FF 0%, #EEF2FF 100%);
+    background: rgba(21,101,192,.1);
     border-left: 3px solid {BLUE};
     border-radius: 0 var(--radius-md) var(--radius-md) 0;
     padding: 1rem 1.2rem;
     font-size: .88rem;
-    color: {NAVY};
     line-height: 1.7;
     margin-top: .5rem;
-    box-shadow: var(--shadow-sm);
 }}
 .rs-ai-narasi {{
-    background: linear-gradient(135deg, {BG_AI} 0%, #E8F5FF 100%);
+    background: rgba(63,81,181,.12);
     border-left: 3px solid {INDIGO};
     border-radius: 0 var(--radius-md) var(--radius-md) 0;
     padding: 1rem 1.2rem;
     font-size: .88rem;
-    color: #1E1B4B;
     line-height: 1.75;
     margin-top: .5rem;
-    box-shadow: var(--shadow-sm);
 }}
 .rs-ai-badge {{
     display: inline-flex;
@@ -461,11 +456,11 @@ section[data-testid="stMain"] .block-container {{
 .rs-section-title {{
     font-family: var(--font-display);
     font-size: 1.4rem;
-    color: {NAVY};
+    color: {WHITE};
     margin-bottom: .25rem;
     letter-spacing: -.02em;
 }}
-.rs-section-sub {{ font-size: .8rem; color: {SLATE}; margin-bottom: 1rem; }}
+.rs-section-sub {{ font-size: .8rem; color: {SLATE2}; margin-bottom: 1rem; }}
 
 /* Badges */
 .badge-valid     {{ background: #ECFDF5; color: {GREEN}; border: 1px solid #A7F3D0; padding: 3px 10px; border-radius: 20px; font-size: .73rem; font-weight: 600; }}
@@ -497,12 +492,12 @@ section[data-testid="stMain"] .block-container {{
 
 /* Hint bar — tipis, di bawah CTA */
 .rs-hint-bar {{
-    background: rgba(21,101,192,.09);
-    border: 1px solid rgba(21,101,192,.2);
+    background: rgba(21,101,192,.12);
+    border: 1px solid rgba(33,150,243,.25);
     border-radius: var(--radius-md);
     padding: 10px 16px;
     font-size: .84rem;
-    color: {NAVY};
+    color: {BLUE4};
     margin: 8px 0;
     line-height: 1.6;
 }}
@@ -514,16 +509,15 @@ section[data-testid="stMain"] .block-container {{
 
 /* CTA wizard block */
 .rs-cta-wizard {{
-    background: linear-gradient(135deg, #EEF2FF 0%, #E8F0FE 100%);
-    border: 1px solid #C7D2FE;
+    background: rgba(63,81,181,.12);
+    border: 1px solid rgba(99,102,241,.3);
     border-radius: var(--radius-md);
     padding: 20px 22px 16px;
     display: block;
-    box-shadow: 0 2px 8px rgba(99,102,241,.08);
     margin-bottom: 10px;
 }}
-.rs-cta-title {{ font-size: .92rem; font-weight: 700; color: #3730A3; margin-bottom: 5px; letter-spacing: -.01em; }}
-.rs-cta-desc  {{ font-size: .78rem; color: #4338CA; line-height: 1.55; margin-bottom: 0; }}
+.rs-cta-title {{ font-size: .92rem; font-weight: 700; color: {BLUE3}; margin-bottom: 5px; letter-spacing: -.01em; }}
+.rs-cta-desc  {{ font-size: .78rem; color: {BLUE4}; line-height: 1.55; margin-bottom: 0; }}
 
 /* Chat bubbles */
 .chat-container {{
@@ -707,14 +701,14 @@ section[data-testid="stMain"] .block-container {{
 .rs-footer {{
     margin-top: 3rem;
     padding-top: 1.5rem;
-    border-top: 1px solid {BORDER};
+    border-top: 1px solid rgba(255,255,255,.08);
     text-align: center;
     font-size: .76rem;
-    color: {SLATE2};
+    color: {SLATE};
 }}
-.rs-footer a {{ color: {BLUE}; text-decoration: none; font-weight: 500; }}
+.rs-footer a {{ color: {BLUE3}; text-decoration: none; font-weight: 500; }}
 .rs-footer a:hover {{ color: {BLUE2}; text-decoration: underline; }}
-.rs-footer b {{ color: {NAVY}; }}
+.rs-footer b {{ color: {SLATE2}; }}
 
 /* ══ DARK MODE OVERRIDES ═════════════════════════════════════════════════════
    Streamlit dark mode menggunakan [data-theme="dark"] pada root element.
@@ -729,6 +723,63 @@ section[data-testid="stMain"] .block-container {{
     --text-muted-dm:   #94A3B8;
     --text-navy-dm:    #CBD5E1;
 }}
+
+/* ══ LIGHT MODE OVERRIDES ════════════════════════════════════════════════════
+   Base styles = dark-friendly (transparan/teks terang).
+   Saat light mode aktif, override komponen yang butuh warna light.
+   ═══════════════════════════════════════════════════════════════════════════ */
+[data-theme="light"] .rs-metric {{
+    background: {BG_CARD} !important;
+    border-color: {BORDER} !important;
+    box-shadow: var(--shadow-card) !important;
+}}
+[data-theme="light"] .rs-metric-label {{ color: {SLATE} !important; }}
+[data-theme="light"] .rs-metric-value {{ color: {NAVY} !important; }}
+[data-theme="light"] .rs-metric-sub   {{ color: {SLATE} !important; }}
+[data-theme="light"] .rs-metric:hover {{ border-color: {BORDER2} !important; box-shadow: var(--shadow-md) !important; }}
+
+[data-theme="light"] .rs-step {{
+    background: {BG_CARD} !important;
+    border-color: {BORDER} !important;
+    box-shadow: var(--shadow-card) !important;
+}}
+[data-theme="light"] .rs-step:hover {{ border-color: {BORDER2} !important; box-shadow: var(--shadow-md) !important; }}
+[data-theme="light"] .rs-step-title {{ color: {NAVY} !important; }}
+[data-theme="light"] .rs-step-desc  {{ color: {SLATE} !important; }}
+
+[data-theme="light"] .rs-narasi {{
+    background: linear-gradient(135deg, #EFF6FF 0%, #EEF2FF 100%) !important;
+    color: {NAVY} !important;
+    box-shadow: var(--shadow-sm) !important;
+}}
+[data-theme="light"] .rs-ai-narasi {{
+    background: linear-gradient(135deg, {BG_AI} 0%, #E8F5FF 100%) !important;
+    color: #1E1B4B !important;
+    box-shadow: var(--shadow-sm) !important;
+}}
+
+[data-theme="light"] .rs-cta-wizard {{
+    background: linear-gradient(135deg, #EEF2FF 0%, #E8F0FE 100%) !important;
+    border-color: #C7D2FE !important;
+    box-shadow: 0 2px 8px rgba(99,102,241,.08) !important;
+}}
+[data-theme="light"] .rs-cta-title {{ color: #3730A3 !important; }}
+[data-theme="light"] .rs-cta-desc  {{ color: #4338CA !important; }}
+
+[data-theme="light"] .rs-hint-bar {{
+    background: rgba(21,101,192,.07) !important;
+    border-color: rgba(21,101,192,.2) !important;
+    color: {NAVY} !important;
+}}
+
+[data-theme="light"] .rs-section-title {{ color: {NAVY} !important; }}
+[data-theme="light"] .rs-section-sub   {{ color: {SLATE} !important; }}
+
+[data-theme="light"] .rs-footer {{
+    border-top-color: {BORDER} !important;
+    color: {SLATE2} !important;
+}}
+[data-theme="light"] .rs-footer b {{ color: {NAVY} !important; }}
 
 /* ── Metric cards ── */
 [data-theme="dark"] .rs-metric {{
