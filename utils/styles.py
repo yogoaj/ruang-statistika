@@ -335,13 +335,14 @@ section[data-testid="stMain"] .stTextInput input {{
     border:1.5px solid rgba(255,255,255,.22) !important;
     border-radius:8px !important; padding:9px 12px !important;
     font-size:.85rem !important;
-    background:rgba(255,255,255,.11) !important;
-    color:{NAVY} !important; -webkit-text-fill-color:{NAVY} !important;
+    background:rgba(255,255,255,.15) !important;
+    color:{WHITE} !important; -webkit-text-fill-color:{WHITE} !important;
+    caret-color:{WHITE} !important;
     transition:border-color .15s,box-shadow .15s !important;
 }}
 section[data-testid="stMain"] .stTextInput input:focus {{
     border-color:rgba(255,255,255,.48) !important;
-    background:rgba(255,255,255,.17) !important;
+    background:rgba(255,255,255,.2) !important;
     box-shadow:0 0 0 3px rgba(255,255,255,.07) !important;
 }}
 section[data-testid="stMain"] .stTextInput input::placeholder {{
