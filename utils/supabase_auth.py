@@ -97,10 +97,9 @@ def save_supabase_session(user_obj, session_obj=None) -> None:
                 sb.table("pro_licenses")
                 .select("license_key, expires_at, is_active, tier")
                 .eq("email", email.strip().lower())
-                .maybeSingle()
                 .execute()
             )
-            row = resp.data if resp else None
+            row = resp.data[0] if resp and resp.data else None
             if row and row.get("is_active", True):
                 expires_str = row.get("expires_at")
                 _expired = False
@@ -374,26 +373,45 @@ def _sign_in_via_pro_licenses(sb, email: str, password: str) -> tuple[bool, str]
     """
     from datetime import datetime, timezone
 
+    email_clean = email.strip().lower()
+
+    # Query utama — exact match
+    row = None
     try:
         resp = (
             sb.table("pro_licenses")
             .select("email, name, password, license_key, expires_at, is_active, tier")
-            .eq("email", email.strip().lower())
-            .single()
+            .eq("email", email_clean)
             .execute()
         )
+        if resp.data:
+            row = resp.data[0]
     except Exception:
-        return False, "❌ Email atau password salah."
+        pass
 
-    row = resp.data if resp else None
+    # Fallback — case-insensitive
+    if not row:
+        try:
+            resp2 = (
+                sb.table("pro_licenses")
+                .select("email, name, password, license_key, expires_at, is_active, tier")
+                .ilike("email", email_clean)
+                .execute()
+            )
+            if resp2.data:
+                row = resp2.data[0]
+        except Exception:
+            pass
+
     if not row:
         return False, "❌ Email atau password salah."
 
-    # Cek aktif dulu sebelum cek password (urutan penting)
+    # Cek aktif dulu sebelum cek password
     if not row.get("is_active", True):
         return False, "❌ Akun kamu sudah dinonaktifkan. Hubungi admin."
 
-    if row.get("password", "") != password:
+    # Bandingkan password — strip() kedua sisi
+    if row.get("password", "").strip() != password.strip():
         return False, "❌ Email atau password salah."
 
     expires_str = row.get("expires_at")
@@ -453,6 +471,7 @@ def supabase_sign_in(email: str, password: str) -> tuple[bool, str]:
 
     email = email.strip().lower()
 
+    # ── Langkah 1: Coba Supabase Auth ────────────────────────────────────────
     try:
         resp = sb.auth.sign_in_with_password({"email": email, "password": password})
         if resp and resp.user:
@@ -460,53 +479,43 @@ def supabase_sign_in(email: str, password: str) -> tuple[bool, str]:
             return True, ""
     except Exception as e:
         msg_lower = str(e).lower()
-
-        if "email not confirmed" in msg_lower:
+        if "email not confirmed" in msg_lower or "not confirmed" in msg_lower:
             return False, (
                 "📧 Email kamu belum dikonfirmasi. "
                 "Cek inbox (atau folder spam) dan klik link konfirmasi, "
                 "lalu coba masuk lagi."
             )
+        # Error lain → lanjut ke pro_licenses
 
-        if "invalid login credentials" in msg_lower:
-            # PERBAIKAN: Coba fallback ke pro_licenses terlebih dahulu.
-            # User Lynk.id memiliki password di kolom pro_licenses.password,
-            # bukan di Supabase Auth (karena belum pernah sign up mandiri).
-            _ok_pl, _msg_pl = _sign_in_via_pro_licenses(sb, email, password)
-            if _ok_pl:
-                return True, ""
+    # ── Langkah 2: Coba pro_licenses (user Lynk.id belum sign up mandiri) ────
+    ok_pl, msg_pl = _sign_in_via_pro_licenses(sb, email, password)
+    if ok_pl:
+        return True, ""
 
-            # Fallback gagal → cek apakah email ada di pro_licenses (password salah)
-            _is_pro_lynk = False
-            try:
-                _pl = (
-                    sb.table("pro_licenses")
-                    .select("email")
-                    .eq("email", email)
-                    .maybeSingle()
-                    .execute()
-                )
-                _is_pro_lynk = bool(_pl and _pl.data)
-            except Exception:
-                pass
+    # ── Kedua jalur gagal — pesan error yang tepat ───────────────────────────
+    _in_pro_licenses = False
+    try:
+        _pl = (
+            sb.table("pro_licenses")
+            .select("email")
+            .ilike("email", email)
+            .execute()
+        )
+        _in_pro_licenses = bool(_pl.data)
+    except Exception:
+        pass
 
-            if _is_pro_lynk:
-                # Ada di pro_licenses tapi password salah
-                return False, (
-                    "❌ Password salah.\n\n"
-                    "Gunakan **password yang tertulis di email konfirmasi pembelian** "
-                    "dari Lynk.id. Atau klik **Lupa password?** untuk reset."
-                )
+    if _in_pro_licenses:
+        return False, (
+            "❌ Password salah.\n\n"
+            "Gunakan **password yang tertulis di email konfirmasi pembelian** "
+            "dari Lynk.id. Jika lupa, hubungi admin via WhatsApp **087887533149**."
+        )
 
-            return False, (
-                "❌ Password salah. "
-                "Gunakan tombol **Lupa password?** jika lupa password kamu."
-            )
-
-        # Error lain → user kemungkinan tidak ada di Supabase Auth
-        # Lanjut fallback ke pro_licenses
-
-    return _sign_in_via_pro_licenses(sb, email, password)
+    return False, (
+        "❌ Email atau password salah. "
+        "Pastikan email yang digunakan sama dengan email pembelian di Lynk.id."
+    )
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -536,10 +545,9 @@ def supabase_sign_up(email: str, password: str, full_name: str) -> tuple[bool, s
             sb.table("pro_licenses")
             .select("email")
             .eq("email", email)
-            .maybeSingle()
             .execute()
         )
-        _in_pro_licenses = bool(_pl and _pl.data)
+        _in_pro_licenses = bool(_pl and _pl.data and len(_pl.data) > 0)
     except Exception:
         pass
 
@@ -610,10 +618,9 @@ def supabase_forgot_password(email: str, redirect_url: str = "") -> tuple[bool, 
             sb.table("pro_licenses")
             .select("email")
             .eq("email", email)
-            .maybeSingle()
             .execute()
         )
-        _in_pro_licenses = bool(_pl and _pl.data)
+        _in_pro_licenses = bool(_pl and _pl.data and len(_pl.data) > 0)
     except Exception:
         pass
 
@@ -696,13 +703,11 @@ def supabase_sign_out() -> None:
 def validate_license_supabase(key: str) -> dict:
     """
     Validasi license key dengan query ke tabel pro_licenses di Supabase.
-
-    Dipakai di tab "Pro" (login via license key tanpa email/password).
     Menggantikan validate_license() dari auth.py yang hanya cek dict hardcoded.
 
     Return dict:
         status  : 'pro' | 'expired' | 'free'
-        label   : nama/label lisensi
+        label   : deskripsi lisensi
         expires : string expires_at atau None
         name    : nama pemilik lisensi
         email   : email pemilik lisensi
