@@ -711,8 +711,8 @@ section[data-testid="stMain"] .block-container {{
 .rs-footer b {{ color: {SLATE2}; }}
 
 /* ══ DARK MODE OVERRIDES ═════════════════════════════════════════════════════
-   Streamlit dark mode menggunakan [data-theme="dark"] pada root element.
-   Semua override di sini membalikkan light-only styles di atas.
+   Diaktifkan via JS class body.rs-dark (deteksi background) DAN [data-theme="dark"]
+   Base style = dark-friendly; dark override redundan tapi jaga-jaga.
    ═══════════════════════════════════════════════════════════════════════════ */
 [data-theme="dark"] {{
     --bg-card-dm:   #111e35;
@@ -724,132 +724,175 @@ section[data-testid="stMain"] .block-container {{
     --text-navy-dm:    #CBD5E1;
 }}
 
-/* ══ LIGHT MODE OVERRIDES ════════════════════════════════════════════════════
-   Base styles = dark-friendly (transparan/teks terang).
-   Saat light mode aktif, override komponen yang butuh warna light.
-   ═══════════════════════════════════════════════════════════════════════════ */
+/* ══ LIGHT MODE — body.rs-light (JS-detected) + [data-theme="light"] fallback ════════ */
+body.rs-light .rs-metric,
 [data-theme="light"] .rs-metric {{
     background: {BG_CARD} !important;
     border-color: {BORDER} !important;
     box-shadow: var(--shadow-card) !important;
 }}
+body.rs-light .rs-metric-label,
 [data-theme="light"] .rs-metric-label {{ color: {SLATE} !important; }}
+body.rs-light .rs-metric-value,
 [data-theme="light"] .rs-metric-value {{ color: {NAVY} !important; }}
+body.rs-light .rs-metric-sub,
 [data-theme="light"] .rs-metric-sub   {{ color: {SLATE} !important; }}
+body.rs-light .rs-metric:hover,
 [data-theme="light"] .rs-metric:hover {{ border-color: {BORDER2} !important; box-shadow: var(--shadow-md) !important; }}
 
+body.rs-light .rs-step,
 [data-theme="light"] .rs-step {{
     background: {BG_CARD} !important;
     border-color: {BORDER} !important;
     box-shadow: var(--shadow-card) !important;
 }}
+body.rs-light .rs-step:hover,
 [data-theme="light"] .rs-step:hover {{ border-color: {BORDER2} !important; box-shadow: var(--shadow-md) !important; }}
+body.rs-light .rs-step-title,
 [data-theme="light"] .rs-step-title {{ color: {NAVY} !important; }}
+body.rs-light .rs-step-desc,
 [data-theme="light"] .rs-step-desc  {{ color: {SLATE} !important; }}
 
+body.rs-light .rs-narasi,
 [data-theme="light"] .rs-narasi {{
     background: linear-gradient(135deg, #EFF6FF 0%, #EEF2FF 100%) !important;
     color: {NAVY} !important;
     box-shadow: var(--shadow-sm) !important;
 }}
+body.rs-light .rs-ai-narasi,
 [data-theme="light"] .rs-ai-narasi {{
     background: linear-gradient(135deg, {BG_AI} 0%, #E8F5FF 100%) !important;
     color: #1E1B4B !important;
     box-shadow: var(--shadow-sm) !important;
 }}
 
+body.rs-light .rs-cta-wizard,
 [data-theme="light"] .rs-cta-wizard {{
     background: linear-gradient(135deg, #EEF2FF 0%, #E8F0FE 100%) !important;
     border-color: #C7D2FE !important;
     box-shadow: 0 2px 8px rgba(99,102,241,.08) !important;
 }}
+body.rs-light .rs-cta-title,
 [data-theme="light"] .rs-cta-title {{ color: #3730A3 !important; }}
+body.rs-light .rs-cta-desc,
 [data-theme="light"] .rs-cta-desc  {{ color: #4338CA !important; }}
 
+body.rs-light .rs-hint-bar,
 [data-theme="light"] .rs-hint-bar {{
     background: rgba(21,101,192,.07) !important;
     border-color: rgba(21,101,192,.2) !important;
     color: {NAVY} !important;
 }}
 
+body.rs-light .rs-section-title,
 [data-theme="light"] .rs-section-title {{ color: {NAVY} !important; }}
+body.rs-light .rs-section-sub,
 [data-theme="light"] .rs-section-sub   {{ color: {SLATE} !important; }}
 
+body.rs-light .rs-footer,
 [data-theme="light"] .rs-footer {{
     border-top-color: {BORDER} !important;
     color: {SLATE2} !important;
 }}
+body.rs-light .rs-footer b,
 [data-theme="light"] .rs-footer b {{ color: {NAVY} !important; }}
 
-/* ── Metric cards ── */
+body.rs-light .rs-greeting-sub,
+[data-theme="light"] .rs-greeting-sub {{ color: {SLATE2} !important; }}
+
+body.rs-light [data-testid="stExpander"],
+[data-theme="light"] [data-testid="stExpander"] {{
+    background: {BG_CARD} !important;
+    border-color: {BORDER} !important;
+}}
+body.rs-light [data-testid="stExpander"] summary,
+[data-theme="light"] [data-testid="stExpander"] summary {{
+    background: {BG_CARD} !important;
+    color: {NAVY} !important;
+}}
+body.rs-light [data-testid="stExpander"] > div[data-testid="stExpanderDetails"],
+[data-theme="light"] [data-testid="stExpander"] > div[data-testid="stExpanderDetails"] {{
+    background: {BG_CARD} !important;
+}}
+body.rs-light [data-testid="stExpander"] p,
+body.rs-light [data-testid="stExpander"] td,
+body.rs-light [data-testid="stExpander"] th,
+body.rs-light [data-testid="stExpander"] li,
+[data-theme="light"] [data-testid="stExpander"] p,
+[data-theme="light"] [data-testid="stExpander"] td,
+[data-theme="light"] [data-testid="stExpander"] th,
+[data-theme="light"] [data-testid="stExpander"] li {{ color: {NAVY} !important; }}
+
+body.rs-light [data-baseweb="tab"],
+[data-theme="light"] [data-baseweb="tab"] {{ color: {SLATE} !important; }}
+body.rs-light [data-baseweb="tab"]:hover,
+[data-theme="light"] [data-baseweb="tab"]:hover {{ color: {NAVY} !important; }}
+body.rs-light [aria-selected="true"][data-baseweb="tab"],
+[data-theme="light"] [aria-selected="true"][data-baseweb="tab"] {{
+    color: {BLUE} !important;
+    border-bottom-color: {BLUE} !important;
+}}
+
+body.rs-light .chat-container,
+[data-theme="light"] .chat-container {{
+    background: {BG_SOFT} !important;
+    border-color: {BORDER} !important;
+}}
+body.rs-light .chat-bubble-ai,
+[data-theme="light"] .chat-bubble-ai {{
+    background: {BG_CARD} !important;
+    border-color: {BORDER} !important;
+    color: {NAVY} !important;
+}}
+
+body.rs-light [data-testid="stMetricValue"],
+[data-theme="light"] [data-testid="stMetricValue"] {{ color: {NAVY} !important; }}
+
+/* ══ DARK MODE explicit overrides (redundan, jaga-jaga jika data-theme aktif) ═══ */
 [data-theme="dark"] .rs-metric {{
-    background: var(--bg-card-dm) !important;
-    border-color: var(--border-dm) !important;
-    box-shadow: 0 2px 8px rgba(0,0,0,.3), 0 0 0 1px rgba(255,255,255,.04) !important;
+    background: #111e35 !important;
+    border-color: rgba(255,255,255,.08) !important;
 }}
-[data-theme="dark"] .rs-metric:hover {{
-    border-color: var(--border2-dm) !important;
-    box-shadow: 0 8px 24px rgba(0,0,0,.4) !important;
-}}
-[data-theme="dark"] .rs-metric-label {{ color: var(--text-muted-dm) !important; }}
+[data-theme="dark"] .rs-metric-label {{ color: #94A3B8 !important; }}
 [data-theme="dark"] .rs-metric-value {{ color: #F1F5F9 !important; }}
-[data-theme="dark"] .rs-metric-sub   {{ color: var(--text-muted-dm) !important; }}
-
-/* ── Step cards ── */
+[data-theme="dark"] .rs-metric-sub   {{ color: #94A3B8 !important; }}
 [data-theme="dark"] .rs-step {{
-    background: var(--bg-card-dm) !important;
-    border-color: var(--border-dm) !important;
-    box-shadow: 0 2px 8px rgba(0,0,0,.3), 0 0 0 1px rgba(255,255,255,.04) !important;
+    background: #111e35 !important;
+    border-color: rgba(255,255,255,.08) !important;
 }}
-[data-theme="dark"] .rs-step:hover {{
-    box-shadow: 0 6px 20px rgba(0,0,0,.4) !important;
-}}
-
-/* ── Narasi / AI blocks ── */
+[data-theme="dark"] .rs-step-title {{ color: #E2E8F0 !important; }}
+[data-theme="dark"] .rs-step-desc  {{ color: #94A3B8 !important; }}
 [data-theme="dark"] .rs-narasi {{
-    background: linear-gradient(135deg, rgba(21,101,192,.18) 0%, rgba(63,81,181,.15) 100%) !important;
+    background: rgba(21,101,192,.18) !important;
     border-left-color: {BLUE3} !important;
     color: #CBD5E1 !important;
-    box-shadow: none !important;
 }}
 [data-theme="dark"] .rs-ai-narasi {{
-    background: linear-gradient(135deg, rgba(63,81,181,.18) 0%, rgba(21,101,192,.14) 100%) !important;
+    background: rgba(63,81,181,.18) !important;
     border-left-color: #818CF8 !important;
     color: #C7D2FE !important;
-    box-shadow: none !important;
 }}
-
-/* ── CTA Wizard block ── */
 [data-theme="dark"] .rs-cta-wizard {{
     background: linear-gradient(135deg, rgba(55,48,163,.25) 0%, rgba(37,99,235,.2) 100%) !important;
     border-color: rgba(99,102,241,.35) !important;
-    box-shadow: 0 2px 12px rgba(99,102,241,.12) !important;
 }}
 [data-theme="dark"] .rs-cta-title {{ color: #A5B4FC !important; }}
 [data-theme="dark"] .rs-cta-desc  {{ color: #818CF8 !important; }}
-
-/* ── Section typography ── */
+[data-theme="dark"] .rs-hint-bar {{
+    background: rgba(21,101,192,.18) !important;
+    border-color: rgba(33,150,243,.3) !important;
+    color: rgba(187,222,251,.9) !important;
+}}
 [data-theme="dark"] .rs-section-title {{ color: #E2E8F0 !important; }}
 [data-theme="dark"] .rs-section-sub   {{ color: #94A3B8 !important; }}
-
-/* ── Greeting bar ── */
+[data-theme="dark"] .rs-footer {{ border-top-color: rgba(255,255,255,.07) !important; color: #475569 !important; }}
+[data-theme="dark"] .rs-footer b {{ color: #CBD5E1 !important; }}
 [data-theme="dark"] .rs-greeting-sub {{ color: #64748B !important; }}
-
-/* ── Expanders ── */
 [data-theme="dark"] [data-testid="stExpander"] {{
-    background: var(--bg-card-dm) !important;
-    border-color: var(--border-dm) !important;
+    background: #111e35 !important; border-color: rgba(255,255,255,.08) !important;
 }}
-[data-theme="dark"] [data-testid="stExpander"] summary {{
-    background: var(--bg-card-dm) !important;
-    color: #E2E8F0 !important;
-}}
-[data-theme="dark"] [data-testid="stExpander"] > div[data-testid="stExpanderDetails"] {{
-    background: var(--bg-card-dm) !important;
-}}
-[data-theme="dark"] [data-testid="stExpander"] [data-testid="stVerticalBlock"] {{
-    background: var(--bg-card-dm) !important;
-}}
+[data-theme="dark"] [data-testid="stExpander"] summary {{ background: #111e35 !important; color: #E2E8F0 !important; }}
+[data-theme="dark"] [data-testid="stExpander"] > div[data-testid="stExpanderDetails"] {{ background: #111e35 !important; }}
 [data-theme="dark"] [data-testid="stExpander"] p,
 [data-theme="dark"] [data-testid="stExpander"] td,
 [data-theme="dark"] [data-testid="stExpander"] th,
@@ -861,103 +904,60 @@ section[data-testid="stMain"] .block-container {{
 [data-theme="dark"] [data-testid="stExpander"] .stMarkdown h1,
 [data-theme="dark"] [data-testid="stExpander"] .stMarkdown h2,
 [data-theme="dark"] [data-testid="stExpander"] .stMarkdown h3,
-[data-theme="dark"] [data-testid="stExpander"] .stMarkdown h4 {{
-    color: #CBD5E1 !important;
-}}
-[data-theme="dark"] [data-testid="stExpander"] table {{
-    background: var(--bg-card-dm) !important;
-}}
-[data-theme="dark"] [data-testid="stExpander"] thead tr {{
-    background: var(--bg-soft-dm) !important;
-    border-bottom-color: var(--border-dm) !important;
-}}
-[data-theme="dark"] [data-testid="stExpander"] thead th {{
-    background: var(--bg-soft-dm) !important;
-    color: #E2E8F0 !important;
-}}
-[data-theme="dark"] [data-testid="stExpander"] tbody tr {{
-    border-bottom-color: var(--border-dm) !important;
-    background: var(--bg-card-dm) !important;
-}}
-[data-theme="dark"] [data-testid="stExpander"] tbody tr:nth-child(even) {{
-    background: var(--bg-soft-dm) !important;
-}}
-[data-theme="dark"] [data-testid="stExpander"] tbody td {{
-    color: #CBD5E1 !important;
-}}
-
-/* ── Tabs ── */
-[data-theme="dark"] [data-baseweb="tab"] {{
-    color: #64748B !important;
-}}
-[data-theme="dark"] [data-baseweb="tab"]:hover {{
-    color: #CBD5E1 !important;
-    background: rgba(255,255,255,.05) !important;
-}}
-[data-theme="dark"] [aria-selected="true"][data-baseweb="tab"] {{
-    color: {BLUE3} !important;
-    border-bottom-color: {BLUE3} !important;
-}}
-[data-theme="dark"] [data-baseweb="tab-list"] {{
-    border-bottom-color: rgba(255,255,255,.08) !important;
-}}
-
-/* ── DataFrames ── */
-[data-theme="dark"] .stDataFrame {{
-    border-color: var(--border-dm) !important;
-}}
-
-/* ── Native metric values ── */
-[data-theme="dark"] [data-testid="stMetricValue"] {{
-    color: #F1F5F9 !important;
-}}
-
-/* ── Chat bubbles ── */
-[data-theme="dark"] .chat-container {{
-    background: var(--bg-soft-dm) !important;
-    border-color: var(--border-dm) !important;
-}}
-[data-theme="dark"] .chat-bubble-ai {{
-    background: var(--bg-card-dm) !important;
-    border-color: var(--border-dm) !important;
-    color: #CBD5E1 !important;
-}}
+[data-theme="dark"] [data-testid="stExpander"] .stMarkdown h4 {{ color: #CBD5E1 !important; }}
+[data-theme="dark"] [data-testid="stExpander"] table {{ background: #111e35 !important; }}
+[data-theme="dark"] [data-testid="stExpander"] thead tr {{ background: #0d1728 !important; }}
+[data-theme="dark"] [data-testid="stExpander"] thead th {{ background: #0d1728 !important; color: #E2E8F0 !important; }}
+[data-theme="dark"] [data-testid="stExpander"] tbody tr {{ background: #111e35 !important; }}
+[data-theme="dark"] [data-testid="stExpander"] tbody tr:nth-child(even) {{ background: #0d1728 !important; }}
+[data-theme="dark"] [data-testid="stExpander"] tbody td {{ color: #CBD5E1 !important; }}
+[data-theme="dark"] [data-baseweb="tab"] {{ color: #64748B !important; }}
+[data-theme="dark"] [data-baseweb="tab"]:hover {{ color: #CBD5E1 !important; background: rgba(255,255,255,.05) !important; }}
+[data-theme="dark"] [aria-selected="true"][data-baseweb="tab"] {{ color: {BLUE3} !important; border-bottom-color: {BLUE3} !important; }}
+[data-theme="dark"] [data-baseweb="tab-list"] {{ border-bottom-color: rgba(255,255,255,.08) !important; }}
+[data-theme="dark"] .stDataFrame {{ border-color: rgba(255,255,255,.08) !important; }}
+[data-theme="dark"] [data-testid="stMetricValue"] {{ color: #F1F5F9 !important; }}
+[data-theme="dark"] .chat-container {{ background: #0d1728 !important; border-color: rgba(255,255,255,.08) !important; }}
+[data-theme="dark"] .chat-bubble-ai {{ background: #111e35 !important; border-color: rgba(255,255,255,.08) !important; color: #CBD5E1 !important; }}
 [data-theme="dark"] .chat-label {{ color: #64748B !important; }}
-
-/* ── Footer ── */
-[data-theme="dark"] .rs-footer {{
-    border-top-color: rgba(255,255,255,.07) !important;
-    color: #475569 !important;
-}}
-[data-theme="dark"] .rs-footer b {{ color: #CBD5E1 !important; }}
-
-/* ── Badges ── */
-[data-theme="dark"] .badge-valid {{
-    background: rgba(46,125,50,.2) !important;
-    color: #86EFAC !important;
-    border-color: rgba(134,239,172,.2) !important;
-}}
-[data-theme="dark"] .badge-invalid {{
-    background: rgba(198,40,40,.2) !important;
-    color: #FCA5A5 !important;
-    border-color: rgba(252,165,165,.2) !important;
-}}
-[data-theme="dark"] .badge-reliable {{
-    background: rgba(46,125,50,.2) !important;
-    color: #86EFAC !important;
-    border-color: rgba(134,239,172,.2) !important;
-}}
-[data-theme="dark"] .badge-unreliable {{
-    background: rgba(198,40,40,.2) !important;
-    color: #FCA5A5 !important;
-    border-color: rgba(252,165,165,.2) !important;
-}}
+[data-theme="dark"] .badge-valid {{ background: rgba(46,125,50,.2) !important; color: #86EFAC !important; border-color: rgba(134,239,172,.2) !important; }}
+[data-theme="dark"] .badge-invalid {{ background: rgba(198,40,40,.2) !important; color: #FCA5A5 !important; border-color: rgba(252,165,165,.2) !important; }}
+[data-theme="dark"] .badge-reliable {{ background: rgba(46,125,50,.2) !important; color: #86EFAC !important; border-color: rgba(134,239,172,.2) !important; }}
+[data-theme="dark"] .badge-unreliable {{ background: rgba(198,40,40,.2) !important; color: #FCA5A5 !important; border-color: rgba(252,165,165,.2) !important; }}
 </style>"""
 
 
 def inject_global_css() -> None:
     """Inject CSS global. Konten di-cache — aman dipanggil tiap rerun."""
     st.markdown(_global_css(), unsafe_allow_html=True)
+    # JS: deteksi tema Streamlit via warna background, tambahkan class ke body
+    # Ini lebih reliable dari [data-theme] yang tidak selalu aktif
+    st.markdown("""<script>
+(function() {
+    function applyThemeClass() {
+        try {
+            var app = document.querySelector('[data-testid="stAppViewContainer"]') || document.body;
+            var bg = window.getComputedStyle(app).backgroundColor;
+            var m = bg.match(/rgb\\((\\d+),(\\s*)(\\d+),(\\s*)(\\d+)\\)/);
+            if (!m) { m = bg.replace(/\\s/g,'').match(/rgb\\((\\d+),(\\d+),(\\d+)\\)/); }
+            var isDark = true;
+            if (m) {
+                var r = parseInt(m[1]), g = parseInt(m[3]||m[2]), b = parseInt(m[5]||m[4]);
+                var lum = (0.299*r + 0.587*g + 0.114*b);
+                isDark = lum < 128;
+            }
+            document.body.classList.remove('rs-light','rs-dark');
+            document.body.classList.add(isDark ? 'rs-dark' : 'rs-light');
+        } catch(e) {}
+    }
+    applyThemeClass();
+    setTimeout(applyThemeClass, 300);
+    setTimeout(applyThemeClass, 800);
+    setTimeout(applyThemeClass, 1500);
+    var obs = new MutationObserver(function() { applyThemeClass(); });
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+})();
+</script>""", unsafe_allow_html=True)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
