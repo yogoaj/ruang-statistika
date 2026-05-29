@@ -542,12 +542,74 @@ section[data-testid="stMain"] .block-container {{
     border-radius: var(--radius-md) !important;
     box-shadow: var(--shadow-card) !important;
     overflow: hidden !important;
+    background: {BG_CARD} !important;
 }}
 [data-testid="stExpander"] summary {{
     font-weight: 600 !important;
     font-size: .88rem !important;
     color: {NAVY} !important;
     padding: 10px 16px !important;
+    background: {BG_CARD} !important;
+}}
+/* Expander body + all content inside */
+[data-testid="stExpander"] > div[data-testid="stExpanderDetails"] {{
+    background: {BG_CARD} !important;
+    padding: 4px 16px 14px !important;
+}}
+/* All text inside expander → dark on light */
+[data-testid="stExpander"] p,
+[data-testid="stExpander"] span,
+[data-testid="stExpander"] div,
+[data-testid="stExpander"] td,
+[data-testid="stExpander"] th,
+[data-testid="stExpander"] li,
+[data-testid="stExpander"] label {{
+    color: {NAVY} !important;
+}}
+/* Tables inside expander */
+[data-testid="stExpander"] table {{
+    background: {BG_CARD} !important;
+    border-collapse: collapse !important;
+    width: 100% !important;
+}}
+[data-testid="stExpander"] thead tr {{
+    background: {BG_SOFT} !important;
+    border-bottom: 2px solid {BORDER} !important;
+}}
+[data-testid="stExpander"] thead th {{
+    background: {BG_SOFT} !important;
+    color: {NAVY} !important;
+    font-weight: 600 !important;
+    font-size: .8rem !important;
+    padding: 8px 12px !important;
+    text-align: left !important;
+}}
+[data-testid="stExpander"] tbody tr {{
+    border-bottom: 1px solid {BORDER} !important;
+    background: {BG_CARD} !important;
+}}
+[data-testid="stExpander"] tbody tr:nth-child(even) {{
+    background: {BG_SOFT} !important;
+}}
+[data-testid="stExpander"] tbody td {{
+    color: {NAVY} !important;
+    font-size: .82rem !important;
+    padding: 7px 12px !important;
+    background: transparent !important;
+}}
+/* stDataFrame inside expander */
+[data-testid="stExpander"] [data-testid="stDataFrame"],
+[data-testid="stExpander"] [data-testid="stDataFrameResizable"] {{
+    background: {BG_CARD} !important;
+}}
+[data-testid="stExpander"] [data-testid="stDataFrame"] * {{
+    color: {NAVY} !important;
+    background-color: {BG_CARD} !important;
+}}
+/* Markdown inside expander */
+[data-testid="stExpander"] .stMarkdown,
+[data-testid="stExpander"] .stMarkdown * {{
+    color: {NAVY} !important;
 }}
 
 /* ══ ALERTS / INFO / SUCCESS / ERROR ═════════════════════════════════════════ */
