@@ -31,7 +31,7 @@ from utils.supabase_auth import handle_google_callback, restore_supabase_session
 # Script ini membaca window.location.hash dan redirect ke URL yang sama
 # dengan fragment diubah menjadi query string, sehingga handle_google_callback
 # bisa membacanya via st.query_params.
-if not st.query_params.get("access_token"):
+if not st.query_params.get("access_token") and not st.query_params.get("token_hash"):
     components.html("""
     <script>
     (function() {
@@ -48,12 +48,10 @@ if not st.query_params.get("access_token"):
             } catch(e) {}
             return false;
         }
-        // Jalankan langsung + retry bertingkat
         convertFragment();
         setTimeout(convertFragment, 100);
-        setTimeout(convertFragment, 400);
-        setTimeout(convertFragment, 900);
-        setTimeout(convertFragment, 1800);
+        setTimeout(convertFragment, 500);
+        setTimeout(convertFragment, 1200);
     })();
     </script>
     """, height=1)
