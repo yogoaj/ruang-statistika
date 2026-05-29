@@ -243,14 +243,14 @@ def handle_google_callback() -> bool:
     """
     Tangkap token dari URL setelah redirect balik dari Google/Supabase.
 
-    HARUS dipanggil di paling awal app.py, SEBELUM restore_supabase_session()
-    dan SEBELUM st.set_page_config().
+    Mendukung dua flow:
+    A) Fragment flow (lama)  : access_token di query_params (dikonversi JS dari #fragment)
+    B) PKCE/token_hash flow  : token_hash + type di query_params langsung (tanpa JS)
 
-    Juga mendeteksi token recovery (reset password) dari email Supabase:
-    - type=recovery → simpan ke session_state["_recovery_token"], JANGAN login
-    - type=lainnya  → proses sebagai login OAuth biasa
+    Flow B lebih reliable karena tidak bergantung pada JS iframe.
+    Template email harus menggunakan redirect_to dengan token_hash sebagai query string.
 
-    Return True jika berhasil set session dari callback Google.
+    Return True jika berhasil set session dari callback Google/OAuth.
     """
     if st.session_state.get("user_logged_in"):
         return True
@@ -259,7 +259,52 @@ def handle_google_callback() -> bool:
     access_token  = params.get("access_token")
     refresh_token = params.get("refresh_token", "")
     token_type    = params.get("type", "")
+    token_hash    = params.get("token_hash", "")
 
+    # ── Flow B: token_hash (PKCE) — lebih reliable, tidak butuh JS ───────────
+    if token_hash and token_type:
+        sb = get_supabase()
+        if not sb:
+            return False
+
+        if token_type == "recovery":
+            # Reset password: verifikasi token_hash → dapat access_token
+            try:
+                resp = sb.auth.verify_otp({
+                    "token_hash": token_hash,
+                    "type": "recovery",
+                })
+                if resp and resp.session:
+                    st.session_state["_recovery_access_token"]  = resp.session.access_token
+                    st.session_state["_recovery_refresh_token"] = resp.session.refresh_token or ""
+                    st.session_state["modal_tab"]               = "reset_password"
+                    st.query_params.clear()
+                    return False
+            except Exception:
+                pass
+            # Fallback: simpan token_hash langsung untuk dipakai update_user
+            st.session_state["_recovery_token_hash"] = token_hash
+            st.session_state["modal_tab"]            = "reset_password"
+            st.query_params.clear()
+            return False
+
+        # Flow B lainnya (email_change, magiclink, signup, dll)
+        try:
+            resp = sb.auth.verify_otp({
+                "token_hash": token_hash,
+                "type": token_type,
+            })
+            if resp and resp.user:
+                save_supabase_session(resp.user, resp.session)
+                st.query_params.clear()
+                return True
+        except Exception:
+            pass
+
+        st.query_params.clear()
+        return False
+
+    # ── Flow A: access_token dari fragment (dikonversi JS) ────────────────────
     if not access_token:
         return False
 
@@ -293,39 +338,43 @@ def supabase_update_password(new_password: str) -> tuple[bool, str]:
     """
     Update password user yang sedang dalam sesi recovery.
 
-    Dipanggil dari tab 'reset_password' di app.py setelah user
-    klik link reset dari email dan mengisi password baru.
-
-    Alur:
-      1. handle_google_callback() mendeteksi type=recovery →
-         simpan token ke session_state, set modal_tab = 'reset_password'
-      2. app.py render tab 'reset_password' dengan form input password baru
-      3. Saat submit, fungsi ini dipanggil:
-         a. Set Supabase session dengan recovery token
-         b. Update password via sb.auth.update_user()
-         c. Bersihkan token recovery dari session_state
+    Support dua flow:
+    A) access_token sudah ada di session (dari Flow A/B via verify_otp)
+    B) token_hash ada di session (fallback Flow B jika verify_otp gagal saat handle_callback)
     """
     if len(new_password) < 6:
         return False, "❌ Password minimal 6 karakter."
-
-    access_token  = st.session_state.get("_recovery_access_token", "")
-    refresh_token = st.session_state.get("_recovery_refresh_token", "")
-
-    if not access_token:
-        return False, "❌ Sesi reset tidak valid. Minta link reset baru."
 
     sb = get_supabase()
     if not sb:
         return False, "Koneksi ke Supabase gagal."
 
+    access_token  = st.session_state.get("_recovery_access_token", "")
+    refresh_token = st.session_state.get("_recovery_refresh_token", "")
+    token_hash    = st.session_state.get("_recovery_token_hash", "")
+
+    # ── Flow B fallback: pakai token_hash langsung ────────────────────────────
+    if not access_token and token_hash:
+        try:
+            resp = sb.auth.verify_otp({
+                "token_hash": token_hash,
+                "type": "recovery",
+            })
+            if resp and resp.session:
+                access_token  = resp.session.access_token
+                refresh_token = resp.session.refresh_token or ""
+        except Exception as e:
+            return False, f"❌ Token reset tidak valid atau sudah expired. Minta link baru. ({e})"
+
+    if not access_token:
+        return False, "❌ Sesi reset tidak valid. Minta link reset baru."
+
     try:
-        # Set sesi dengan recovery token terlebih dahulu
         sb.auth.set_session(access_token, refresh_token)
-        # Update password
         sb.auth.update_user({"password": new_password})
-        # Bersihkan token recovery
         st.session_state.pop("_recovery_access_token", None)
         st.session_state.pop("_recovery_refresh_token", None)
+        st.session_state.pop("_recovery_token_hash", None)
         return True, "✅ Password berhasil diperbarui. Silakan masuk dengan password baru."
     except Exception as e:
         return False, f"❌ Gagal memperbarui password: {e}"
@@ -687,6 +736,7 @@ def supabase_sign_out() -> None:
         "_modal_license_key", "sidebar_license_key",
         # token recovery (reset password)
         "_recovery_access_token", "_recovery_refresh_token", "_recovery_token",
+        "_recovery_token_hash",
         # state UI auth
         "modal_tab", "_lupa_email_sent",
         "_auth_msg_error", "_auth_msg_success",
