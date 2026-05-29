@@ -798,27 +798,50 @@ if menu == "Beranda":
                                           placeholder="Nama peneliti…")
                 if st.form_submit_button("Aktifkan Pro →", use_container_width=True,
                                          type="primary"):
-                    from utils.auth import validate_license
-                    _k = _key_inp.strip()
+                    from utils.supabase_auth import validate_license_supabase
+                    from utils.auth import validate_license as _validate_registry
+                    _k = _key_inp.strip().upper()
                     if not _k:
                         st.error("Masukkan license key terlebih dahulu.")
                     else:
-                        _info = validate_license(_k)
+                        # Cek Supabase dulu (key dinamis dari Lynk.id)
+                        _info = validate_license_supabase(_k)
+                        # Fallback ke LICENSE_REGISTRY (key hardcoded lama)
+                        if _info.get("status") != "pro":
+                            _info_reg = _validate_registry(_k)
+                            if _info_reg.get("status") == "pro":
+                                _info = {
+                                    "status": "pro",
+                                    "label":  _info_reg.get("label", "Pro"),
+                                    "expires": str(_info_reg["expires"]) if _info_reg.get("expires") else None,
+                                    "name":   "",
+                                    "email":  "",
+                                    "tier":   "starter",
+                                }
+
                         if _info.get("status") == "pro":
+                            # Nama: dari input → dari pro_licenses → default
+                            _dname = _pro_name.strip() or _info.get("name", "") or "Pengguna Pro"
                             st.session_state["_modal_license_key"]  = _k
                             st.session_state["sidebar_license_key"] = _k
-                            _dname = _pro_name.strip() or "Pengguna Pro"
                             st.session_state["user_logged_in"] = True
                             st.session_state["user_name"]      = _dname
                             st.session_state["_user_data"] = {
-                                "username": "pro_key_user", "name": _dname,
-                                "email": "", "role": "pro",
-                                "license_key": _k, "active": True,
+                                "username":    _info.get("email", "pro_key_user"),
+                                "name":        _dname,
+                                "email":       _info.get("email", ""),
+                                "role":        "pro",
+                                "tier":        _info.get("tier", "starter"),
+                                "license_key": _k,
+                                "expires_at":  _info.get("expires"),
+                                "active":      True,
                             }
                             st.query_params.clear()
                             st.rerun()
+                        elif _info.get("status") == "expired":
+                            st.error("⏰ License key sudah expired. Perpanjang di lynk.id/ruangstatistika")
                         else:
-                            st.error("❌ License key tidak valid atau sudah expired.")
+                            st.error("❌ License key tidak valid. Pastikan key diketik dengan benar.")
             st.markdown(
                 '<div class="signin-footer">Dapatkan key di '
                 '<a href="https://lynk.id/ruangstatistika" target="_blank">lynk.id/ruangstatistika</a>'
@@ -845,8 +868,18 @@ if menu == "Beranda":
                                            placeholder="Untuk laporan — boleh kosong")
                 if st.form_submit_button("Lanjutkan Gratis →", use_container_width=True,
                                          type="primary"):
-                    st.session_state.user_name      = _free_name.strip()
-                    st.session_state.user_logged_in = True
+                    _dname = _free_name.strip() or "Pengguna"
+                    st.session_state["user_name"]      = _dname
+                    st.session_state["user_logged_in"] = True
+                    st.session_state["_user_data"] = {
+                        "username":    "guest",
+                        "name":        _dname,
+                        "email":       "",
+                        "role":        "free",
+                        "tier":        "free",
+                        "license_key": "",
+                        "active":      True,
+                    }
                     st.query_params.clear()
                     st.rerun()
             _gc1, _gc2 = st.columns([1, 1])
