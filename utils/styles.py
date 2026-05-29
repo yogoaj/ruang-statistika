@@ -724,71 +724,116 @@ section[data-testid="stMain"] .block-container {{
     --text-navy-dm:    #CBD5E1;
 }}
 
-/* ══ LIGHT MODE — body.rs-light (JS-detected) + [data-theme="light"] fallback ════════ */
+/* ══ LIGHT MODE — body.rs-light (JS-detected) + [data-theme="light"] fallback ════════
+   Greeting bar & hero header SENGAJA tetap navy di light mode (brand konsisten).
+   ══════════════════════════════════════════════════════════════════════════════════ */
+
+/* Metric card — white + blue top border sebagai anchor visual */
 body.rs-light .rs-metric,
 [data-theme="light"] .rs-metric {{
-    background: {BG_CARD} !important;
-    border-color: {BORDER} !important;
-    box-shadow: var(--shadow-card) !important;
+    background: #FFFFFF !important;
+    border: 1px solid #CBD5E1 !important;
+    border-top: 3px solid {BLUE} !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,.07) !important;
+}}
+body.rs-light .rs-metric::before,
+[data-theme="light"] .rs-metric::before {{
+    opacity: 0 !important;
+}}
+body.rs-light .rs-metric:hover,
+[data-theme="light"] .rs-metric:hover {{
+    border-color: #94A3B8 !important;
+    border-top-color: {BLUE2} !important;
+    box-shadow: 0 4px 16px rgba(0,0,0,.12) !important;
 }}
 body.rs-light .rs-metric-label,
-[data-theme="light"] .rs-metric-label {{ color: {SLATE} !important; }}
+[data-theme="light"] .rs-metric-label {{ color: #475569 !important; }}
 body.rs-light .rs-metric-value,
 [data-theme="light"] .rs-metric-value {{ color: {NAVY} !important; }}
 body.rs-light .rs-metric-sub,
-[data-theme="light"] .rs-metric-sub   {{ color: {SLATE} !important; }}
-body.rs-light .rs-metric:hover,
-[data-theme="light"] .rs-metric:hover {{ border-color: {BORDER2} !important; box-shadow: var(--shadow-md) !important; }}
+[data-theme="light"] .rs-metric-sub   {{ color: #64748B !important; }}
 
+/* Step card — sky-50 fill + border-left biru */
 body.rs-light .rs-step,
 [data-theme="light"] .rs-step {{
-    background: {BG_CARD} !important;
-    border-color: {BORDER} !important;
-    box-shadow: var(--shadow-card) !important;
+    background: #F0F9FF !important;
+    border: 1px solid #BAE6FD !important;
+    border-left: 3px solid {BLUE} !important;
+    border-radius: 0 var(--radius-md) var(--radius-md) 0 !important;
+    box-shadow: none !important;
 }}
 body.rs-light .rs-step:hover,
-[data-theme="light"] .rs-step:hover {{ border-color: {BORDER2} !important; box-shadow: var(--shadow-md) !important; }}
+[data-theme="light"] .rs-step:hover {{
+    background: #E0F2FE !important;
+    border-color: #7DD3FC !important;
+    border-left-color: {BLUE2} !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,.07) !important;
+    transform: translateY(-1px) !important;
+}}
+body.rs-light .rs-step-num,
+[data-theme="light"] .rs-step-num {{
+    background: linear-gradient(135deg, {BLUE}, {BLUE2}) !important;
+    color: #FFFFFF !important;
+}}
 body.rs-light .rs-step-title,
-[data-theme="light"] .rs-step-title {{ color: {NAVY} !important; }}
+[data-theme="light"] .rs-step-title {{ color: #0C4A6E !important; }}
 body.rs-light .rs-step-desc,
-[data-theme="light"] .rs-step-desc  {{ color: {SLATE} !important; }}
+[data-theme="light"] .rs-step-desc  {{ color: #0369A1 !important; }}
 
+/* Narasi & AI block */
 body.rs-light .rs-narasi,
 [data-theme="light"] .rs-narasi {{
-    background: linear-gradient(135deg, #EFF6FF 0%, #EEF2FF 100%) !important;
+    background: #EFF6FF !important;
+    border-left-color: {BLUE} !important;
     color: {NAVY} !important;
-    box-shadow: var(--shadow-sm) !important;
+    box-shadow: none !important;
 }}
 body.rs-light .rs-ai-narasi,
 [data-theme="light"] .rs-ai-narasi {{
-    background: linear-gradient(135deg, {BG_AI} 0%, #E8F5FF 100%) !important;
+    background: #EEF2FF !important;
+    border-left-color: {INDIGO} !important;
     color: #1E1B4B !important;
-    box-shadow: var(--shadow-sm) !important;
+    box-shadow: none !important;
 }}
 
+/* CTA Wizard */
 body.rs-light .rs-cta-wizard,
 [data-theme="light"] .rs-cta-wizard {{
-    background: linear-gradient(135deg, #EEF2FF 0%, #E8F0FE 100%) !important;
-    border-color: #C7D2FE !important;
-    box-shadow: 0 2px 8px rgba(99,102,241,.08) !important;
+    background: #EEF2FF !important;
+    border: 1px solid #C7D2FE !important;
+    box-shadow: none !important;
 }}
 body.rs-light .rs-cta-title,
 [data-theme="light"] .rs-cta-title {{ color: #3730A3 !important; }}
 body.rs-light .rs-cta-desc,
 [data-theme="light"] .rs-cta-desc  {{ color: #4338CA !important; }}
 
+/* Hint bar */
 body.rs-light .rs-hint-bar,
 [data-theme="light"] .rs-hint-bar {{
-    background: rgba(21,101,192,.07) !important;
-    border-color: rgba(21,101,192,.2) !important;
-    color: {NAVY} !important;
+    background: #EFF6FF !important;
+    border: 1px solid #BFDBFE !important;
+    color: #1E3A5F !important;
 }}
 
+/* Greeting bar — tetap navy agar brand konsisten */
+body.rs-light .rs-greeting,
+[data-theme="light"] .rs-greeting {{
+    background: linear-gradient(135deg, {NAVY2} 0%, {NAVY3} 100%) !important;
+    border-color: rgba(255,255,255,.06) !important;
+}}
+body.rs-light .rs-greeting-text,
+[data-theme="light"] .rs-greeting-text {{ color: #FFFFFF !important; }}
+body.rs-light .rs-greeting-sub,
+[data-theme="light"] .rs-greeting-sub  {{ color: #94A3B8 !important; }}
+
+/* Section typography */
 body.rs-light .rs-section-title,
 [data-theme="light"] .rs-section-title {{ color: {NAVY} !important; }}
 body.rs-light .rs-section-sub,
 [data-theme="light"] .rs-section-sub   {{ color: {SLATE} !important; }}
 
+/* Footer */
 body.rs-light .rs-footer,
 [data-theme="light"] .rs-footer {{
     border-top-color: {BORDER} !important;
@@ -797,9 +842,7 @@ body.rs-light .rs-footer,
 body.rs-light .rs-footer b,
 [data-theme="light"] .rs-footer b {{ color: {NAVY} !important; }}
 
-body.rs-light .rs-greeting-sub,
-[data-theme="light"] .rs-greeting-sub {{ color: {SLATE2} !important; }}
-
+/* Expander */
 body.rs-light [data-testid="stExpander"],
 [data-theme="light"] [data-testid="stExpander"] {{
     background: {BG_CARD} !important;
@@ -822,7 +865,27 @@ body.rs-light [data-testid="stExpander"] li,
 [data-theme="light"] [data-testid="stExpander"] td,
 [data-theme="light"] [data-testid="stExpander"] th,
 [data-theme="light"] [data-testid="stExpander"] li {{ color: {NAVY} !important; }}
+body.rs-light [data-testid="stExpander"] .stMarkdown p,
+body.rs-light [data-testid="stExpander"] .stMarkdown li,
+body.rs-light [data-testid="stExpander"] .stMarkdown h1,
+body.rs-light [data-testid="stExpander"] .stMarkdown h2,
+body.rs-light [data-testid="stExpander"] .stMarkdown h3,
+body.rs-light [data-testid="stExpander"] .stMarkdown h4,
+[data-theme="light"] [data-testid="stExpander"] .stMarkdown p,
+[data-theme="light"] [data-testid="stExpander"] .stMarkdown li,
+[data-theme="light"] [data-testid="stExpander"] .stMarkdown h1,
+[data-theme="light"] [data-testid="stExpander"] .stMarkdown h2,
+[data-theme="light"] [data-testid="stExpander"] .stMarkdown h3,
+[data-theme="light"] [data-testid="stExpander"] .stMarkdown h4 {{ color: {NAVY} !important; }}
+body.rs-light [data-testid="stExpander"] thead th,
+[data-theme="light"] [data-testid="stExpander"] thead th {{
+    background: {BG_SOFT} !important;
+    color: {NAVY} !important;
+}}
+body.rs-light [data-testid="stExpander"] tbody td,
+[data-theme="light"] [data-testid="stExpander"] tbody td {{ color: {NAVY} !important; }}
 
+/* Tabs */
 body.rs-light [data-baseweb="tab"],
 [data-theme="light"] [data-baseweb="tab"] {{ color: {SLATE} !important; }}
 body.rs-light [data-baseweb="tab"]:hover,
@@ -832,7 +895,12 @@ body.rs-light [aria-selected="true"][data-baseweb="tab"],
     color: {BLUE} !important;
     border-bottom-color: {BLUE} !important;
 }}
+body.rs-light [data-baseweb="tab-list"],
+[data-theme="light"] [data-baseweb="tab-list"] {{
+    border-bottom-color: {BORDER} !important;
+}}
 
+/* Chat bubbles */
 body.rs-light .chat-container,
 [data-theme="light"] .chat-container {{
     background: {BG_SOFT} !important;
@@ -844,9 +912,44 @@ body.rs-light .chat-bubble-ai,
     border-color: {BORDER} !important;
     color: {NAVY} !important;
 }}
+body.rs-light .chat-label,
+[data-theme="light"] .chat-label {{ color: {SLATE} !important; }}
 
+/* Native metric widget */
 body.rs-light [data-testid="stMetricValue"],
 [data-theme="light"] [data-testid="stMetricValue"] {{ color: {NAVY} !important; }}
+
+/* Sidebar — tetap navy di semua mode */
+body.rs-light [data-testid="stSidebar"],
+[data-theme="light"] [data-testid="stSidebar"] {{
+    background: {NAVY} !important;
+}}
+
+/* Badges */
+body.rs-light .badge-valid,
+[data-theme="light"] .badge-valid {{
+    background: #ECFDF5 !important;
+    color: {GREEN} !important;
+    border-color: #A7F3D0 !important;
+}}
+body.rs-light .badge-invalid,
+[data-theme="light"] .badge-invalid {{
+    background: #FEF2F2 !important;
+    color: {RED} !important;
+    border-color: #FECACA !important;
+}}
+body.rs-light .badge-reliable,
+[data-theme="light"] .badge-reliable {{
+    background: #ECFDF5 !important;
+    color: {GREEN} !important;
+    border-color: #A7F3D0 !important;
+}}
+body.rs-light .badge-unreliable,
+[data-theme="light"] .badge-unreliable {{
+    background: #FEF2F2 !important;
+    color: {RED} !important;
+    border-color: #FECACA !important;
+}}
 
 /* ══ DARK MODE explicit overrides (redundan, jaga-jaga jika data-theme aktif) ═══ */
 [data-theme="dark"] .rs-metric {{
