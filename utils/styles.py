@@ -351,19 +351,29 @@ section[data-testid="stMain"] .stTextInput input {{
     border:1.5px solid rgba(255,255,255,.22) !important;
     border-radius:8px !important; padding:9px 12px !important;
     font-size:.85rem !important;
-    background:rgba(255,255,255,.15) !important;
-    color:{WHITE} !important; -webkit-text-fill-color:{WHITE} !important;
+    background:rgba(20,50,90,.55) !important;
+    color:{WHITE} !important;
+    -webkit-text-fill-color:{WHITE} !important;
     caret-color:{WHITE} !important;
     transition:border-color .15s,box-shadow .15s !important;
 }}
 section[data-testid="stMain"] .stTextInput input:focus {{
     border-color:rgba(255,255,255,.48) !important;
-    background:rgba(255,255,255,.2) !important;
+    background:rgba(20,50,90,.7) !important;
     box-shadow:0 0 0 3px rgba(255,255,255,.07) !important;
+    color:{WHITE} !important;
+    -webkit-text-fill-color:{WHITE} !important;
+}}
+section[data-testid="stMain"] .stTextInput input:-webkit-autofill,
+section[data-testid="stMain"] .stTextInput input:-webkit-autofill:hover,
+section[data-testid="stMain"] .stTextInput input:-webkit-autofill:focus {{
+    -webkit-text-fill-color:{WHITE} !important;
+    -webkit-box-shadow:0 0 0 1000px rgba(20,50,90,.8) inset !important;
+    caret-color:{WHITE} !important;
 }}
 section[data-testid="stMain"] .stTextInput input::placeholder {{
-    color:rgba(255,255,255,.35) !important;
-    -webkit-text-fill-color:rgba(255,255,255,.35) !important;
+    color:rgba(255,255,255,.38) !important;
+    -webkit-text-fill-color:rgba(255,255,255,.38) !important;
 }}
 
 /* Submit button */
