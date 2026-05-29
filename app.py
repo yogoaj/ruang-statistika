@@ -601,11 +601,11 @@ if menu == "Beranda":
 
             # ── Info: sudah beli Pro, login langsung pakai email + password ──
             st.markdown("""
-            <div style='background:rgba(21,101,192,.08);
-                        border:1px solid rgba(21,101,192,.2); border-radius:10px;
+            <div style='background:rgba(21,101,192,.15);
+                        border:1px solid rgba(33,150,243,.3); border-radius:10px;
                         padding:11px 15px; margin:14px 0 4px;
-                        font-size:0.80rem; color:#0d2a4e; line-height:1.7;'>
-                <div style='font-weight:700; font-size:0.82rem; margin-bottom:3px; color:#0a1628;'>
+                        font-size:0.80rem; color:rgba(187,222,251,.9); line-height:1.7;'>
+                <div style='font-weight:700; font-size:0.82rem; margin-bottom:3px; color:#90CAF9;'>
                     🎫 Sudah membeli Pro?
                 </div>
                 Masuk dengan <b>email</b> dan <b>password</b> yang dikirim ke emailmu
@@ -703,11 +703,11 @@ if menu == "Beranda":
 
             # ── Info: sudah beli Pro, tidak perlu daftar ────────────────────
             st.markdown("""
-            <div style='background:rgba(21,101,192,.08);
-                        border:1px solid rgba(21,101,192,.2); border-radius:10px;
+            <div style='background:rgba(21,101,192,.15);
+                        border:1px solid rgba(33,150,243,.3); border-radius:10px;
                         padding:11px 15px; margin:12px 0 4px;
-                        font-size:0.80rem; color:#0d2a4e; line-height:1.7;'>
-                <div style='font-weight:700; font-size:0.82rem; margin-bottom:3px; color:#0a1628;'>
+                        font-size:0.80rem; color:rgba(187,222,251,.9); line-height:1.7;'>
+                <div style='font-weight:700; font-size:0.82rem; margin-bottom:3px; color:#90CAF9;'>
                     🎫 Sudah membeli Pro?
                 </div>
                 Coba tab <b>Masuk</b> dengan email &amp; password yang dikirim setelah
@@ -965,9 +965,7 @@ if menu == "Beranda":
         st.rerun()
 
     st.markdown(
-        """<div style='background:rgba(21,101,192,.07);border:1px solid rgba(21,101,192,.18);
-            border-radius:10px;padding:10px 16px;font-size:.84rem;color:#0d2a4e;
-            margin:8px 0;line-height:1.6;'>
+        """<div class="rs-hint-bar">
             💡 <b>Baru di v4.8:</b> Mulai dari <b>🧭 Wizard Analisis</b> untuk dipandu memilih uji statistik yang tepat.
         </div>""",
         unsafe_allow_html=True,
