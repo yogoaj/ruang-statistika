@@ -97,10 +97,9 @@ def save_supabase_session(user_obj, session_obj=None) -> None:
                 sb.table("pro_licenses")
                 .select("license_key, expires_at, is_active, tier")
                 .eq("email", email.strip().lower())
-                .maybeSingle()
                 .execute()
             )
-            row = resp.data if resp else None
+            row = resp.data[0] if resp and resp.data else None
             if row and row.get("is_active", True):
                 expires_str = row.get("expires_at")
                 _expired = False
@@ -366,30 +365,31 @@ def _email_exists_in_supabase_auth(sb, email: str) -> Optional[bool]:
 
 def _sign_in_via_pro_licenses(sb, email: str, password: str) -> tuple[bool, str]:
     """
-    Login via tabel pro_licenses untuk user Lynk.id yang belum sign up mandiri.
+    Fallback login via tabel pro_licenses untuk user Lynk.id.
 
     Perubahan v4.9.2:
-    - Ganti .single() → .maybeSingle(): .single() throw exception jika row
-      tidak ditemukan, exception ditangkap diam-diam → return False padahal
-      masalahnya bukan password salah
-    - Tambah fallback query .ilike() untuk handle email mixed-case di DB
+    - Hapus .single() dan .maybeSingle() — keduanya bermasalah di supabase-py 2.x:
+      .single() throw exception jika row tidak ditemukan (ditelan except → False)
+      .maybeSingle() harus dichain setelah .execute(), bukan sebelum
+    - Ganti dengan .execute() biasa lalu ambil data[0] secara manual
+    - Tambah fallback .ilike() untuk email mixed-case di DB
     - Tambah .strip() pada perbandingan password
     """
     from datetime import datetime, timezone
 
     email_clean = email.strip().lower()
 
-    # Query utama — exact match
+    # Query utama — exact match, pakai .execute() biasa
     row = None
     try:
         resp = (
             sb.table("pro_licenses")
             .select("email, name, password, license_key, expires_at, is_active, tier")
             .eq("email", email_clean)
-            .maybeSingle()
             .execute()
         )
-        row = resp.data if resp else None
+        if resp.data:
+            row = resp.data[0]
     except Exception:
         pass
 
@@ -400,21 +400,21 @@ def _sign_in_via_pro_licenses(sb, email: str, password: str) -> tuple[bool, str]
                 sb.table("pro_licenses")
                 .select("email, name, password, license_key, expires_at, is_active, tier")
                 .ilike("email", email_clean)
-                .maybeSingle()
                 .execute()
             )
-            row = resp2.data if resp2 else None
+            if resp2.data:
+                row = resp2.data[0]
         except Exception:
             pass
 
     if not row:
         return False, "❌ Email atau password salah."
 
-    # Cek aktif dulu sebelum cek password (urutan penting)
+    # Cek aktif dulu sebelum cek password
     if not row.get("is_active", True):
         return False, "❌ Akun kamu sudah dinonaktifkan. Hubungi admin."
 
-    # Bandingkan password — strip() kedua sisi
+    # Bandingkan password — strip() kedua sisi untuk handle spasi tersembunyi
     if row.get("password", "").strip() != password.strip():
         return False, "❌ Email atau password salah."
 
@@ -460,20 +460,14 @@ def supabase_sign_in(email: str, password: str) -> tuple[bool, str]:
     """
     Login dengan email + password.
 
-    Alur v4.9.2 — dual-path login, tidak bergantung pada string error message:
+    Alur v4.9.2 — dual-path, tidak bergantung pada string error message:
       1. Coba Supabase Auth
          - Berhasil → selesai
-         - "Email not confirmed" → STOP, minta konfirmasi email dulu
-         - Gagal karena alasan apapun → lanjut ke langkah 2
+         - "Email not confirmed" → STOP, minta konfirmasi dulu
+         - Gagal apapun errornya → lanjut ke langkah 2
       2. Coba pro_licenses (user Lynk.id yang belum sign up mandiri)
          - Berhasil → selesai
-         - Gagal → cek apakah email ada di pro_licenses untuk pesan error tepat
-
-    Kenapa dual-path tanpa cek string error:
-      - Error message Supabase Auth berbeda antar versi supabase-py
-        ("invalid login credentials" vs "User not found" vs lainnya)
-      - Bergantung pada string matching rapuh dan sulit di-debug
-      - Urutan: Supabase Auth dulu (lebih aman), baru pro_licenses
+         - Gagal → pesan error yang tepat
     """
     sb = get_supabase()
     if not sb:
@@ -482,8 +476,6 @@ def supabase_sign_in(email: str, password: str) -> tuple[bool, str]:
     email = email.strip().lower()
 
     # ── Langkah 1: Coba Supabase Auth ────────────────────────────────────────
-    supabase_auth_ok   = False
-    supabase_auth_err  = ""
     try:
         resp = sb.auth.sign_in_with_password({"email": email, "password": password})
         if resp and resp.user:
@@ -491,50 +483,42 @@ def supabase_sign_in(email: str, password: str) -> tuple[bool, str]:
             return True, ""
     except Exception as e:
         msg_lower = str(e).lower()
-        supabase_auth_err = msg_lower
 
-        # Satu-satunya kasus kita STOP di sini tanpa coba pro_licenses:
-        # email ada di Supabase Auth tapi belum dikonfirmasi.
-        # Jika kita fallback ke pro_licenses, user bisa bypass konfirmasi.
+        # Satu-satunya kasus STOP tanpa coba pro_licenses:
+        # email ada di Supabase Auth tapi belum dikonfirmasi
         if "email not confirmed" in msg_lower or "not confirmed" in msg_lower:
             return False, (
                 "📧 Email kamu belum dikonfirmasi. "
                 "Cek inbox (atau folder spam) dan klik link konfirmasi, "
                 "lalu coba masuk lagi."
             )
-
-        # Semua error lain → lanjut coba pro_licenses
+        # Error lain → lanjut ke pro_licenses
 
     # ── Langkah 2: Coba pro_licenses (user Lynk.id) ──────────────────────────
     ok_pl, msg_pl = _sign_in_via_pro_licenses(sb, email, password)
     if ok_pl:
         return True, ""
 
-    # ── Kedua jalur gagal — tentukan pesan error yang paling tepat ───────────
-    # Cek apakah email ada di pro_licenses (untuk beda pesan "password salah"
-    # vs "email tidak terdaftar")
+    # ── Kedua jalur gagal — pesan error yang tepat ───────────────────────────
     _in_pro_licenses = False
     try:
         _pl = (
             sb.table("pro_licenses")
             .select("email")
             .ilike("email", email)
-            .maybeSingle()
             .execute()
         )
-        _in_pro_licenses = bool(_pl and _pl.data)
+        _in_pro_licenses = bool(_pl.data)
     except Exception:
         pass
 
     if _in_pro_licenses:
-        # Email ada di pro_licenses tapi password tidak cocok
         return False, (
             "❌ Password salah.\n\n"
             "Gunakan **password yang tertulis di email konfirmasi pembelian** "
             "dari Lynk.id. Jika lupa, hubungi admin via WhatsApp **087887533149**."
         )
 
-    # Email tidak ada di mana pun
     return False, (
         "❌ Email atau password salah. "
         "Pastikan email yang digunakan sama dengan email pembelian di Lynk.id."
@@ -568,10 +552,9 @@ def supabase_sign_up(email: str, password: str, full_name: str) -> tuple[bool, s
             sb.table("pro_licenses")
             .select("email")
             .eq("email", email)
-            .maybeSingle()
             .execute()
         )
-        _in_pro_licenses = bool(_pl and _pl.data)
+        _in_pro_licenses = bool(_pl and _pl.data and len(_pl.data) > 0)
     except Exception:
         pass
 
@@ -642,10 +625,9 @@ def supabase_forgot_password(email: str, redirect_url: str = "") -> tuple[bool, 
             sb.table("pro_licenses")
             .select("email")
             .eq("email", email)
-            .maybeSingle()
             .execute()
         )
-        _in_pro_licenses = bool(_pl and _pl.data)
+        _in_pro_licenses = bool(_pl and _pl.data and len(_pl.data) > 0)
     except Exception:
         pass
 
