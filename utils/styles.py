@@ -551,15 +551,17 @@ section[data-testid="stMain"] .block-container {{
     padding: 10px 16px !important;
     background: {BG_CARD} !important;
 }}
-/* Expander body + all content inside */
+/* Expander body wrapper */
 [data-testid="stExpander"] > div[data-testid="stExpanderDetails"] {{
     background: {BG_CARD} !important;
     padding: 4px 16px 14px !important;
 }}
-/* All text inside expander → dark on light */
+/* Expander detail inner block */
+[data-testid="stExpander"] [data-testid="stVerticalBlock"] {{
+    background: {BG_CARD} !important;
+}}
+/* Text inside expander — targeted, tidak merusak internal Streamlit widgets */
 [data-testid="stExpander"] p,
-[data-testid="stExpander"] span,
-[data-testid="stExpander"] div,
 [data-testid="stExpander"] td,
 [data-testid="stExpander"] th,
 [data-testid="stExpander"] li,
@@ -597,18 +599,14 @@ section[data-testid="stMain"] .block-container {{
     padding: 7px 12px !important;
     background: transparent !important;
 }}
-/* stDataFrame inside expander */
-[data-testid="stExpander"] [data-testid="stDataFrame"],
-[data-testid="stExpander"] [data-testid="stDataFrameResizable"] {{
-    background: {BG_CARD} !important;
-}}
-[data-testid="stExpander"] [data-testid="stDataFrame"] * {{
-    color: {NAVY} !important;
-    background-color: {BG_CARD} !important;
-}}
 /* Markdown inside expander */
-[data-testid="stExpander"] .stMarkdown,
-[data-testid="stExpander"] .stMarkdown * {{
+[data-testid="stExpander"] .stMarkdown p,
+[data-testid="stExpander"] .stMarkdown span,
+[data-testid="stExpander"] .stMarkdown li,
+[data-testid="stExpander"] .stMarkdown h1,
+[data-testid="stExpander"] .stMarkdown h2,
+[data-testid="stExpander"] .stMarkdown h3,
+[data-testid="stExpander"] .stMarkdown h4 {{
     color: {NAVY} !important;
 }}
 
