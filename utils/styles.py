@@ -495,6 +495,23 @@ section[data-testid="stMain"] .block-container {{
     box-shadow: 0 1px 4px rgba(99,102,241,.25);
 }}
 
+/* Hint bar — tipis, di bawah CTA */
+.rs-hint-bar {{
+    background: rgba(21,101,192,.09);
+    border: 1px solid rgba(21,101,192,.2);
+    border-radius: var(--radius-md);
+    padding: 10px 16px;
+    font-size: .84rem;
+    color: {NAVY};
+    margin: 8px 0;
+    line-height: 1.6;
+}}
+[data-theme="dark"] .rs-hint-bar {{
+    background: rgba(21,101,192,.18) !important;
+    border-color: rgba(33,150,243,.3) !important;
+    color: rgba(187,222,251,.9) !important;
+}}
+
 /* CTA wizard block */
 .rs-cta-wizard {{
     background: linear-gradient(135deg, #EEF2FF 0%, #E8F0FE 100%);
@@ -1073,22 +1090,34 @@ section[data-testid="stMain"] .stTextInput label {{
     text-transform: uppercase !important;
     margin-bottom: 5px !important;
 }}
-section[data-testid="stMain"] .stTextInput input {{
-    border: 1.5px solid rgba(255,255,255,.15) !important;
+section[data-testid="stMain"] .stTextInput input,
+section[data-testid="stMain"] .stTextInput input[type="text"],
+section[data-testid="stMain"] .stTextInput input[type="password"],
+section[data-testid="stMain"] .stTextInput input[type="email"] {{
+    border: 1.5px solid rgba(255,255,255,.2) !important;
     border-radius: var(--radius-sm) !important;
     padding: 10px 13px !important;
     font-size: .86rem !important;
-    background: rgba(255,255,255,.07) !important;
+    background: rgba(13,31,60,.75) !important;
+    background-color: rgba(13,31,60,.75) !important;
     color: {WHITE} !important;
     -webkit-text-fill-color: {WHITE} !important;
     caret-color: {BLUE2} !important;
     transition: border-color .2s, box-shadow .2s !important;
     letter-spacing: .01em !important;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,.3) !important;
+}}
+section[data-testid="stMain"] .stTextInput div[data-baseweb="input"],
+section[data-testid="stMain"] .stTextInput div[data-baseweb="base-input"] {{
+    background: rgba(13,31,60,.75) !important;
+    background-color: rgba(13,31,60,.75) !important;
+    border-color: rgba(255,255,255,.2) !important;
 }}
 section[data-testid="stMain"] .stTextInput input:focus {{
     border-color: rgba(33,150,243,.7) !important;
-    background: rgba(13,31,60,.85) !important;
-    box-shadow: 0 0 0 3px rgba(33,150,243,.15) !important;
+    background: rgba(13,31,60,.9) !important;
+    background-color: rgba(13,31,60,.9) !important;
+    box-shadow: 0 0 0 3px rgba(33,150,243,.15), inset 0 1px 3px rgba(0,0,0,.3) !important;
     color: {WHITE} !important;
     -webkit-text-fill-color: {WHITE} !important;
     caret-color: {BLUE2} !important;
@@ -1096,18 +1125,25 @@ section[data-testid="stMain"] .stTextInput input:focus {{
 }}
 /* Paksa dark background saat browser autocomplete fill */
 section[data-testid="stMain"] .stTextInput input:focus-within {{
-    background: rgba(13,31,60,.85) !important;
+    background: rgba(13,31,60,.9) !important;
+    background-color: rgba(13,31,60,.9) !important;
 }}
 section[data-testid="stMain"] .stTextInput input:-webkit-autofill,
 section[data-testid="stMain"] .stTextInput input:-webkit-autofill:hover,
 section[data-testid="stMain"] .stTextInput input:-webkit-autofill:focus {{
     -webkit-text-fill-color: {WHITE} !important;
-    -webkit-box-shadow: 0 0 0 1000px rgba(13,31,60,.85) inset !important;
+    -webkit-box-shadow: 0 0 0 1000px rgba(13,31,60,.9) inset !important;
     caret-color: {WHITE} !important;
 }}
 section[data-testid="stMain"] .stTextInput input::placeholder {{
-    color: rgba(255,255,255,.3) !important;
-    -webkit-text-fill-color: rgba(255,255,255,.3) !important;
+    color: rgba(255,255,255,.35) !important;
+    -webkit-text-fill-color: rgba(255,255,255,.35) !important;
+}}
+/* Password toggle icon area */
+section[data-testid="stMain"] .stTextInput [data-testid="textInputRootElement"] {{
+    background: rgba(13,31,60,.75) !important;
+    background-color: rgba(13,31,60,.75) !important;
+    border-color: rgba(255,255,255,.2) !important;
 }}
 
 /* Submit button */
