@@ -328,35 +328,28 @@ section[data-testid="stMain"] .block-container {{
     box-shadow: 0 2px 8px rgba(255,179,0,.35);
 }}
 
-/* Metric card — glass card style */
+/* Metric card — light-mode default, dark override di bawah */
 .rs-metric {{
-    background: rgba(255,255,255,.07);
-    border: 1px solid rgba(255,255,255,.1);
+    background: #FFFFFF;
+    border: 1px solid #CBD5E1;
+    border-top: 3px solid {BLUE};
     border-radius: var(--radius-md);
     padding: 16px 18px;
     text-align: center;
     transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
     position: relative;
     overflow: hidden;
-}}
-.rs-metric::before {{
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 2px;
-    background: linear-gradient(90deg, {BLUE}, {BLUE3});
-    opacity: 0;
-    transition: opacity var(--transition);
+    box-shadow: 0 2px 8px rgba(0,0,0,.07);
 }}
 .rs-metric:hover {{
     transform: translateY(-3px);
-    box-shadow: var(--shadow-md);
-    border-color: rgba(255,255,255,.18);
+    border-color: #94A3B8;
+    border-top-color: {BLUE2};
+    box-shadow: 0 4px 16px rgba(0,0,0,.12);
 }}
-.rs-metric:hover::before {{ opacity: 1; }}
 .rs-metric-label {{
     font-size: .68rem;
-    color: {SLATE2};
+    color: #475569;
     text-transform: uppercase;
     letter-spacing: .08em;
     margin-bottom: 8px;
@@ -365,34 +358,37 @@ section[data-testid="stMain"] .block-container {{
 .rs-metric-value {{
     font-size: 1.6rem;
     font-weight: 700;
-    color: {WHITE};
+    color: {NAVY};
     letter-spacing: -.03em;
     line-height: 1;
 }}
-.rs-metric-sub {{ font-size: .72rem; color: {SLATE2}; margin-top: 6px; font-weight: 400; }}
+.rs-metric-sub {{ font-size: .72rem; color: #64748B; margin-top: 6px; font-weight: 400; }}
 
-/* Step card — clean numbered list */
+/* Step card — light-mode default, dark override di bawah */
 .rs-step-full {{
     margin-bottom: 8px;
 }}
 .rs-step {{
-    background: rgba(255,255,255,.06);
-    border: 1px solid rgba(255,255,255,.1);
-    border-radius: var(--radius-md);
+    background: #F0F9FF;
+    border: 1px solid #BAE6FD;
+    border-left: 3px solid {BLUE};
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
     padding: 14px 16px;
     display: flex;
     align-items: flex-start;
     gap: 12px;
-    transition: transform var(--transition), box-shadow var(--transition);
+    transition: transform var(--transition), box-shadow var(--transition), background var(--transition);
     margin-bottom: 8px;
 }}
 .rs-step:hover {{
     transform: translateY(-1px);
-    box-shadow: var(--shadow-md);
-    border-color: rgba(255,255,255,.16);
+    background: #E0F2FE;
+    border-color: #7DD3FC;
+    border-left-color: {BLUE2};
+    box-shadow: 0 2px 8px rgba(0,0,0,.07);
 }}
 .rs-step-num {{
-    background: linear-gradient(135deg, {BLUE}, {BLUE3});
+    background: linear-gradient(135deg, {BLUE}, {BLUE2});
     color: {WHITE};
     width: 26px; height: 26px;
     border-radius: 8px;
@@ -404,36 +400,36 @@ section[data-testid="stMain"] .block-container {{
 }}
 .rs-step-title {{
     font-weight: 600;
-    color: {WHITE};
+    color: #0C4A6E;
     font-size: .85rem;
     letter-spacing: -.01em;
 }}
 .rs-step-desc {{
     font-size: .76rem;
-    color: {SLATE2};
+    color: #0369A1;
     margin-top: 3px;
     line-height: 1.45;
 }}
-[data-theme="dark"] .rs-step-title {{ color: #E2E8F0 !important; }}
-[data-theme="dark"] .rs-step-desc  {{ color: #94A3B8 !important; }}
 
-/* Narasi / AI blocks */
+/* Narasi / AI blocks — light default */
 .rs-narasi {{
-    background: rgba(21,101,192,.1);
+    background: #EFF6FF;
     border-left: 3px solid {BLUE};
     border-radius: 0 var(--radius-md) var(--radius-md) 0;
     padding: 1rem 1.2rem;
     font-size: .88rem;
     line-height: 1.7;
+    color: {NAVY};
     margin-top: .5rem;
 }}
 .rs-ai-narasi {{
-    background: rgba(63,81,181,.12);
+    background: #EEF2FF;
     border-left: 3px solid {INDIGO};
     border-radius: 0 var(--radius-md) var(--radius-md) 0;
     padding: 1rem 1.2rem;
     font-size: .88rem;
     line-height: 1.75;
+    color: #1E1B4B;
     margin-top: .5rem;
 }}
 .rs-ai-badge {{
@@ -724,116 +720,71 @@ section[data-testid="stMain"] .block-container {{
     --text-navy-dm:    #CBD5E1;
 }}
 
-/* ══ LIGHT MODE — body.rs-light (JS-detected) + [data-theme="light"] fallback ════════
-   Greeting bar & hero header SENGAJA tetap navy di light mode (brand konsisten).
-   ══════════════════════════════════════════════════════════════════════════════════ */
-
-/* Metric card — white + blue top border sebagai anchor visual */
+/* ══ LIGHT MODE — body.rs-light (JS-detected) + [data-theme="light"] fallback ════════ */
 body.rs-light .rs-metric,
 [data-theme="light"] .rs-metric {{
-    background: #FFFFFF !important;
-    border: 1px solid #CBD5E1 !important;
-    border-top: 3px solid {BLUE} !important;
-    box-shadow: 0 2px 8px rgba(0,0,0,.07) !important;
-}}
-body.rs-light .rs-metric::before,
-[data-theme="light"] .rs-metric::before {{
-    opacity: 0 !important;
-}}
-body.rs-light .rs-metric:hover,
-[data-theme="light"] .rs-metric:hover {{
-    border-color: #94A3B8 !important;
-    border-top-color: {BLUE2} !important;
-    box-shadow: 0 4px 16px rgba(0,0,0,.12) !important;
+    background: {BG_CARD} !important;
+    border-color: {BORDER} !important;
+    box-shadow: var(--shadow-card) !important;
 }}
 body.rs-light .rs-metric-label,
-[data-theme="light"] .rs-metric-label {{ color: #475569 !important; }}
+[data-theme="light"] .rs-metric-label {{ color: {SLATE} !important; }}
 body.rs-light .rs-metric-value,
 [data-theme="light"] .rs-metric-value {{ color: {NAVY} !important; }}
 body.rs-light .rs-metric-sub,
-[data-theme="light"] .rs-metric-sub   {{ color: #64748B !important; }}
+[data-theme="light"] .rs-metric-sub   {{ color: {SLATE} !important; }}
+body.rs-light .rs-metric:hover,
+[data-theme="light"] .rs-metric:hover {{ border-color: {BORDER2} !important; box-shadow: var(--shadow-md) !important; }}
 
-/* Step card — sky-50 fill + border-left biru */
 body.rs-light .rs-step,
 [data-theme="light"] .rs-step {{
-    background: #F0F9FF !important;
-    border: 1px solid #BAE6FD !important;
-    border-left: 3px solid {BLUE} !important;
-    border-radius: 0 var(--radius-md) var(--radius-md) 0 !important;
-    box-shadow: none !important;
+    background: {BG_CARD} !important;
+    border-color: {BORDER} !important;
+    box-shadow: var(--shadow-card) !important;
 }}
 body.rs-light .rs-step:hover,
-[data-theme="light"] .rs-step:hover {{
-    background: #E0F2FE !important;
-    border-color: #7DD3FC !important;
-    border-left-color: {BLUE2} !important;
-    box-shadow: 0 2px 8px rgba(0,0,0,.07) !important;
-    transform: translateY(-1px) !important;
-}}
-body.rs-light .rs-step-num,
-[data-theme="light"] .rs-step-num {{
-    background: linear-gradient(135deg, {BLUE}, {BLUE2}) !important;
-    color: #FFFFFF !important;
-}}
+[data-theme="light"] .rs-step:hover {{ border-color: {BORDER2} !important; box-shadow: var(--shadow-md) !important; }}
 body.rs-light .rs-step-title,
-[data-theme="light"] .rs-step-title {{ color: #0C4A6E !important; }}
+[data-theme="light"] .rs-step-title {{ color: {NAVY} !important; }}
 body.rs-light .rs-step-desc,
-[data-theme="light"] .rs-step-desc  {{ color: #0369A1 !important; }}
+[data-theme="light"] .rs-step-desc  {{ color: {SLATE} !important; }}
 
-/* Narasi & AI block */
 body.rs-light .rs-narasi,
 [data-theme="light"] .rs-narasi {{
-    background: #EFF6FF !important;
-    border-left-color: {BLUE} !important;
+    background: linear-gradient(135deg, #EFF6FF 0%, #EEF2FF 100%) !important;
     color: {NAVY} !important;
-    box-shadow: none !important;
+    box-shadow: var(--shadow-sm) !important;
 }}
 body.rs-light .rs-ai-narasi,
 [data-theme="light"] .rs-ai-narasi {{
-    background: #EEF2FF !important;
-    border-left-color: {INDIGO} !important;
+    background: linear-gradient(135deg, {BG_AI} 0%, #E8F5FF 100%) !important;
     color: #1E1B4B !important;
-    box-shadow: none !important;
+    box-shadow: var(--shadow-sm) !important;
 }}
 
-/* CTA Wizard */
 body.rs-light .rs-cta-wizard,
 [data-theme="light"] .rs-cta-wizard {{
-    background: #EEF2FF !important;
-    border: 1px solid #C7D2FE !important;
-    box-shadow: none !important;
+    background: linear-gradient(135deg, #EEF2FF 0%, #E8F0FE 100%) !important;
+    border-color: #C7D2FE !important;
+    box-shadow: 0 2px 8px rgba(99,102,241,.08) !important;
 }}
 body.rs-light .rs-cta-title,
 [data-theme="light"] .rs-cta-title {{ color: #3730A3 !important; }}
 body.rs-light .rs-cta-desc,
 [data-theme="light"] .rs-cta-desc  {{ color: #4338CA !important; }}
 
-/* Hint bar */
 body.rs-light .rs-hint-bar,
 [data-theme="light"] .rs-hint-bar {{
-    background: #EFF6FF !important;
-    border: 1px solid #BFDBFE !important;
-    color: #1E3A5F !important;
+    background: rgba(21,101,192,.07) !important;
+    border-color: rgba(21,101,192,.2) !important;
+    color: {NAVY} !important;
 }}
 
-/* Greeting bar — tetap navy agar brand konsisten */
-body.rs-light .rs-greeting,
-[data-theme="light"] .rs-greeting {{
-    background: linear-gradient(135deg, {NAVY2} 0%, {NAVY3} 100%) !important;
-    border-color: rgba(255,255,255,.06) !important;
-}}
-body.rs-light .rs-greeting-text,
-[data-theme="light"] .rs-greeting-text {{ color: #FFFFFF !important; }}
-body.rs-light .rs-greeting-sub,
-[data-theme="light"] .rs-greeting-sub  {{ color: #94A3B8 !important; }}
-
-/* Section typography */
 body.rs-light .rs-section-title,
 [data-theme="light"] .rs-section-title {{ color: {NAVY} !important; }}
 body.rs-light .rs-section-sub,
 [data-theme="light"] .rs-section-sub   {{ color: {SLATE} !important; }}
 
-/* Footer */
 body.rs-light .rs-footer,
 [data-theme="light"] .rs-footer {{
     border-top-color: {BORDER} !important;
@@ -842,7 +793,9 @@ body.rs-light .rs-footer,
 body.rs-light .rs-footer b,
 [data-theme="light"] .rs-footer b {{ color: {NAVY} !important; }}
 
-/* Expander */
+body.rs-light .rs-greeting-sub,
+[data-theme="light"] .rs-greeting-sub {{ color: {SLATE2} !important; }}
+
 body.rs-light [data-testid="stExpander"],
 [data-theme="light"] [data-testid="stExpander"] {{
     background: {BG_CARD} !important;
@@ -865,27 +818,7 @@ body.rs-light [data-testid="stExpander"] li,
 [data-theme="light"] [data-testid="stExpander"] td,
 [data-theme="light"] [data-testid="stExpander"] th,
 [data-theme="light"] [data-testid="stExpander"] li {{ color: {NAVY} !important; }}
-body.rs-light [data-testid="stExpander"] .stMarkdown p,
-body.rs-light [data-testid="stExpander"] .stMarkdown li,
-body.rs-light [data-testid="stExpander"] .stMarkdown h1,
-body.rs-light [data-testid="stExpander"] .stMarkdown h2,
-body.rs-light [data-testid="stExpander"] .stMarkdown h3,
-body.rs-light [data-testid="stExpander"] .stMarkdown h4,
-[data-theme="light"] [data-testid="stExpander"] .stMarkdown p,
-[data-theme="light"] [data-testid="stExpander"] .stMarkdown li,
-[data-theme="light"] [data-testid="stExpander"] .stMarkdown h1,
-[data-theme="light"] [data-testid="stExpander"] .stMarkdown h2,
-[data-theme="light"] [data-testid="stExpander"] .stMarkdown h3,
-[data-theme="light"] [data-testid="stExpander"] .stMarkdown h4 {{ color: {NAVY} !important; }}
-body.rs-light [data-testid="stExpander"] thead th,
-[data-theme="light"] [data-testid="stExpander"] thead th {{
-    background: {BG_SOFT} !important;
-    color: {NAVY} !important;
-}}
-body.rs-light [data-testid="stExpander"] tbody td,
-[data-theme="light"] [data-testid="stExpander"] tbody td {{ color: {NAVY} !important; }}
 
-/* Tabs */
 body.rs-light [data-baseweb="tab"],
 [data-theme="light"] [data-baseweb="tab"] {{ color: {SLATE} !important; }}
 body.rs-light [data-baseweb="tab"]:hover,
@@ -895,12 +828,7 @@ body.rs-light [aria-selected="true"][data-baseweb="tab"],
     color: {BLUE} !important;
     border-bottom-color: {BLUE} !important;
 }}
-body.rs-light [data-baseweb="tab-list"],
-[data-theme="light"] [data-baseweb="tab-list"] {{
-    border-bottom-color: {BORDER} !important;
-}}
 
-/* Chat bubbles */
 body.rs-light .chat-container,
 [data-theme="light"] .chat-container {{
     background: {BG_SOFT} !important;
@@ -912,44 +840,9 @@ body.rs-light .chat-bubble-ai,
     border-color: {BORDER} !important;
     color: {NAVY} !important;
 }}
-body.rs-light .chat-label,
-[data-theme="light"] .chat-label {{ color: {SLATE} !important; }}
 
-/* Native metric widget */
 body.rs-light [data-testid="stMetricValue"],
 [data-theme="light"] [data-testid="stMetricValue"] {{ color: {NAVY} !important; }}
-
-/* Sidebar — tetap navy di semua mode */
-body.rs-light [data-testid="stSidebar"],
-[data-theme="light"] [data-testid="stSidebar"] {{
-    background: {NAVY} !important;
-}}
-
-/* Badges */
-body.rs-light .badge-valid,
-[data-theme="light"] .badge-valid {{
-    background: #ECFDF5 !important;
-    color: {GREEN} !important;
-    border-color: #A7F3D0 !important;
-}}
-body.rs-light .badge-invalid,
-[data-theme="light"] .badge-invalid {{
-    background: #FEF2F2 !important;
-    color: {RED} !important;
-    border-color: #FECACA !important;
-}}
-body.rs-light .badge-reliable,
-[data-theme="light"] .badge-reliable {{
-    background: #ECFDF5 !important;
-    color: {GREEN} !important;
-    border-color: #A7F3D0 !important;
-}}
-body.rs-light .badge-unreliable,
-[data-theme="light"] .badge-unreliable {{
-    background: #FEF2F2 !important;
-    color: {RED} !important;
-    border-color: #FECACA !important;
-}}
 
 /* ══ DARK MODE explicit overrides (redundan, jaga-jaga jika data-theme aktif) ═══ */
 [data-theme="dark"] .rs-metric {{
