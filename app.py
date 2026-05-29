@@ -1,4 +1,7 @@
-# DEBUG SEMENTARA — hapus setelah selesai
+# DEBUG SEMENTARA — tambah di app.py paling atas, hapus setelah selesai
+from utils.supabase_auth import get_supabase
+import streamlit as st
+
 sb = get_supabase()
 if sb:
     try:
@@ -11,6 +14,10 @@ if sb:
         st.write("🔍 DEBUG query result:", resp.data)
     except Exception as e:
         st.write("🔍 DEBUG error:", str(e))
+else:
+    st.write("🔍 DEBUG: Supabase client None — cek Secrets")
+
+st.stop()  # stop di sini dulu supaya tidak render halaman lain
 """
 Ruang Statistika — Automated Research & Stats Reporting
 Oleh: Yogo Aryo Jatmiko | yogoaj.github.io
