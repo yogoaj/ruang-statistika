@@ -74,12 +74,13 @@ body:not(.rs-logged-in) [data-testid="stSidebarCollapsedControl"] {{ display:non
     font-size: .79rem !important; width: 100% !important;
     font-weight: 400 !important; margin: 0 !important;
     line-height: 1.4 !important; min-height: 0 !important;
-    height: auto !important; transition: background .12s, color .12s !important;
+    height: auto !important; transition: background .15s, color .15s, transform .15s, border-left-color .15s !important;
 }}
 [data-testid="stSidebar"] .stButton > button:hover {{
-    background: rgba(255,255,255,.05) !important;
+    background: rgba(255,255,255,.07) !important;
     color: {LIGHT} !important;
-    border-left-color: rgba(55,138,221,.3) !important;
+    border-left-color: rgba(55,138,221,.5) !important;
+    transform: translateX(2px) !important;
 }}
 [data-testid="stSidebar"] .stButton > button:focus {{
     box-shadow: none !important; outline: none !important;
@@ -97,10 +98,15 @@ body:not(.rs-logged-in) [data-testid="stSidebarCollapsedControl"] {{ display:non
     margin-bottom: 1.25rem; position: relative; overflow: hidden;
     display: flex; align-items: center; gap: 20px;
 }}
+.rs-header::before {{
+    content:''; position:absolute; left:-30px; bottom:-40px;
+    width:140px; height:140px; border-radius:50%;
+    background:rgba(255,255,255,.03); pointer-events:none;
+}}
 .rs-header::after {{
     content:''; position:absolute; right:-50px; top:-50px;
     width:180px; height:180px; border-radius:50%;
-    background:rgba(255,255,255,.04); pointer-events:none;
+    background:rgba(255,255,255,.06); pointer-events:none;
 }}
 .rs-header-icon {{
     background: rgba(255,255,255,.1); border-radius:12px;
@@ -134,13 +140,19 @@ body:not(.rs-logged-in) [data-testid="stSidebarCollapsedControl"] {{ display:non
     background: var(--background-color, #f7faff);
     border: .5px solid {BORDER}; border-radius:8px;
     padding:12px 14px; text-align:center;
+    transition: box-shadow .2s, transform .2s;
+}}
+.rs-metric:hover {{
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(12,35,64,.09);
+    border-color: {MUTED};
 }}
 .rs-metric-label {{
-    font-size:.65rem; color:#5f8ab5; text-transform:uppercase;
+    font-size:.72rem; color:#5f8ab5; text-transform:uppercase;
     letter-spacing:.06em; margin-bottom:5px;
 }}
 .rs-metric-value {{ font-size:1.5rem; font-weight:600; color:{NAVY}; }}
-.rs-metric-sub   {{ font-size:.65rem; color:{GREEN}; margin-top:2px; }}
+.rs-metric-sub   {{ font-size:.72rem; color:{GREEN}; margin-top:2px; }}
 
 /* Step card — 2 col layout */
 .rs-step {{
@@ -160,12 +172,14 @@ body:not(.rs-logged-in) [data-testid="stSidebarCollapsedControl"] {{ display:non
     background:#e6f1fb; border-left:3px solid {BLUE};
     border-radius:0 8px 8px 0; padding:.9rem 1.1rem;
     font-size:.88rem; color:{NAVY}; line-height:1.65; margin-top:.5rem;
+    box-shadow: 0 1px 6px rgba(12,35,64,.06);
 }}
 .rs-ai-narasi {{
     background: linear-gradient(135deg, {BG_AI} 0%, #e8f0fe 100%);
     border-left: 3px solid {INDIGO}; border-radius:0 8px 8px 0;
     padding:.9rem 1.1rem; font-size:.88rem; color:#1e1b4b;
     line-height:1.7; margin-top:.5rem;
+    box-shadow: 0 1px 6px rgba(12,35,64,.06);
 }}
 .rs-ai-badge {{
     display:inline-flex; align-items:center; gap:5px;
@@ -213,6 +227,8 @@ body:not(.rs-logged-in) [data-testid="stSidebarCollapsedControl"] {{ display:non
     max-height:420px; overflow-y:auto; padding:.5rem;
     background:#f7faff; border:.5px solid {BORDER};
     border-radius:10px; margin-bottom:1rem;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 4%, black 96%, transparent 100%);
+    mask-image: linear-gradient(to bottom, transparent 0%, black 4%, black 96%, transparent 100%);
 }}
 .chat-bubble-user {{
     background:{BLUE}; color:{WHITE}; padding:.55rem .95rem;
@@ -455,10 +471,12 @@ def inject_nav_highlight_css(active_idx: int) -> None:
     > div:nth-child({active_idx + 1}) .stButton > button,
 [data-testid="stSidebar"] div[data-testid="stVerticalBlockBorderWrapper"]
     > div:nth-child({active_idx + 1}) .stButton > button {{
-    background: rgba(24,95,165,.25) !important;
+    background: rgba(24,95,165,.2) !important;
     color: {WHITE} !important;
     font-weight: 500 !important;
     border-left-color: {BLUE2} !important;
+    box-shadow: inset 0 0 0 1px rgba(55,138,221,.18) !important;
+    transform: translateX(2px) !important;
 }}
 </style>""", unsafe_allow_html=True)
 
@@ -501,12 +519,13 @@ def render_greeting(user_name: str, is_pro: bool) -> None:
         "Selamat malam"
     )
     tier_badge = (
-        "<span style='background:linear-gradient(90deg,#185FA5,#0c2340);"
-        "color:#fff;font-size:.6rem;font-weight:600;letter-spacing:.04em;"
-        "padding:2px 8px;border-radius:8px;margin-left:5px;'>PRO</span>"
+        "<span style='background:linear-gradient(90deg,#F5B800,#e8a800);"
+        "color:#1a1000;font-size:.65rem;font-weight:800;letter-spacing:.06em;"
+        "padding:3px 10px;border-radius:8px;margin-left:5px;"
+        "box-shadow:0 1px 6px rgba(245,184,0,.35);'>✦ PRO</span>"
         if is_pro else
-        "<span style='background:linear-gradient(90deg,#F5B800,#d4980a);color:#000;"
-        "font-size:.65rem;font-weight:800;padding:2px 9px;border-radius:8px;margin-left:5px;letter-spacing:.3px;'>GRATIS</span>"
+        "<span style='background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.6);"
+        "font-size:.65rem;font-weight:600;padding:2px 9px;border-radius:8px;margin-left:5px;letter-spacing:.2px;'>GRATIS</span>"
     )
     # Fallback: mode gratis tanpa nama
     display_name = user_name if user_name else "Pengguna"
