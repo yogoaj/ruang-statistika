@@ -403,6 +403,20 @@ section[data-testid="stMain"] .block-container {{
     flex-shrink: 0;
     box-shadow: 0 2px 6px rgba(33,150,243,.3);
 }}
+.rs-step-title {{
+    font-weight: 600;
+    color: {NAVY};
+    font-size: .85rem;
+    letter-spacing: -.01em;
+}}
+.rs-step-desc {{
+    font-size: .76rem;
+    color: {SLATE};
+    margin-top: 3px;
+    line-height: 1.45;
+}}
+[data-theme="dark"] .rs-step-title {{ color: #E2E8F0 !important; }}
+[data-theme="dark"] .rs-step-desc  {{ color: #94A3B8 !important; }}
 
 /* Narasi / AI blocks */
 .rs-narasi {{
@@ -684,6 +698,192 @@ section[data-testid="stMain"] .block-container {{
 .rs-footer a {{ color: {BLUE}; text-decoration: none; font-weight: 500; }}
 .rs-footer a:hover {{ color: {BLUE2}; text-decoration: underline; }}
 .rs-footer b {{ color: {NAVY}; }}
+
+/* ══ DARK MODE OVERRIDES ═════════════════════════════════════════════════════
+   Streamlit dark mode menggunakan [data-theme="dark"] pada root element.
+   Semua override di sini membalikkan light-only styles di atas.
+   ═══════════════════════════════════════════════════════════════════════════ */
+[data-theme="dark"] {{
+    --bg-card-dm:   #111e35;
+    --bg-soft-dm:   #0d1728;
+    --border-dm:    rgba(255,255,255,.08);
+    --border2-dm:   rgba(255,255,255,.14);
+    --text-primary-dm: #E2E8F0;
+    --text-muted-dm:   #94A3B8;
+    --text-navy-dm:    #CBD5E1;
+}}
+
+/* ── Metric cards ── */
+[data-theme="dark"] .rs-metric {{
+    background: var(--bg-card-dm) !important;
+    border-color: var(--border-dm) !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,.3), 0 0 0 1px rgba(255,255,255,.04) !important;
+}}
+[data-theme="dark"] .rs-metric:hover {{
+    border-color: var(--border2-dm) !important;
+    box-shadow: 0 8px 24px rgba(0,0,0,.4) !important;
+}}
+[data-theme="dark"] .rs-metric-label {{ color: var(--text-muted-dm) !important; }}
+[data-theme="dark"] .rs-metric-value {{ color: #F1F5F9 !important; }}
+[data-theme="dark"] .rs-metric-sub   {{ color: var(--text-muted-dm) !important; }}
+
+/* ── Step cards ── */
+[data-theme="dark"] .rs-step {{
+    background: var(--bg-card-dm) !important;
+    border-color: var(--border-dm) !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,.3), 0 0 0 1px rgba(255,255,255,.04) !important;
+}}
+[data-theme="dark"] .rs-step:hover {{
+    box-shadow: 0 6px 20px rgba(0,0,0,.4) !important;
+}}
+
+/* ── Narasi / AI blocks ── */
+[data-theme="dark"] .rs-narasi {{
+    background: linear-gradient(135deg, rgba(21,101,192,.18) 0%, rgba(63,81,181,.15) 100%) !important;
+    border-left-color: {BLUE3} !important;
+    color: #CBD5E1 !important;
+    box-shadow: none !important;
+}}
+[data-theme="dark"] .rs-ai-narasi {{
+    background: linear-gradient(135deg, rgba(63,81,181,.18) 0%, rgba(21,101,192,.14) 100%) !important;
+    border-left-color: #818CF8 !important;
+    color: #C7D2FE !important;
+    box-shadow: none !important;
+}}
+
+/* ── CTA Wizard block ── */
+[data-theme="dark"] .rs-cta-wizard {{
+    background: linear-gradient(135deg, rgba(55,48,163,.25) 0%, rgba(37,99,235,.2) 100%) !important;
+    border-color: rgba(99,102,241,.35) !important;
+    box-shadow: 0 2px 12px rgba(99,102,241,.12) !important;
+}}
+[data-theme="dark"] .rs-cta-title {{ color: #A5B4FC !important; }}
+[data-theme="dark"] .rs-cta-desc  {{ color: #818CF8 !important; }}
+
+/* ── Section typography ── */
+[data-theme="dark"] .rs-section-title {{ color: #E2E8F0 !important; }}
+[data-theme="dark"] .rs-section-sub   {{ color: #94A3B8 !important; }}
+
+/* ── Greeting bar ── */
+[data-theme="dark"] .rs-greeting-sub {{ color: #64748B !important; }}
+
+/* ── Expanders ── */
+[data-theme="dark"] [data-testid="stExpander"] {{
+    background: var(--bg-card-dm) !important;
+    border-color: var(--border-dm) !important;
+}}
+[data-theme="dark"] [data-testid="stExpander"] summary {{
+    background: var(--bg-card-dm) !important;
+    color: #E2E8F0 !important;
+}}
+[data-theme="dark"] [data-testid="stExpander"] > div[data-testid="stExpanderDetails"] {{
+    background: var(--bg-card-dm) !important;
+}}
+[data-theme="dark"] [data-testid="stExpander"] [data-testid="stVerticalBlock"] {{
+    background: var(--bg-card-dm) !important;
+}}
+[data-theme="dark"] [data-testid="stExpander"] p,
+[data-theme="dark"] [data-testid="stExpander"] td,
+[data-theme="dark"] [data-testid="stExpander"] th,
+[data-theme="dark"] [data-testid="stExpander"] li,
+[data-theme="dark"] [data-testid="stExpander"] label,
+[data-theme="dark"] [data-testid="stExpander"] .stMarkdown p,
+[data-theme="dark"] [data-testid="stExpander"] .stMarkdown span,
+[data-theme="dark"] [data-testid="stExpander"] .stMarkdown li,
+[data-theme="dark"] [data-testid="stExpander"] .stMarkdown h1,
+[data-theme="dark"] [data-testid="stExpander"] .stMarkdown h2,
+[data-theme="dark"] [data-testid="stExpander"] .stMarkdown h3,
+[data-theme="dark"] [data-testid="stExpander"] .stMarkdown h4 {{
+    color: #CBD5E1 !important;
+}}
+[data-theme="dark"] [data-testid="stExpander"] table {{
+    background: var(--bg-card-dm) !important;
+}}
+[data-theme="dark"] [data-testid="stExpander"] thead tr {{
+    background: var(--bg-soft-dm) !important;
+    border-bottom-color: var(--border-dm) !important;
+}}
+[data-theme="dark"] [data-testid="stExpander"] thead th {{
+    background: var(--bg-soft-dm) !important;
+    color: #E2E8F0 !important;
+}}
+[data-theme="dark"] [data-testid="stExpander"] tbody tr {{
+    border-bottom-color: var(--border-dm) !important;
+    background: var(--bg-card-dm) !important;
+}}
+[data-theme="dark"] [data-testid="stExpander"] tbody tr:nth-child(even) {{
+    background: var(--bg-soft-dm) !important;
+}}
+[data-theme="dark"] [data-testid="stExpander"] tbody td {{
+    color: #CBD5E1 !important;
+}}
+
+/* ── Tabs ── */
+[data-theme="dark"] [data-baseweb="tab"] {{
+    color: #64748B !important;
+}}
+[data-theme="dark"] [data-baseweb="tab"]:hover {{
+    color: #CBD5E1 !important;
+    background: rgba(255,255,255,.05) !important;
+}}
+[data-theme="dark"] [aria-selected="true"][data-baseweb="tab"] {{
+    color: {BLUE3} !important;
+    border-bottom-color: {BLUE3} !important;
+}}
+[data-theme="dark"] [data-baseweb="tab-list"] {{
+    border-bottom-color: rgba(255,255,255,.08) !important;
+}}
+
+/* ── DataFrames ── */
+[data-theme="dark"] .stDataFrame {{
+    border-color: var(--border-dm) !important;
+}}
+
+/* ── Native metric values ── */
+[data-theme="dark"] [data-testid="stMetricValue"] {{
+    color: #F1F5F9 !important;
+}}
+
+/* ── Chat bubbles ── */
+[data-theme="dark"] .chat-container {{
+    background: var(--bg-soft-dm) !important;
+    border-color: var(--border-dm) !important;
+}}
+[data-theme="dark"] .chat-bubble-ai {{
+    background: var(--bg-card-dm) !important;
+    border-color: var(--border-dm) !important;
+    color: #CBD5E1 !important;
+}}
+[data-theme="dark"] .chat-label {{ color: #64748B !important; }}
+
+/* ── Footer ── */
+[data-theme="dark"] .rs-footer {{
+    border-top-color: rgba(255,255,255,.07) !important;
+    color: #475569 !important;
+}}
+[data-theme="dark"] .rs-footer b {{ color: #CBD5E1 !important; }}
+
+/* ── Badges ── */
+[data-theme="dark"] .badge-valid {{
+    background: rgba(46,125,50,.2) !important;
+    color: #86EFAC !important;
+    border-color: rgba(134,239,172,.2) !important;
+}}
+[data-theme="dark"] .badge-invalid {{
+    background: rgba(198,40,40,.2) !important;
+    color: #FCA5A5 !important;
+    border-color: rgba(252,165,165,.2) !important;
+}}
+[data-theme="dark"] .badge-reliable {{
+    background: rgba(46,125,50,.2) !important;
+    color: #86EFAC !important;
+    border-color: rgba(134,239,172,.2) !important;
+}}
+[data-theme="dark"] .badge-unreliable {{
+    background: rgba(198,40,40,.2) !important;
+    color: #FCA5A5 !important;
+    border-color: rgba(252,165,165,.2) !important;
+}}
 </style>"""
 
 
@@ -1195,8 +1395,8 @@ def render_steps_grid() -> None:
                 f'<div class="rs-step rs-step-full">'
                 f'<div class="rs-step-num">{i}</div>'
                 f'<div>'
-                f'<div style="font-weight:600;color:#0a1628;font-size:.85rem;letter-spacing:-.01em;">{title}</div>'
-                f'<div style="font-size:.76rem;color:#64748b;margin-top:3px;line-height:1.45;">{desc}</div>'
+                f'<div class="rs-step-title">{title}</div>'
+                f'<div class="rs-step-desc">{desc}</div>'
                 f'</div></div>',
                 unsafe_allow_html=True,
             )
@@ -1208,8 +1408,8 @@ def render_steps_grid() -> None:
                         f'<div class="rs-step">'
                         f'<div class="rs-step-num">{i}</div>'
                         f'<div>'
-                        f'<div style="font-weight:600;color:#0a1628;font-size:.85rem;letter-spacing:-.01em;">{title}</div>'
-                        f'<div style="font-size:.76rem;color:#64748b;margin-top:3px;line-height:1.45;">{desc}</div>'
+                        f'<div class="rs-step-title">{title}</div>'
+                        f'<div class="rs-step-desc">{desc}</div>'
                         f'</div></div>',
                         unsafe_allow_html=True,
                     )
