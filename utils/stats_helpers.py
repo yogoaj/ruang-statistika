@@ -313,60 +313,158 @@ def interpret_skew(sk: float) -> str:
     return "distribusi condong ke kanan (positif)" if sk > 0.5 else "distribusi condong ke kiri (negatif)"
 
 
+def _interpret_kurtosis(ku: float) -> str:
+    if abs(ku) < 0.5:
+        return "mesokurtik (mendekati normal)"
+    return "leptokurtik (ekor berat)" if ku > 0.5 else "platikurtik (ekor ringan)"
+
+
+def _interpret_cv(mean: float, sd: float) -> str:
+    """Koefisien variasi sebagai indikator homogenitas data."""
+    if mean == 0:
+        return ""
+    cv = abs(sd / mean) * 100
+    if cv < 15:
+        return "Data relatif homogen (CV < 15%)."
+    elif cv < 30:
+        return "Variabilitas data sedang (CV 15–30%)."
+    else:
+        return "Data menunjukkan variabilitas tinggi (CV > 30%)."
+
+
 def narrate_descriptive(stats_df: pd.DataFrame) -> str:
-    lines = []
+    """
+    Menghasilkan interpretasi deskriptif dalam format prosa ilmiah.
+    Output berupa HTML (menggunakan <b> bukan **) untuk dirender
+    langsung di dalam rs-narasi via unsafe_allow_html=True.
+    """
+    paragraphs = []
     for _, row in stats_df.iterrows():
-        lines.append(
-            f"**{row['Variabel']}** — Mean = {row['Mean']}, SD = {row['Std Dev']}. "
-            f"Dengan skewness = {row['Skewness']}, {interpret_skew(row['Skewness'])}."
-        )
-    return "\n\n".join(lines)
+        var    = row["Variabel"]
+        mean   = row["Mean"]
+        median = row.get("Median", "—")
+        sd     = row["Std Dev"]
+        sk     = row["Skewness"]
+        ku     = row["Kurtosis"]
+        n      = int(row["N"])
+        vmin   = row["Min"]
+        vmax   = row["Max"]
+
+        skew_desc = interpret_skew(sk)
+        kurt_desc = _interpret_kurtosis(ku)
+        cv_note   = _interpret_cv(mean, sd)
+
+        # Deteksi apakah mean ≈ median (simetri praktis)
+        try:
+            mean_median_diff = abs(float(mean) - float(median))
+            ratio = mean_median_diff / float(sd) if float(sd) > 0 else 0
+            central_note = (
+                "Nilai mean dan median berdekatan, mengindikasikan distribusi yang relatif simetris."
+                if ratio < 0.2
+                else f"Selisih mean ({mean}) dan median ({median}) menunjukkan adanya kemiringan distribusi."
+            )
+        except Exception:
+            central_note = ""
+
+        p = (
+            f"<b>{var}</b> memiliki nilai rata-rata (mean) sebesar {mean} "
+            f"dengan standar deviasi {sd} (N = {n}). "
+            f"Rentang data berada antara {vmin} hingga {vmax}. "
+            f"{central_note} "
+            f"Nilai skewness = {sk} menunjukkan {skew_desc}, "
+            f"sedangkan kurtosis = {ku} mengindikasikan distribusi {kurt_desc}. "
+            f"{cv_note}"
+        ).strip()
+
+        paragraphs.append(p)
+
+    return "<br/><br/>".join(paragraphs)
 
 
 def narrate_validity(val_df: pd.DataFrame, r_tabel: float) -> str:
-    n_valid = (val_df["Status"].str.contains("Valid ✓")).sum()
-    invalid = val_df[val_df["Status"].str.contains("Tidak Valid")]["Butir"].tolist()
-    txt = f"Dari {len(val_df)} butir, **{n_valid}** dinyatakan valid (r-hitung ≥ {r_tabel}). "
-    if invalid:
-        txt += f"Butir **{', '.join(invalid)}** tidak lolos uji validitas dan perlu ditinjau ulang."
+    """Prosa ilmiah hasil uji validitas — output HTML."""
+    n_total = len(val_df)
+    n_valid = int((val_df["Status"].str.contains("Valid ✓")).sum())
+    n_invalid = n_total - n_valid
+    invalid_items = val_df[val_df["Status"].str.contains("Tidak Valid")]["Butir"].tolist()
+
+    txt = (
+        f"Pengujian validitas butir dilakukan menggunakan korelasi Pearson "
+        f"dengan nilai r-tabel = {r_tabel}. "
+        f"Dari {n_total} butir yang diuji, sebanyak <b>{n_valid} butir dinyatakan valid</b> "
+        f"(r-hitung ≥ r-tabel). "
+    )
+    if n_invalid > 0:
+        txt += (
+            f"Sebanyak {n_invalid} butir tidak memenuhi kriteria validitas, "
+            f"yaitu: <b>{', '.join(invalid_items)}</b>. "
+            f"Butir-butir tersebut perlu ditinjau ulang atau dieliminasi dari instrumen."
+        )
     else:
-        txt += "Seluruh butir lolos uji validitas."
+        txt += "Seluruh butir instrumen memenuhi kriteria validitas dan layak digunakan dalam analisis."
     return txt
 
 
 def narrate_alpha(alpha: Optional[float]) -> str:
+    """Prosa ilmiah hasil Cronbach Alpha — output HTML."""
     if alpha is None:
-        return "Gagal menghitung Alpha."
+        return "Perhitungan Cronbach's Alpha tidak dapat dilakukan."
     if alpha >= 0.9:
-        kat = "sangat tinggi (excellent)"
+        kat = "sangat tinggi (<i>excellent</i>)"
     elif alpha >= 0.8:
-        kat = "tinggi (good)"
+        kat = "tinggi (<i>good</i>)"
     elif alpha >= 0.7:
-        kat = "cukup (acceptable)"
+        kat = "cukup (<i>acceptable</i>)"
     elif alpha >= 0.6:
-        kat = "kurang (questionable)"
+        kat = "kurang (<i>questionable</i>)"
     else:
-        kat = "rendah (poor)"
-    status = "reliabel" if alpha >= 0.7 else "tidak reliabel"
+        kat = "rendah (<i>poor</i>)"
+    status_word = "reliabel" if alpha >= 0.7 else "tidak reliabel"
+    status_html = f"<b>{status_word}</b>"
     return (
-        f"Berdasarkan kriteria Ghozali (2018), instrumen dinyatakan reliabel jika "
-        f"Cronbach's Alpha > 0.70. Hasil menunjukkan α = **{alpha}** (kategori **{kat}**), "
-        f"sehingga instrumen ini dinyatakan **{status}**."
+        f"Berdasarkan kriteria Ghozali (2018), instrumen dinyatakan reliabel apabila "
+        f"nilai Cronbach's Alpha melebihi 0,70. Hasil analisis menunjukkan "
+        f"α = <b>{alpha}</b> yang termasuk dalam kategori {kat}, "
+        f"sehingga instrumen penelitian ini dinyatakan {status_html} "
+        f"dan dapat digunakan dalam analisis lebih lanjut."
     )
 
 
 def narrate_correlation(corr: pd.DataFrame) -> str:
+    """Prosa ilmiah hasil korelasi — output HTML."""
     cols = corr.columns.tolist()
-    pairs = []
+    kuat, sedang = [], []
     for i in range(len(cols)):
         for j in range(i + 1, len(cols)):
             r = corr.iloc[i, j]
+            arah = "positif" if r > 0 else "negatif"
             if abs(r) >= 0.7:
-                arah = "positif" if r > 0 else "negatif"
-                pairs.append(f"**{cols[i]}** & **{cols[j]}** (r = {r:.3f}, kuat {arah})")
-    if not pairs:
-        return "Tidak ditemukan hubungan yang sangat kuat (|r| ≥ 0.7) antar variabel."
-    return "Hubungan kuat ditemukan antara: " + "; ".join(pairs) + "."
+                kuat.append(f"{cols[i]} &amp; {cols[j]} (r = {r:.3f}, kuat {arah})")
+            elif abs(r) >= 0.4:
+                sedang.append(f"{cols[i]} &amp; {cols[j]} (r = {r:.3f}, sedang {arah})")
+
+    if not kuat and not sedang:
+        return (
+            "Hasil analisis korelasi menunjukkan bahwa tidak terdapat hubungan yang kuat "
+            "(|r| ≥ 0,40) di antara variabel-variabel yang dianalisis. "
+            "Hal ini mengindikasikan rendahnya multikolinearitas antar prediktor."
+        )
+
+    parts = []
+    if kuat:
+        parts.append(
+            f"Hubungan <b>kuat</b> (|r| ≥ 0,70) ditemukan antara: {'; '.join(kuat)}."
+        )
+    if sedang:
+        parts.append(
+            f"Hubungan <b>sedang</b> (0,40 ≤ |r| &lt; 0,70) ditemukan antara: {'; '.join(sedang)}."
+        )
+    parts.append(
+        "Pasangan variabel dengan korelasi tinggi (|r| &gt; 0,80) perlu diwaspadai "
+        "sebagai potensi multikolinearitas dalam analisis regresi (Hair et al., 2019)."
+        if any("kuat" in p for p in parts) else ""
+    )
+    return " ".join(p for p in parts if p)
 
 
 # ── Session state helpers ─────────────────────────────────────────────────────
