@@ -110,100 +110,231 @@ def recommend_analysis(df: pd.DataFrame, report: dict) -> dict:
 
     # ── RULE ENGINE ───────────────────────────────────────────────────────
 
+    # Hitung kolom biner
+    binary_cols = []
+    for col in numeric_cols:
+        s = pd.to_numeric(df[col], errors="coerce").dropna()
+        if set(s.unique()).issubset({0, 1, 0.0, 1.0}) and len(s) > 10:
+            binary_cols.append(col)
+    n_binary = len(binary_cols)
+
+    # Estimasi apakah data time series (ada kolom tanggal / nama kolom mengandung "tahun","bulan","date","year","time","periode")
+    _ts_keywords = {"tahun", "bulan", "date", "year", "time", "periode", "tanggal", "month", "quarter"}
+    has_time_col  = any(any(kw in c.lower() for kw in _ts_keywords) for c in df.columns)
+
+    # ── PRIMARY — selalu atau hampir selalu relevan ────────────────────────
+
     # 1. Deskriptif — selalu
     primary.append({
         "uji":    "📊 Statistik Deskriptif",
         "alasan": f"Dataset memiliki {n_numeric} variabel numerik — selalu mulai dari ringkasan deskriptif.",
-        "modul":  "Statistik Deskriptif",
+        "modul":  "Deskriptif",
         "icon":   "✅",
     })
 
-    # 2. Validitas & Reliabilitas — jika banyak numerik (kuesioner)
+    # 2. Visualisasi EDA — selalu, deteksi pola & distribusi visual
+    primary.append({
+        "uji":    "🔍 Visualisasi EDA",
+        "alasan": "Eksplorasi distribusi, histogram, dan pola data secara visual sebelum analisis inferensial.",
+        "modul":  "EDA",
+        "icon":   "✅",
+    })
+
+    # 3. Uji Asumsi — selalu (prasyarat uji parametrik)
+    primary.append({
+        "uji":    "🔬 Uji Asumsi",
+        "alasan": "Periksa normalitas, homogenitas varians, dan linearitas sebelum analisis parametrik.",
+        "modul":  "Uji Asumsi",
+        "icon":   "✅",
+    })
+
+    # 4. Deteksi Outlier — selalu
+    primary.append({
+        "uji":    "🎯 Deteksi Outlier (IQR / Z-Score / Mahalanobis)",
+        "alasan": "Nilai ekstrem dapat mendistorsi hasil uji parametrik — periksa sebelum analisis lanjutan.",
+        "modul":  "Outlier",
+        "icon":   "✅",
+    })
+
+    # 5. Validitas & Reliabilitas — jika banyak numerik (indikasi kuesioner Likert)
     if n_numeric >= 5:
         primary.append({
             "uji":    "✅ Validitas & Reliabilitas (Cronbach's Alpha)",
-            "alasan": f"{n_numeric} variabel numerik terdeteksi — kemungkinan data kuesioner skala Likert.",
-            "modul":  "Validitas & Reliabilitas",
+            "alasan": f"{n_numeric} variabel numerik terdeteksi — kemungkinan data kuesioner/skala Likert.",
+            "modul":  "Validitas",
             "icon":   "✅",
         })
 
-    # 3. Korelasi — jika ≥ 2 numerik
+    # 6. Korelasi — jika ≥ 2 numerik
     if n_numeric >= 2:
         primary.append({
-            "uji":    "🔗 Analisis Korelasi Pearson",
-            "alasan": "Periksa hubungan linear antar variabel sebelum regresi.",
+            "uji":    "🔗 Analisis Korelasi Pearson / Spearman",
+            "alasan": "Periksa arah dan kekuatan hubungan linear antar variabel sebelum regresi.",
             "modul":  "Korelasi",
             "icon":   "✅",
         })
 
-    # 4. Berdasarkan distribusi normal vs tidak
-    if pct_normal >= 70:
-        secondary.append({
-            "uji":    "📈 Regresi Linier / OLS+",
-            "alasan": f"{len(normal_cols)} variabel berdistribusi normal — uji parametrik direkomendasikan.",
-            "modul":  "Regresi & Prediksi",
-            "icon":   "🟢",
-        })
-        secondary.append({
-            "uji":    "📊 ANOVA + Post-hoc",
-            "alasan": "Data normal + ada variabel kategorik → ANOVA lebih tepat dari Kruskal-Wallis.",
-            "modul":  "ANOVA & Post-hoc",
-            "icon":   "🟢",
-        })
-    else:
-        secondary.append({
-            "uji":    "📉 Uji Non-Parametrik (Kruskal-Wallis / Mann-Whitney)",
-            "alasan": f"{len(non_normal_cols)} variabel tidak normal → pertimbangkan uji non-parametrik.",
-            "modul":  "Analisis Kelompok / Uji Beda",
-            "icon":   "🟡",
+    # 7. Analisis Kelompok — jika ada kategorik
+    if n_categorical > 0:
+        cat_preview = ", ".join(non_numeric[:3])
+        primary.append({
+            "uji":    "📂 Analisis Kelompok",
+            "alasan": f"Ditemukan {n_categorical} variabel kategorik ({cat_preview}) — bandingkan statistik antar kelompok.",
+            "modul":  "Kelompok",
+            "icon":   "✅",
         })
 
-    # 5. Mediasi — jika ≥ 3 numerik
+    # ── SECONDARY — berdasarkan kondisi data ──────────────────────────────
+
+    # 8. Uji Beda — jika ada kategorik (biner → t-test / 2 grup)
+    if n_categorical > 0 and n_numeric >= 1:
+        if n_binary > 0:
+            secondary.append({
+                "uji":    "🔢 Uji Beda (Independent t-test / Mann-Whitney)",
+                "alasan": f"Variabel biner ({binary_cols[0]}) cocok sebagai variabel pengelompok untuk uji beda dua kelompok.",
+                "modul":  "Uji Beda",
+                "icon":   "🟢",
+            })
+        else:
+            secondary.append({
+                "uji":    "🔢 Uji Beda (Independent t-test / Mann-Whitney)",
+                "alasan": f"Variabel kategorik ({non_numeric[0]}) dapat digunakan untuk membandingkan dua kelompok independen.",
+                "modul":  "Uji Beda",
+                "icon":   "🟢",
+            })
+
+    # 9. ANOVA — jika ada kategorik + data cukup normal
+    if n_categorical > 0 and n_numeric >= 1:
+        if pct_normal >= 50:
+            secondary.append({
+                "uji":    "📊 ANOVA & Post-hoc (One-Way / Two-Way)",
+                "alasan": f"Data cukup normal ({pct_normal}%) + variabel kategorik → ANOVA lebih tepat dari Kruskal-Wallis.",
+                "modul":  "ANOVA",
+                "icon":   "🟢",
+            })
+        else:
+            secondary.append({
+                "uji":    "📐 Uji Non-Parametrik (Kruskal-Wallis / Friedman)",
+                "alasan": f"{len(non_normal_cols)} variabel tidak normal — alternatif ANOVA tanpa asumsi distribusi.",
+                "modul":  "Uji Nonparametrik",
+                "icon":   "🟡",
+            })
+
+    # 10. Power Analysis — berguna untuk validasi ukuran sampel
+    secondary.append({
+        "uji":    "🔋 Power Analysis (Ukuran Sampel Minimum)",
+        "alasan": f"N = {n_rows}. Pastikan ukuran sampel cukup untuk mendeteksi efek yang diharapkan (Cohen, 1988).",
+        "modul":  "Power Analysis",
+        "icon":   "🟢" if n_rows >= 30 else "🟡",
+    })
+
+    # 11. Regresi Linier / OLS+ — jika ≥ 2 numerik
+    if n_numeric >= 2:
+        if pct_normal >= 70:
+            secondary.append({
+                "uji":    "📈 Regresi Linier Berganda (OLS)",
+                "alasan": f"{len(normal_cols)} variabel normal — uji parametrik OLS direkomendasikan untuk prediksi Y.",
+                "modul":  "Regresi",
+                "icon":   "🟢",
+            })
+            secondary.append({
+                "uji":    "📈 OLS+ (dengan Uji Asumsi Klasik Lengkap)",
+                "alasan": "Versi OLS dengan pemeriksaan multikolinearitas (VIF), heteroskedastisitas (White), dan autokorelasi (DW).",
+                "modul":  "OLS Plus",
+                "icon":   "🟢",
+            })
+        else:
+            secondary.append({
+                "uji":    "📈 OLS Robust (Huber / MM-Estimator)",
+                "alasan": f"Data tidak sepenuhnya normal ({pct_normal}%) — OLS Robust lebih tahan terhadap outlier dan heteroskedastisitas.",
+                "modul":  "OLS Robust",
+                "icon":   "🟡",
+            })
+
+    # 12. Regresi Logistik — jika ada variabel biner
+    if n_binary > 0:
+        secondary.append({
+            "uji":    f"📉 Regresi Logistik (variabel outcome: {binary_cols[0]})",
+            "alasan": f"Kolom '{binary_cols[0]}' terdeteksi sebagai variabel biner (0/1) — cocok sebagai variabel dependen logistik.",
+            "modul":  "Regresi Logistik",
+            "icon":   "🔵",
+        })
+
+    # 13. Mediasi — jika ≥ 3 numerik
     if n_numeric >= 3:
         secondary.append({
-            "uji":    "🔀 Analisis Mediasi (Baron & Kenny)",
-            "alasan": f"Dengan {n_numeric} variabel, Anda dapat menguji hubungan mediasi X → M → Y.",
+            "uji":    "🔀 Analisis Mediasi (Bootstrap / Baron-Kenny)",
+            "alasan": f"Dengan {n_numeric} variabel numerik, uji jalur X → M → Y untuk mengidentifikasi mekanisme pengaruh.",
             "modul":  "Mediasi",
             "icon":   "🔵",
         })
 
-    # 6. Moderasi — jika ≥ 3 numerik
+    # 14. Moderasi — jika ≥ 3 numerik
     if n_numeric >= 3:
         secondary.append({
-            "uji":    "🎛️ Analisis Moderasi (Interaksi)",
-            "alasan": "Uji apakah variabel ketiga memoderasi hubungan X → Y.",
+            "uji":    "🎛️ Analisis Moderasi (Interaksi / Johnson-Neyman)",
+            "alasan": "Uji apakah variabel Z memoderasi kekuatan hubungan X → Y (efek interaksi).",
             "modul":  "Moderasi",
             "icon":   "🔵",
         })
 
-    # 7. Logistik — jika ada variabel biner
-    for col in numeric_cols:
-        s = pd.to_numeric(df[col], errors="coerce").dropna()
-        if set(s.unique()).issubset({0, 1, 0.0, 1.0}) and len(s) > 10:
-            secondary.append({
-                "uji":    f"📉 Regresi Logistik (variabel biner: {col})",
-                "alasan": f"Kolom '{col}' terdeteksi sebagai variabel biner (0/1).",
-                "modul":  "Regresi Logistik",
-                "icon":   "🔵",
-            })
-            break
-
-    # 8. Kelompok — jika ada kategorik
-    if n_categorical > 0:
-        primary.append({
-            "uji":    "📂 Analisis Kelompok",
-            "alasan": f"Ditemukan {n_categorical} variabel kategorik ({', '.join(non_numeric[:3])}) — bandingkan rata-rata antar kelompok.",
-            "modul":  "Analisis Kelompok",
-            "icon":   "✅",
+    # 15. EFA — jika ≥ 5 numerik (indikasi konstruk laten)
+    if n_numeric >= 5:
+        secondary.append({
+            "uji":    "🔬 Analisis Faktor Eksploratori (EFA)",
+            "alasan": f"{n_numeric} variabel numerik — EFA cocok untuk mengidentifikasi faktor/konstruk laten yang mendasari data.",
+            "modul":  "EFA",
+            "icon":   "🔵",
         })
 
-    # 9. Outlier — selalu
-    secondary.append({
-        "uji":    "🎯 Deteksi Outlier (IQR / Z-Score)",
-        "alasan": "Periksa nilai ekstrem sebelum menjalankan analisis lanjutan.",
-        "modul":  "Deteksi Outlier",
-        "icon":   "⚠️",
-    })
+    # 16. CFA — jika ≥ 6 numerik (EFA dulu, lalu konfirmasi dengan CFA)
+    if n_numeric >= 6:
+        secondary.append({
+            "uji":    "🔬 CFA Standalone (Confirmatory Factor Analysis)",
+            "alasan": "Jika struktur faktor sudah dihipotesiskan, CFA menguji fit model pengukuran secara konfirmatori.",
+            "modul":  "CFA",
+            "icon":   "🔵",
+        })
+
+    # 17. SEM — jika ≥ 6 numerik (gabungan model pengukuran + struktural)
+    if n_numeric >= 6:
+        secondary.append({
+            "uji":    "🧩 SEM & CFA (Structural Equation Modeling)",
+            "alasan": f"{n_numeric} variabel — SEM menggabungkan CFA (model pengukuran) dan regresi jalur struktural sekaligus.",
+            "modul":  "SEM",
+            "icon":   "🔵",
+        })
+
+    # 18. Time Series — jika terdeteksi kolom waktu atau data cukup banyak baris
+    if has_time_col or n_rows >= 24:
+        secondary.append({
+            "uji":    "⏱️ Time Series Analysis (ARIMA / Auto-ARIMA)",
+            "alasan": (
+                "Kolom bertanda waktu terdeteksi — analisis tren, musiman, dan peramalan deret waktu."
+                if has_time_col
+                else f"N = {n_rows} baris — data longitudinal berpotensi untuk analisis time series dan forecasting."
+            ),
+            "modul":  "Time Series",
+            "icon":   "🔵",
+        })
+
+    # 19. Compute Variabel — jika ada banyak variabel numerik (potensi pembentukan indeks)
+    if n_numeric >= 4:
+        secondary.append({
+            "uji":    "🧮 Compute Variabel (Indeks / Transformasi)",
+            "alasan": f"{n_numeric} variabel numerik — bentuk variabel baru (mean score, z-score, interaksi, log) untuk analisis lanjutan.",
+            "modul":  "Compute",
+            "icon":   "🟡",
+        })
+
+    # 20. Reliabilitas ICC — jika ada variabel penilaian berulang / multi-rater
+    if n_numeric >= 3:
+        secondary.append({
+            "uji":    "📏 Reliabilitas ICC (Intraclass Correlation Coefficient)",
+            "alasan": "Jika data berasal dari penilaian berulang atau multi-rater, ICC mengukur konsistensi antar pengukur.",
+            "modul":  "Reliabilitas ICC",
+            "icon":   "🟡",
+        })
 
     # ── Peringatan ────────────────────────────────────────────────────────
     if total_missing > 0:
@@ -214,7 +345,10 @@ def recommend_analysis(df: pd.DataFrame, report: dict) -> dict:
         warnings.append(f"⚠️ Ukuran sampel kecil (N = {n_rows}). Hasil uji statistik mungkin tidak stabil.")
 
     if non_normal_cols:
-        warnings.append(f"⚠️ Variabel tidak normal: {', '.join(non_normal_cols[:5])}. Pertimbangkan uji non-parametrik.")
+        warnings.append(f"⚠️ Variabel tidak normal: {', '.join(non_normal_cols[:5])}. Pertimbangkan uji non-parametrik atau transformasi data.")
+
+    if n_binary > 0 and pct_normal < 50:
+        warnings.append(f"⚠️ Variabel biner ({binary_cols[0]}) terdeteksi — untuk outcome biner, gunakan Regresi Logistik, bukan OLS.")
 
     return {
         "primary":      primary,
@@ -222,6 +356,13 @@ def recommend_analysis(df: pd.DataFrame, report: dict) -> dict:
         "warnings":     warnings,
         "data_profile": data_profile,
     }
+
+
+# Modul yang memerlukan lisensi Pro
+_PRO_MODULES = {
+    "Mediasi", "Moderasi", "Time Series", "EFA", "SEM", "CFA",
+    "Scraping", "OLS Plus", "OLS Robust",
+}
 
 
 def render_recommendation_card(rec: dict):
@@ -244,30 +385,103 @@ def render_recommendation_card(rec: dict):
         unsafe_allow_html=True,
     )
 
-    # Peringatan
+    # ── Peringatan ────────────────────────────────────────────────────────────
     if rec["warnings"]:
         for w in rec["warnings"]:
             st.warning(w)
 
-    # Rekomendasi utama
+    # ── Rekomendasi Utama ─────────────────────────────────────────────────────
     if rec["primary"]:
         st.markdown("**✅ Analisis yang Disarankan (Mulai dari Sini):**")
-        for item in rec["primary"]:
-            st.markdown(
-                f'<div class="rs-narasi" style="margin-bottom:8px;">'
-                f'{item["icon"]} <b>{item["uji"]}</b><br/>'
-                f'<span style="font-size:0.85rem;color:#5f8ab5;">{item["alasan"]}</span>'
-                f'</div>',
-                unsafe_allow_html=True,
+        cols_per_row = 2
+        items = rec["primary"]
+        for i in range(0, len(items), cols_per_row):
+            row_items = items[i : i + cols_per_row]
+            cols = st.columns(len(row_items))
+            for col, item in zip(cols, row_items):
+                is_pro = item["modul"] in _PRO_MODULES
+                badge = (
+                    ' <span style="font-size:0.68rem;background:#e8d5a3;'
+                    'color:#7a5c00;padding:1px 6px;border-radius:4px;'
+                    'vertical-align:middle;">★ Pro</span>'
+                    if is_pro else ""
+                )
+                with col:
+                    st.markdown(
+                        f'<div class="rs-narasi" style="margin-bottom:6px;min-height:80px;">'
+                        f'{item["icon"]} <b>{item["uji"]}</b>{badge}<br/>'
+                        f'<span style="font-size:0.82rem;color:#5f8ab5;">'
+                        f'{item["alasan"]}</span>'
+                        f'</div>',
+                        unsafe_allow_html=True,
+                    )
+                    if st.button(
+                        f"Buka → {item['modul']}",
+                        key=f"rec_primary_{item['modul']}_{i}",
+                        use_container_width=True,
+                    ):
+                        st.session_state.active_menu = item["modul"]
+                        st.rerun()
+
+    # ── Analisis Lanjutan ─────────────────────────────────────────────────────
+    if rec["secondary"]:
+        st.markdown("<br/>", unsafe_allow_html=True)
+        with st.expander("🔍 Analisis Lanjutan yang Relevan", expanded=False):
+            st.caption(
+                "Modul berikut relevan berdasarkan profil data Anda. "
+                "Klik tombol untuk langsung membuka modul. "
+                "Modul bertanda ★ Pro memerlukan lisensi Pro."
             )
 
-    # Rekomendasi tambahan
-    if rec["secondary"]:
-        with st.expander("🔍 Analisis Lanjutan yang Relevan"):
-            for item in rec["secondary"]:
+            _GROUP_ORDER = [
+                ("🟢", "Direkomendasikan Kuat"),
+                ("🔵", "Analisis Lanjutan"),
+                ("🟡", "Opsional / Kondisional"),
+            ]
+
+            for icon_key, group_label in _GROUP_ORDER:
+                group_items = [
+                    it for it in rec["secondary"] if it.get("icon") == icon_key
+                ]
+                if not group_items:
+                    continue
+
                 st.markdown(
-                    f'{item["icon"]} **{item["uji"]}** — {item["alasan"]}'
+                    f'<div style="font-size:0.8rem;font-weight:700;color:#185fa5;'
+                    f'letter-spacing:0.03em;margin:14px 0 6px 0;">'
+                    f'{icon_key} {group_label}</div>',
+                    unsafe_allow_html=True,
                 )
+
+                cols_per_row = 2
+                for i in range(0, len(group_items), cols_per_row):
+                    row_items = group_items[i : i + cols_per_row]
+                    cols = st.columns(len(row_items))
+                    for col, item in zip(cols, row_items):
+                        is_pro = item["modul"] in _PRO_MODULES
+                        badge = (
+                            ' <span style="font-size:0.68rem;background:#e8d5a3;'
+                            'color:#7a5c00;padding:1px 6px;border-radius:4px;">'
+                            '★ Pro</span>'
+                            if is_pro else ""
+                        )
+                        with col:
+                            st.markdown(
+                                f'<div class="rs-narasi" style="margin-bottom:6px;'
+                                f'min-height:80px;">'
+                                f'<b>{item["uji"]}</b>{badge}<br/>'
+                                f'<span style="font-size:0.8rem;color:#5f8ab5;">'
+                                f'{item["alasan"]}</span>'
+                                f'</div>',
+                                unsafe_allow_html=True,
+                            )
+                            if st.button(
+                                f"→ {item['modul']}",
+                                key=f"rec_sec_{item['modul']}_{i}",
+                                use_container_width=True,
+                            ):
+                                st.session_state.active_menu = item["modul"]
+                                st.rerun()
 
 
 def render(ctx: dict):
