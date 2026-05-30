@@ -23,7 +23,7 @@
 ## Struktur Proyek
 
 ```
-ruang_statistika/
+ruang-statistika-main/
 │
 ├── app.py                            ← Entry point: routing menu, sidebar, login, CSS global
 │
@@ -32,7 +32,7 @@ ruang_statistika/
 │   │
 │   ├── # ── FREE MODULES ─────────────────────────────────────────────────────
 │   ├── upload.py                     ← Upload & Cleaning (CSV / Excel / SPSS / Stata / TXT)
-│   ├── wizard.py                     ← Wizard Analisis — panduan 4 langkah pilih uji statistik
+│   ├── wizard.py                     ← Wizard Analisis v2.5.0 — panduan 4 langkah pilih uji statistik
 │   ├── compute.py                    ← Compute Variabel Baru (formula, recode, transform)
 │   ├── eda.py                        ← Exploratory Data Analysis (distribusi, outlier, korelasi ringkas)
 │   ├── deskriptif.py                 ← Statistik Deskriptif + Normalitas
@@ -45,7 +45,7 @@ ruang_statistika/
 │   ├── uji_beda.py                   ← t-test / Mann-Whitney
 │   ├── uji_nonparametrik.py          ← Wilcoxon, Friedman, McNemar, Cochran Q, Korelasi Ordinal
 │   ├── power_analysis.py             ← Power Analysis & Sample Size
-│   ├── chat_ai.py                    ← Chat AI Analyst
+│   ├── chat_ai.py                    ← Chat AI Analyst (butuh API Key)
 │   │
 │   └── # ── FREE (terbatas) + PRO MODULES ────────────────────────────────────
 │       ├── regresi.py                ← Regresi & Prediksi (OLS dasar gratis; VIF, prediksi, AI → Pro)
@@ -62,7 +62,7 @@ ruang_statistika/
 │       ├── sem.py                    ← SEM + CFA via semopy ★ Pro
 │       ├── cfa.py                    ← Confirmatory Factor Analysis Standalone ★ Pro
 │       ├── reliabilitas_icc.py       ← Reliabilitas ICC (Intraclass Correlation) ★ Pro
-│       ├── scraping.py               ← Web Scraping Data ★ Pro
+│       ├── scraping.py               ← Web Scraping & Data Collector ★ Pro
 │       └── export.py                 ← Generate Laporan (1×/sesi gratis; tak terbatas + AI → Pro)
 │
 ├── utils/
@@ -89,6 +89,9 @@ ruang_statistika/
 │   ├── _export_normalize.py          ← Normalisasi raw session_state ke format standar docx/markdown
 │   ├── _export_ai_prompt.py          ← Prompt builder AI per modul untuk interpretasi laporan
 │   └── _export_apa_refs.py           ← Database referensi APA 7th Edition per modul
+│
+├── .devcontainer/
+│   └── devcontainer.json             ← Konfigurasi Dev Container (GitHub Codespaces / VS Code)
 │
 ├── .streamlit/
 │   └── secrets.toml                  ← Kredensial Supabase & AI keys (JANGAN diupload ke GitHub!)
@@ -189,7 +192,7 @@ Semua tombol dan link "Upgrade" di dalam aplikasi mengarah ke: **[lynk.id/ruangs
 
 ```bash
 git clone <repo-url>
-cd ruang_statistika
+cd ruang-statistika-main
 pip install -r requirements.txt
 streamlit run app.py
 ```
@@ -296,16 +299,16 @@ Jangan isi `redirect_to` di kode — biarkan Supabase memakai callback URL defau
 
 AI provider dikonfigurasi oleh masing-masing user dari sidebar aplikasi (input API key). Tidak ada AI key yang disimpan di server.
 
-| Provider | Gratis? | Cara Dapat Key |
-|---|---|---|
-| Claude (Anthropic) | Berbayar | [console.anthropic.com](https://console.anthropic.com) |
-| GPT-4o (OpenAI) | Berbayar | [platform.openai.com](https://platform.openai.com) |
-| Gemini (Google) | Terbatas gratis | [aistudio.google.com](https://aistudio.google.com) |
-| Groq — Llama 3.3 70B | **Gratis** | [console.groq.com](https://console.groq.com) |
-| OpenRouter | **Gratis** (model tertentu) | [openrouter.ai](https://openrouter.ai) |
-| HuggingFace — Mistral 7B | **Gratis** | [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens) |
-| Mistral AI | Trial gratis | [console.mistral.ai](https://console.mistral.ai) |
-| Cohere | Trial gratis | [dashboard.cohere.com](https://dashboard.cohere.com) |
+| Provider | Model | Gratis? | Cara Dapat Key |
+|---|---|---|---|
+| Claude (Anthropic) | Claude Sonnet 4, Claude Haiku | Berbayar | [console.anthropic.com](https://console.anthropic.com) |
+| GPT-4o (OpenAI) | GPT-4o, GPT-4o Mini | Berbayar | [platform.openai.com](https://platform.openai.com) |
+| Gemini (Google) | Gemini 2.0 Flash | **Gratis** (terbatas) | [aistudio.google.com](https://aistudio.google.com) |
+| Groq | Llama 3.3 70B, Mixtral 8x7B, Gemma2 9B | **Gratis** | [console.groq.com](https://console.groq.com) |
+| OpenRouter | Llama 4 Scout, DeepSeek R1, Gemma 3 27B | **Gratis** (model tertentu) | [openrouter.ai](https://openrouter.ai) |
+| HuggingFace | Qwen 2.5 72B, Phi-3.5 | **Gratis** | [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens) |
+| Mistral AI | Nemo, Mixtral 8x7B | Trial gratis | [console.mistral.ai](https://console.mistral.ai) |
+| Cohere | Command-R, Command-R+ | Trial gratis | [dashboard.cohere.com](https://dashboard.cohere.com) |
 
 ---
 
@@ -404,7 +407,7 @@ elif menu == "key_unik":
 **5.** Simpan hasil analisis ke `st.session_state` dengan key yang konsisten, lalu daftarkan di:
    - `utils/_export_normalize.py` → blok normalisasi hasil
    - `utils/_docx_renderers.py` → fungsi `_render_nama_modul()`
-   - `utils/_export_narasi.py` → narasi fallback (opsional)
+   - `utils/_docx_narasi.py` → narasi fallback (opsional)
    - `utils/_export_apa_refs.py` → referensi APA (opsional)
    - `utils/_export_ai_prompt.py` → prompt AI (opsional)
 
@@ -458,6 +461,8 @@ Diimplementasikan di `utils/effect_size.py`, konsisten di seluruh modul.
 - **Badge tier di sidebar:** Nama user + badge tier tampil di panel sidebar setelah login
 - **`user_tier` di ctx:** Diteruskan ke semua modul untuk logika tier-aware
 - **Quota fix:** Kuota laporan gratis dipindah dari file `.quota_cache.json` ke `st.session_state` — aman di Streamlit Community Cloud yang tidak mendukung file persisten
+- **Wizard v2.5.0:** Tambah tujuan "Analisis data deret waktu" → Time Series; tambah "Reliabilitas antar rater" → Reliabilitas ICC; badge ★ Pro di tombol alternatif
+- **AI model update:** Claude Sonnet 4 (`claude-sonnet-4-20250514`) & Claude Haiku (`claude-haiku-4-5-20251001`); Gemini 2.0 Flash; OpenRouter: Llama 4 Scout, DeepSeek R1, Gemma 3 27B; HuggingFace: Qwen 2.5 72B, Phi-3.5
 - **Bug fix:** Badge versi beranda diperbarui ke v4.8
 - **Link upgrade:** Semua tombol upgrade mengarah ke `lynk.id/ruangstatistika`
 
