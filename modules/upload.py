@@ -1,729 +1,1003 @@
 """
-modules/upload.py — Upload & Auto Cleaning (Free)
-Ruang Statistika v4.0
-
-Struktur standar modul:
-    render(ctx: dict) → None
-    ctx keys: alpha_level, r_tab, license_info, ai_enabled, anthropic_api_key, ai_provider
+utils/styles.py — Ruang Statistika v5.0
+CSS terpusat, dipecah per concern untuk performa optimal.
 """
-
+from __future__ import annotations
 import streamlit as st
-import pandas as pd
-import numpy as np
 
-from utils.stats_helpers import load_data, auto_clean, encode_categorical, ss_get
-
-# ── Opsi tipe variabel ────────────────────────────────────────────────────────
-TYPE_OPTIONS = [
-    "Numerik Kontinu",
-    "Numerik Diskrit",
-    "Ordinal / Likert",
-    "Kategorik Nominal",
-    "Biner (0/1)",
-    "ID / Diabaikan",
-]
-
-# Tipe yang dianggap analitik (dimasukkan ke selected_cols)
-_NUMERIC_TYPES = {"Numerik Kontinu", "Numerik Diskrit", "Ordinal / Likert", "Biner (0/1)"}
-
-
-def _auto_detect_var_types(df: pd.DataFrame, report: dict) -> dict:
-    """
-    Auto-detect tipe variabel berdasarkan profil data.
-    Dipakai sebagai default awal — user bisa override via UI.
-    Tidak mengubah df atau report.
-    """
-    numeric_cols     = set(report.get("numeric_cols", []))
-    non_numeric_cols = set(report.get("non_numeric_cols", []))
-    var_types = {}
-
-    for col in df.columns:
-        if col in non_numeric_cols:
-            var_types[col] = "Kategorik Nominal"
-        elif col in numeric_cols:
-            s = pd.to_numeric(df[col], errors="coerce").dropna()
-            if s.empty:
-                var_types[col] = "Numerik Kontinu"
-            elif set(s.unique()).issubset({0, 1, 0.0, 1.0}):
-                var_types[col] = "Biner (0/1)"
-            elif s.nunique() <= 10 and (s % 1 == 0).all():
-                var_types[col] = "Ordinal / Likert"
-            else:
-                var_types[col] = "Numerik Kontinu"
-        else:
-            var_types[col] = "Numerik Kontinu"
-
-    return var_types
+NAVY    = "#0a1628"
+NAVY2   = "#0d1f3c"
+NAVY3   = "#112244"
+BLUE    = "#1565C0"
+BLUE2   = "#2196F3"
+BLUE3   = "#42A5F5"
+BLUE4   = "#90CAF9"
+LIGHT   = "#BBDEFB"
+MUTED   = "#78909C"
+MUTED2  = "#546E7A"
+MUTED3  = "#37474F"
+SLATE   = "#64748b"
+SLATE2  = "#94a3b8"
+GREEN   = "#2E7D32"
+GREEN2  = "#43A047"
+GREEN3  = "#A5D6A7"
+RED     = "#C62828"
+RED2    = "#EF5350"
+INDIGO  = "#3F51B5"
+VIOLET  = "#7C3AED"
+AMBER   = "#F57F17"
+AMBER2  = "#FFB300"
+TEAL    = "#00897B"
+BORDER  = "#E3EBF6"
+BORDER2 = "#CBD5E1"
+BG_SOFT = "#F8FAFD"
+BG_AI   = "#EEF2FF"
+BG_CARD = "#FFFFFF"
+WHITE   = "#ffffff"
+SHADOW  = "rgba(10, 22, 40, 0.08)"
+SHADOW2 = "rgba(10, 22, 40, 0.14)"
 
 
-def recommend_analysis(df: pd.DataFrame, report: dict) -> dict:
-    """
-    Analisis karakteristik data dan buat rekomendasi uji statistik.
+@st.cache_data(show_spinner=False)
+def _global_css() -> str:
+    return f"""<style>
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=DM+Serif+Display:ital@0;1&display=swap');
 
-    Returns dict berisi:
-        primary    : list rekomendasi utama (nama uji + alasan)
-        secondary  : list rekomendasi tambahan
-        warnings   : list peringatan (distribusi tidak normal, dll)
-        data_profile: ringkasan profil data
-    """
-    numeric_cols    = report.get("numeric_cols", [])
-    non_numeric     = report.get("non_numeric_cols", [])
-    total_missing   = report.get("total_missing", 0)
-    n_rows          = len(df)
-    n_numeric       = len(numeric_cols)
-    n_categorical   = len(non_numeric)
+:root {{
+    --font-display: 'DM Serif Display', Georgia, serif;
+    --font-body: 'Plus Jakarta Sans', 'Sora', sans-serif;
+    --nav-bg: {NAVY};
+    --nav-border: rgba(255,255,255,.05);
+    --nav-text: #94A3B8;
+    --nav-text-hover: #E2E8F0;
+    --nav-active-bg: rgba(33,150,243,.12);
+    --nav-active-border: {BLUE2};
+    --nav-active-text: #F0F9FF;
+    --accent: {BLUE2};
+    --accent2: {BLUE3};
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+    --shadow-sm: 0 1px 3px {SHADOW}, 0 1px 2px {SHADOW};
+    --shadow-md: 0 4px 12px {SHADOW}, 0 2px 6px {SHADOW};
+    --shadow-lg: 0 10px 30px {SHADOW2}, 0 4px 12px {SHADOW};
+    --shadow-card: 0 2px 8px rgba(10,22,40,.07), 0 0 0 1px rgba(10,22,40,.04);
+    --transition: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}}
+html, body, [class*="css"] {{
+    font-family: var(--font-body) !important;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+}}
+::-webkit-scrollbar {{ width: 5px; height: 5px; }}
+::-webkit-scrollbar-track {{ background: transparent; }}
+::-webkit-scrollbar-thumb {{ background: rgba(100,116,139,.3); border-radius: 10px; }}
+::-webkit-scrollbar-thumb:hover {{ background: rgba(100,116,139,.5); }}
 
-    primary   = []
-    secondary = []
-    warnings  = []
+body:not(.rs-logged-in) [data-testid="collapsedControl"],
+body:not(.rs-logged-in) [data-testid="stSidebarCollapsedControl"] {{ display:none !important; }}
 
-    # ── Periksa normalitas cepat (Shapiro untuk N ≤ 5000) ────────────────
-    from scipy import stats as scipy_stats
-    normal_cols     = []
-    non_normal_cols = []
+[data-testid="stSidebar"] {{
+    background: {NAVY} !important;
+    border-right: 1px solid rgba(255,255,255,.05) !important;
+}}
+[data-testid="stSidebar"] * {{ color: var(--nav-text) !important; }}
+[data-testid="stSidebar"] .stMarkdown h1,
+[data-testid="stSidebar"] .stMarkdown h2,
+[data-testid="stSidebar"] .stMarkdown h3 {{ color: {WHITE} !important; }}
+[data-testid="stSidebar"]::-webkit-scrollbar {{ width: 3px; }}
+[data-testid="stSidebar"]::-webkit-scrollbar-thumb {{ background: rgba(255,255,255,.1); }}
 
-    for col in numeric_cols[:10]:  # batasi 10 kolom untuk kecepatan
-        s = pd.to_numeric(df[col], errors="coerce").dropna()
-        if len(s) >= 3:
-            try:
-                samp = s if len(s) <= 5000 else s.sample(5000, random_state=42)
-                _, p = scipy_stats.shapiro(samp)
-                if p > 0.05:
-                    normal_cols.append(col)
-                else:
-                    non_normal_cols.append(col)
-            except Exception:
-                pass
+.nav-group-label {{
+    font-size: .6rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+    color: rgba(148,163,184,.45) !important; padding: 14px 14px 4px; margin: 0; display: block;
+}}
 
-    pct_normal = len(normal_cols) / len(numeric_cols) * 100 if numeric_cols else 0
+[data-testid="stSidebar"] .stButton > button {{
+    background: transparent !important; border: none !important;
+    color: var(--nav-text) !important; text-align: left !important;
+    padding: 6px 14px 6px 16px !important; border-radius: 0 !important;
+    border-left: 2px solid transparent !important; font-size: .8rem !important;
+    width: 100% !important; font-weight: 400 !important; margin: 0 !important;
+    line-height: 1.5 !important; min-height: 0 !important; height: auto !important;
+    letter-spacing: .01em !important; transition: all var(--transition) !important;
+}}
+[data-testid="stSidebar"] .stButton > button:hover {{
+    background: rgba(255,255,255,.05) !important; color: var(--nav-text-hover) !important;
+    border-left-color: rgba(33,150,243,.4) !important; padding-left: 18px !important;
+}}
+[data-testid="stSidebar"] .stButton > button:focus {{ box-shadow: none !important; outline: none !important; }}
+[data-testid="stSidebar"] .stButton {{ margin-bottom:0 !important; margin-top:0 !important; }}
+[data-testid="stSidebar"] .element-container {{ margin-bottom:0 !important; margin-top:0 !important; }}
+[data-testid="stSidebar"] [data-testid="stVerticalBlock"] {{ gap:0 !important; }}
+[data-testid="stSidebar"] hr {{
+    border: none !important; border-top: 1px solid rgba(255,255,255,.06) !important; margin: 8px 14px !important;
+}}
+[data-testid="stSidebar"] .stSelectbox label {{
+    font-size: .68rem !important; font-weight: 600 !important; letter-spacing: .06em !important;
+    text-transform: uppercase !important; color: rgba(148,163,184,.55) !important;
+}}
+[data-testid="stSidebar"] .stSelectbox > div > div {{
+    background: rgba(255,255,255,.05) !important; border: 1px solid rgba(255,255,255,.1) !important;
+    border-radius: var(--radius-sm) !important; color: #CBD5E1 !important; font-size: .8rem !important;
+}}
+[data-testid="stSidebar"] .stTextInput label {{
+    font-size: .68rem !important; font-weight: 600 !important; letter-spacing: .06em !important;
+    text-transform: uppercase !important; color: rgba(148,163,184,.55) !important;
+}}
+[data-testid="stSidebar"] .stTextInput input {{
+    background: rgba(255,255,255,.05) !important; border: 1px solid rgba(255,255,255,.1) !important;
+    border-radius: var(--radius-sm) !important; color: #CBD5E1 !important; font-size: .8rem !important;
+}}
+[data-testid="stSidebar"] .stTextInput input:focus {{
+    border-color: rgba(33,150,243,.5) !important; box-shadow: 0 0 0 3px rgba(33,150,243,.08) !important;
+}}
+[data-testid="stSidebar"] .stSlider label,
+[data-testid="stSidebar"] .stNumberInput label {{
+    font-size: .68rem !important; font-weight: 600 !important; letter-spacing: .06em !important;
+    text-transform: uppercase !important; color: rgba(148,163,184,.55) !important;
+}}
+[data-testid="stSidebar"] .stNumberInput input {{
+    background: rgba(255,255,255,.05) !important; border: 1px solid rgba(255,255,255,.1) !important;
+    border-radius: var(--radius-sm) !important; color: #CBD5E1 !important; font-size: .8rem !important;
+}}
 
-    # ── Profil data ───────────────────────────────────────────────────────
-    data_profile = {
-        "n_baris":       n_rows,
-        "n_numerik":     n_numeric,
-        "n_kategorik":   n_categorical,
-        "n_missing":     total_missing,
-        "pct_normal":    round(pct_normal, 1),
-        "normal_cols":   normal_cols,
-        "non_normal":    non_normal_cols,
+section[data-testid="stMain"] .block-container {{
+    padding-top: 1.5rem !important; padding-bottom: 3rem !important; max-width: 1100px !important;
+}}
+
+.rs-header {{
+    background: linear-gradient(135deg, {NAVY3} 0%, {NAVY2} 30%, {BLUE} 100%);
+    padding: 1.75rem 2rem; border-radius: var(--radius-lg); margin-bottom: 1.5rem;
+    position: relative; overflow: hidden; display: flex; align-items: center; gap: 20px;
+    box-shadow: 0 4px 24px rgba(10,22,40,.25), 0 0 0 1px rgba(255,255,255,.06);
+}}
+.rs-header::before {{
+    content:''; position:absolute; left: -60px; bottom: -80px; width: 220px; height: 220px;
+    border-radius: 50%; background: radial-gradient(circle, rgba(33,150,243,.15) 0%, transparent 70%);
+    pointer-events: none;
+}}
+.rs-header::after {{
+    content:''; position:absolute; right: -60px; top: -60px; width: 240px; height: 240px;
+    border-radius: 50%; background: radial-gradient(circle, rgba(255,255,255,.06) 0%, transparent 70%);
+    pointer-events: none;
+}}
+.rs-header .rs-header-texture {{
+    position: absolute; inset: 0;
+    background-image: linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+    background-size: 32px 32px; pointer-events: none;
+}}
+.rs-header-icon {{
+    background: rgba(255,255,255,.1); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,.15);
+    border-radius: var(--radius-md); width: 60px; height: 60px;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    position: relative; z-index: 1; font-size: 28px; color:{WHITE}; box-shadow: 0 2px 10px rgba(0,0,0,.2);
+}}
+.rs-header h1 {{
+    font-family: var(--font-display); font-size: 1.9rem; color: {WHITE}; margin: 0 0 .25rem;
+    position: relative; z-index: 1; letter-spacing: -.02em; text-shadow: 0 1px 8px rgba(0,0,0,.2);
+}}
+.rs-header p {{
+    color: rgba(187,222,251,.8); font-size: .82rem; margin: 0;
+    position: relative; z-index: 1; font-weight: 400; letter-spacing: .01em;
+}}
+.rs-logo-link {{ text-decoration:none; color:{BLUE3} !important; font-size:.8rem; }}
+
+.rs-greeting {{
+    background: linear-gradient(135deg, {NAVY2} 0%, {NAVY3} 100%);
+    border: 1px solid rgba(255,255,255,.07); border-radius: var(--radius-md);
+    padding: 14px 20px; display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 1rem; box-shadow: var(--shadow-sm);
+}}
+.rs-greeting-text {{ font-size: .9rem; color: {WHITE}; font-weight: 600; letter-spacing: -.01em; }}
+.rs-greeting-sub  {{ font-size: .74rem; color: {SLATE2}; margin-top: 2px; }}
+.rs-greeting-badge {{
+    background: linear-gradient(135deg, {AMBER2}, {AMBER}); border-radius: var(--radius-sm);
+    padding: 4px 12px; font-size: .7rem; color: #1a1000; font-weight: 800;
+    letter-spacing: .04em; box-shadow: 0 2px 8px rgba(255,179,0,.35);
+}}
+
+.rs-metric {{
+    background: #FFFFFF; border: 1px solid #CBD5E1; border-top: 3px solid {BLUE};
+    border-radius: var(--radius-md); padding: 16px 18px; text-align: center;
+    transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
+    position: relative; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.07);
+}}
+.rs-metric:hover {{
+    transform: translateY(-3px); border-color: #94A3B8; border-top-color: {BLUE2};
+    box-shadow: 0 4px 16px rgba(0,0,0,.12);
+}}
+.rs-metric-label {{ font-size: .68rem; color: #475569; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 8px; font-weight: 600; }}
+.rs-metric-value {{ font-size: 1.6rem; font-weight: 700; color: {NAVY}; letter-spacing: -.03em; line-height: 1; }}
+.rs-metric-sub {{ font-size: .72rem; color: #64748B; margin-top: 6px; font-weight: 400; }}
+
+.rs-step-full {{ margin-bottom: 8px; }}
+.rs-step {{
+    background: #F0F9FF; border: 1px solid #BAE6FD; border-left: 3px solid {BLUE};
+    border-radius: 0 var(--radius-md) var(--radius-md) 0; padding: 14px 16px;
+    display: flex; align-items: flex-start; gap: 12px;
+    transition: transform var(--transition), box-shadow var(--transition), background var(--transition);
+    margin-bottom: 8px;
+}}
+.rs-step:hover {{
+    transform: translateY(-1px); background: #E0F2FE; border-color: #7DD3FC;
+    border-left-color: {BLUE2}; box-shadow: 0 2px 8px rgba(0,0,0,.07);
+}}
+.rs-step-num {{
+    background: linear-gradient(135deg, {BLUE}, {BLUE2}); color: {WHITE};
+    width: 26px; height: 26px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: .7rem; flex-shrink: 0; box-shadow: 0 2px 6px rgba(33,150,243,.3);
+}}
+.rs-step-title {{ font-weight: 600; color: #0C4A6E; font-size: .85rem; letter-spacing: -.01em; }}
+.rs-step-desc {{ font-size: .76rem; color: #0369A1; margin-top: 3px; line-height: 1.45; }}
+
+.rs-narasi {{
+    background: #EFF6FF; border-left: 3px solid {BLUE};
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    padding: 1rem 1.2rem; font-size: .88rem; line-height: 1.7; color: {NAVY}; margin-top: .5rem;
+}}
+.rs-ai-narasi {{
+    background: #EEF2FF; border-left: 3px solid {INDIGO};
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    padding: 1rem 1.2rem; font-size: .88rem; line-height: 1.75; color: #1E1B4B; margin-top: .5rem;
+}}
+.rs-ai-badge {{
+    display: inline-flex; align-items: center; gap: 5px;
+    background: linear-gradient(135deg, {INDIGO}, {VIOLET}); color: {WHITE};
+    font-size: .64rem; font-weight: 700; letter-spacing: .08em; padding: 3px 10px;
+    border-radius: 20px; margin-bottom: 10px; text-transform: uppercase;
+    box-shadow: 0 2px 8px rgba(99,102,241,.25);
+}}
+
+.rs-section-title {{
+    font-family: var(--font-display); font-size: 1.4rem; color: {WHITE};
+    margin-bottom: .25rem; letter-spacing: -.02em;
+}}
+.rs-section-sub {{ font-size: .8rem; color: {SLATE2}; margin-bottom: 1rem; }}
+
+.badge-valid     {{ background: #ECFDF5; color: {GREEN}; border: 1px solid #A7F3D0; padding: 3px 10px; border-radius: 20px; font-size: .73rem; font-weight: 600; }}
+.badge-invalid   {{ background: #FEF2F2; color: {RED};   border: 1px solid #FECACA; padding: 3px 10px; border-radius: 20px; font-size: .73rem; font-weight: 600; }}
+.badge-reliable  {{ background: #ECFDF5; color: {GREEN}; border: 1px solid #A7F3D0; padding: 3px 12px; border-radius: 20px; font-size: .78rem; font-weight: 600; }}
+.badge-unreliable{{ background: #FEF2F2; color: {RED};   border: 1px solid #FECACA; padding: 3px 12px; border-radius: 20px; font-size: .78rem; font-weight: 600; }}
+.pro-badge {{
+    background: linear-gradient(135deg, {BLUE}, {NAVY}); color: {WHITE}; padding: 3px 12px;
+    border-radius: 20px; font-size: .7rem; font-weight: 700; letter-spacing: .06em;
+    box-shadow: 0 2px 6px rgba(21,101,192,.25);
+}}
+.pro-lock-badge {{
+    background: linear-gradient(135deg, {INDIGO}, {VIOLET}); color: {WHITE}; padding: 2px 8px;
+    border-radius: 10px; font-size: .62rem; font-weight: 700; letter-spacing: .06em;
+    margin-left: 4px; vertical-align: middle; box-shadow: 0 1px 4px rgba(99,102,241,.25);
+}}
+
+.rs-hint-bar {{
+    background: rgba(21,101,192,.12); border: 1px solid rgba(33,150,243,.25);
+    border-radius: var(--radius-md); padding: 10px 16px; font-size: .84rem;
+    color: {BLUE4}; margin: 8px 0; line-height: 1.6;
+}}
+
+.rs-cta-wizard {{
+    background: rgba(63,81,181,.12); border: 1px solid rgba(99,102,241,.3);
+    border-radius: var(--radius-md); padding: 20px 22px 16px; display: block; margin-bottom: 10px;
+}}
+.rs-cta-title {{ font-size: .92rem; font-weight: 700; color: {BLUE3}; margin-bottom: 5px; letter-spacing: -.01em; }}
+.rs-cta-desc  {{ font-size: .78rem; color: {BLUE4}; line-height: 1.55; margin-bottom: 0; }}
+
+.chat-container {{
+    max-height: 420px; overflow-y: auto; padding: .75rem;
+    background: #F8FAFD; border: 1px solid #E3EBF6; border-radius: var(--radius-md);
+    margin-bottom: 1rem;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%);
+    mask-image: linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%);
+}}
+.chat-bubble-user {{
+    background: linear-gradient(135deg, {BLUE}, {BLUE3}); color: {WHITE};
+    padding: .6rem 1rem; border-radius: 14px 14px 4px 14px;
+    margin: .5rem 0 .5rem 25%; font-size: .86rem; line-height: 1.55;
+    box-shadow: 0 2px 8px rgba(33,150,243,.2);
+}}
+.chat-bubble-ai {{
+    background: #FFFFFF; border: 1px solid #E3EBF6; color: {NAVY};
+    padding: .6rem 1rem; border-radius: 14px 14px 14px 4px;
+    margin: .5rem 25% .5rem 0; font-size: .86rem; line-height: 1.6;
+    box-shadow: var(--shadow-card);
+}}
+.chat-label {{ font-size: .67rem; color: {SLATE}; margin-bottom: 3px; letter-spacing: .04em; font-weight: 600; text-transform: uppercase; }}
+
+.stDataFrame {{
+    border-radius: var(--radius-md) !important; overflow: hidden !important;
+    box-shadow: var(--shadow-card) !important; border: 1px solid {BORDER} !important;
+}}
+
+[data-testid="stExpander"] {{
+    border: 1px solid {BORDER} !important; border-radius: var(--radius-md) !important;
+    box-shadow: var(--shadow-card) !important; overflow: hidden !important; background: {BG_CARD} !important;
+}}
+[data-testid="stExpander"] summary {{
+    font-weight: 600 !important; font-size: .88rem !important; color: {NAVY} !important;
+    padding: 10px 16px !important; background: {BG_CARD} !important;
+}}
+[data-testid="stExpander"] > div[data-testid="stExpanderDetails"] {{
+    background: {BG_CARD} !important; padding: 4px 16px 14px !important;
+}}
+[data-testid="stExpander"] [data-testid="stVerticalBlock"] {{ background: {BG_CARD} !important; }}
+[data-testid="stExpander"] p,
+[data-testid="stExpander"] td,
+[data-testid="stExpander"] th,
+[data-testid="stExpander"] li,
+[data-testid="stExpander"] label {{ color: {NAVY} !important; }}
+[data-testid="stExpander"] table {{ background: {BG_CARD} !important; border-collapse: collapse !important; width: 100% !important; }}
+[data-testid="stExpander"] thead tr {{ background: {BG_SOFT} !important; border-bottom: 2px solid {BORDER} !important; }}
+[data-testid="stExpander"] thead th {{ background: {BG_SOFT} !important; color: {NAVY} !important; font-weight: 600 !important; font-size: .8rem !important; padding: 8px 12px !important; text-align: left !important; }}
+[data-testid="stExpander"] tbody tr {{ border-bottom: 1px solid {BORDER} !important; background: {BG_CARD} !important; }}
+[data-testid="stExpander"] tbody tr:nth-child(even) {{ background: {BG_SOFT} !important; }}
+[data-testid="stExpander"] tbody td {{ color: {NAVY} !important; font-size: .82rem !important; padding: 7px 12px !important; background: transparent !important; }}
+[data-testid="stExpander"] .stMarkdown p,
+[data-testid="stExpander"] .stMarkdown span,
+[data-testid="stExpander"] .stMarkdown li,
+[data-testid="stExpander"] .stMarkdown h1,
+[data-testid="stExpander"] .stMarkdown h2,
+[data-testid="stExpander"] .stMarkdown h3,
+[data-testid="stExpander"] .stMarkdown h4 {{ color: {NAVY} !important; }}
+
+[data-testid="stAlert"] {{ border-radius: var(--radius-md) !important; border-width: 1px !important; font-size: .85rem !important; }}
+
+[data-baseweb="tab-list"] {{ gap: 4px !important; background: transparent !important; border-bottom: 1px solid {BORDER} !important; padding-bottom: 0 !important; }}
+[data-baseweb="tab"] {{ border-radius: var(--radius-sm) var(--radius-sm) 0 0 !important; font-size: .84rem !important; font-weight: 500 !important; padding: 8px 16px !important; color: {SLATE} !important; background: transparent !important; border: none !important; transition: color var(--transition), background var(--transition) !important; }}
+[data-baseweb="tab"]:hover {{ color: {NAVY} !important; background: rgba(10,22,40,.04) !important; }}
+[aria-selected="true"][data-baseweb="tab"] {{ color: {BLUE} !important; font-weight: 600 !important; background: transparent !important; border-bottom: 2px solid {BLUE} !important; }}
+
+[data-testid="stMain"] .stButton > button[kind="primary"],
+[data-testid="stMain"] .stButton > button[data-testid*="primary"] {{
+    background: linear-gradient(135deg, {BLUE} 0%, {BLUE3} 100%) !important;
+    color: {WHITE} !important; border: none !important; border-radius: var(--radius-sm) !important;
+    font-weight: 600 !important; font-size: .86rem !important; letter-spacing: .01em !important;
+    box-shadow: 0 2px 10px rgba(33,150,243,.3) !important; transition: all var(--transition) !important;
+}}
+[data-testid="stMain"] .stButton > button[kind="primary"]:hover {{
+    box-shadow: 0 4px 16px rgba(33,150,243,.4) !important; transform: translateY(-1px) !important;
+}}
+
+[data-testid="stMetricValue"] {{ font-size: 1.7rem !important; font-weight: 700 !important; letter-spacing: -.03em !important; color: {NAVY} !important; }}
+
+.rs-footer {{
+    margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid rgba(255,255,255,.08);
+    text-align: center; font-size: .76rem; color: {SLATE};
+}}
+.rs-footer a {{ color: {BLUE3}; text-decoration: none; font-weight: 500; }}
+.rs-footer a:hover {{ color: {BLUE2}; text-decoration: underline; }}
+.rs-footer b {{ color: {SLATE2}; }}
+
+[data-theme="dark"] {{
+    --bg-card-dm: #111e35; --bg-soft-dm: #0d1728; --border-dm: rgba(255,255,255,.08);
+    --border2-dm: rgba(255,255,255,.14); --text-primary-dm: #E2E8F0;
+    --text-muted-dm: #94A3B8; --text-navy-dm: #CBD5E1;
+}}
+
+/* ══ LIGHT MODE OVERRIDES ══ */
+body.rs-light .rs-metric,
+[data-theme="light"] .rs-metric {{ background: {BG_CARD} !important; border-color: {BORDER} !important; box-shadow: var(--shadow-card) !important; }}
+body.rs-light .rs-metric-label,
+[data-theme="light"] .rs-metric-label {{ color: {SLATE} !important; }}
+body.rs-light .rs-metric-value,
+[data-theme="light"] .rs-metric-value {{ color: {NAVY} !important; }}
+body.rs-light .rs-metric-sub,
+[data-theme="light"] .rs-metric-sub   {{ color: {SLATE} !important; }}
+body.rs-light .rs-metric:hover,
+[data-theme="light"] .rs-metric:hover {{ border-color: {BORDER2} !important; box-shadow: var(--shadow-md) !important; }}
+
+body.rs-light .rs-step,
+[data-theme="light"] .rs-step {{ background: {BG_CARD} !important; border-color: {BORDER} !important; box-shadow: var(--shadow-card) !important; }}
+body.rs-light .rs-step:hover,
+[data-theme="light"] .rs-step:hover {{ border-color: {BORDER2} !important; box-shadow: var(--shadow-md) !important; }}
+body.rs-light .rs-step-title,
+[data-theme="light"] .rs-step-title {{ color: {NAVY} !important; }}
+body.rs-light .rs-step-desc,
+[data-theme="light"] .rs-step-desc  {{ color: {SLATE} !important; }}
+
+body.rs-light .rs-narasi,
+[data-theme="light"] .rs-narasi {{ background: linear-gradient(135deg, #EFF6FF 0%, #EEF2FF 100%) !important; color: {NAVY} !important; box-shadow: var(--shadow-sm) !important; }}
+body.rs-light .rs-ai-narasi,
+[data-theme="light"] .rs-ai-narasi {{ background: linear-gradient(135deg, {BG_AI} 0%, #E8F5FF 100%) !important; color: #1E1B4B !important; box-shadow: var(--shadow-sm) !important; }}
+
+/* ── FIX: CTA Wizard light mode — latar lebih jenuh, teks lebih gelap ── */
+body.rs-light .rs-cta-wizard,
+[data-theme="light"] .rs-cta-wizard {{
+    background: linear-gradient(135deg, #DBEAFE 0%, #E0E7FF 100%) !important;
+    border-color: #93C5FD !important;
+    box-shadow: 0 2px 10px rgba(99,102,241,.14) !important;
+}}
+body.rs-light .rs-cta-title,
+[data-theme="light"] .rs-cta-title {{ color: #1E3A8A !important; }}
+body.rs-light .rs-cta-desc,
+[data-theme="light"] .rs-cta-desc  {{ color: #1D4ED8 !important; }}
+
+/* ── FIX: Hint bar light mode — teks lebih gelap ── */
+body.rs-light .rs-hint-bar,
+[data-theme="light"] .rs-hint-bar {{
+    background: rgba(21,101,192,.10) !important;
+    border-color: rgba(21,101,192,.35) !important;
+    color: #0C3669 !important;
+}}
+
+body.rs-light .rs-section-title,
+[data-theme="light"] .rs-section-title {{ color: {NAVY} !important; }}
+body.rs-light .rs-section-sub,
+[data-theme="light"] .rs-section-sub   {{ color: {SLATE} !important; }}
+
+body.rs-light .rs-footer,
+[data-theme="light"] .rs-footer {{ border-top-color: {BORDER} !important; color: {SLATE2} !important; }}
+body.rs-light .rs-footer b,
+[data-theme="light"] .rs-footer b {{ color: {NAVY} !important; }}
+
+body.rs-light .rs-greeting-sub,
+[data-theme="light"] .rs-greeting-sub {{ color: {SLATE2} !important; }}
+
+body.rs-light [data-testid="stExpander"],
+[data-theme="light"] [data-testid="stExpander"] {{ background: {BG_CARD} !important; border-color: {BORDER} !important; }}
+body.rs-light [data-testid="stExpander"] summary,
+[data-theme="light"] [data-testid="stExpander"] summary {{ background: {BG_CARD} !important; color: {NAVY} !important; }}
+body.rs-light [data-testid="stExpander"] > div[data-testid="stExpanderDetails"],
+[data-theme="light"] [data-testid="stExpander"] > div[data-testid="stExpanderDetails"] {{ background: {BG_CARD} !important; }}
+body.rs-light [data-testid="stExpander"] p,
+body.rs-light [data-testid="stExpander"] td,
+body.rs-light [data-testid="stExpander"] th,
+body.rs-light [data-testid="stExpander"] li,
+[data-theme="light"] [data-testid="stExpander"] p,
+[data-theme="light"] [data-testid="stExpander"] td,
+[data-theme="light"] [data-testid="stExpander"] th,
+[data-theme="light"] [data-testid="stExpander"] li {{ color: {NAVY} !important; }}
+
+body.rs-light [data-baseweb="tab"],
+[data-theme="light"] [data-baseweb="tab"] {{ color: {SLATE} !important; }}
+body.rs-light [data-baseweb="tab"]:hover,
+[data-theme="light"] [data-baseweb="tab"]:hover {{ color: {NAVY} !important; }}
+body.rs-light [aria-selected="true"][data-baseweb="tab"],
+[data-theme="light"] [aria-selected="true"][data-baseweb="tab"] {{ color: {BLUE} !important; border-bottom-color: {BLUE} !important; }}
+
+body.rs-light .chat-container,
+[data-theme="light"] .chat-container {{ background: {BG_SOFT} !important; border-color: {BORDER} !important; }}
+body.rs-light .chat-bubble-ai,
+[data-theme="light"] .chat-bubble-ai {{ background: {BG_CARD} !important; border-color: {BORDER} !important; color: {NAVY} !important; }}
+
+body.rs-light [data-testid="stMetricValue"],
+[data-theme="light"] [data-testid="stMetricValue"] {{ color: {NAVY} !important; }}
+
+/* ══ DARK MODE OVERRIDES ══ */
+[data-theme="dark"] .rs-metric {{ background: #111e35 !important; border-color: rgba(255,255,255,.08) !important; }}
+[data-theme="dark"] .rs-metric-label {{ color: #94A3B8 !important; }}
+[data-theme="dark"] .rs-metric-value {{ color: #F1F5F9 !important; }}
+[data-theme="dark"] .rs-metric-sub   {{ color: #94A3B8 !important; }}
+[data-theme="dark"] .rs-step {{ background: #111e35 !important; border-color: rgba(255,255,255,.08) !important; }}
+[data-theme="dark"] .rs-step-title {{ color: #E2E8F0 !important; }}
+[data-theme="dark"] .rs-step-desc  {{ color: #94A3B8 !important; }}
+[data-theme="dark"] .rs-narasi {{ background: rgba(21,101,192,.18) !important; border-left-color: {BLUE3} !important; color: #CBD5E1 !important; }}
+[data-theme="dark"] .rs-ai-narasi {{ background: rgba(63,81,181,.18) !important; border-left-color: #818CF8 !important; color: #C7D2FE !important; }}
+[data-theme="dark"] .rs-cta-wizard {{ background: linear-gradient(135deg, rgba(55,48,163,.25) 0%, rgba(37,99,235,.2) 100%) !important; border-color: rgba(99,102,241,.35) !important; }}
+[data-theme="dark"] .rs-cta-title {{ color: #A5B4FC !important; }}
+[data-theme="dark"] .rs-cta-desc  {{ color: #818CF8 !important; }}
+[data-theme="dark"] .rs-hint-bar {{ background: rgba(21,101,192,.18) !important; border-color: rgba(33,150,243,.3) !important; color: rgba(187,222,251,.9) !important; }}
+[data-theme="dark"] .rs-section-title {{ color: #E2E8F0 !important; }}
+[data-theme="dark"] .rs-section-sub   {{ color: #94A3B8 !important; }}
+[data-theme="dark"] .rs-footer {{ border-top-color: rgba(255,255,255,.07) !important; color: #475569 !important; }}
+[data-theme="dark"] .rs-footer b {{ color: #CBD5E1 !important; }}
+[data-theme="dark"] .rs-greeting-sub {{ color: #64748B !important; }}
+[data-theme="dark"] [data-testid="stExpander"] {{ background: #111e35 !important; border-color: rgba(255,255,255,.08) !important; }}
+[data-theme="dark"] [data-testid="stExpander"] summary {{ background: #111e35 !important; color: #E2E8F0 !important; }}
+[data-theme="dark"] [data-testid="stExpander"] > div[data-testid="stExpanderDetails"] {{ background: #111e35 !important; }}
+[data-theme="dark"] [data-testid="stExpander"] p,
+[data-theme="dark"] [data-testid="stExpander"] td,
+[data-theme="dark"] [data-testid="stExpander"] th,
+[data-theme="dark"] [data-testid="stExpander"] li,
+[data-theme="dark"] [data-testid="stExpander"] label,
+[data-theme="dark"] [data-testid="stExpander"] .stMarkdown p,
+[data-theme="dark"] [data-testid="stExpander"] .stMarkdown span,
+[data-theme="dark"] [data-testid="stExpander"] .stMarkdown li,
+[data-theme="dark"] [data-testid="stExpander"] .stMarkdown h1,
+[data-theme="dark"] [data-testid="stExpander"] .stMarkdown h2,
+[data-theme="dark"] [data-testid="stExpander"] .stMarkdown h3,
+[data-theme="dark"] [data-testid="stExpander"] .stMarkdown h4 {{ color: #CBD5E1 !important; }}
+[data-theme="dark"] [data-testid="stExpander"] table {{ background: #111e35 !important; }}
+[data-theme="dark"] [data-testid="stExpander"] thead tr {{ background: #0d1728 !important; }}
+[data-theme="dark"] [data-testid="stExpander"] thead th {{ background: #0d1728 !important; color: #E2E8F0 !important; }}
+[data-theme="dark"] [data-testid="stExpander"] tbody tr {{ background: #111e35 !important; }}
+[data-theme="dark"] [data-testid="stExpander"] tbody tr:nth-child(even) {{ background: #0d1728 !important; }}
+[data-theme="dark"] [data-testid="stExpander"] tbody td {{ color: #CBD5E1 !important; }}
+[data-theme="dark"] [data-baseweb="tab"] {{ color: #64748B !important; }}
+[data-theme="dark"] [data-baseweb="tab"]:hover {{ color: #CBD5E1 !important; background: rgba(255,255,255,.05) !important; }}
+[data-theme="dark"] [aria-selected="true"][data-baseweb="tab"] {{ color: {BLUE3} !important; border-bottom-color: {BLUE3} !important; }}
+[data-theme="dark"] [data-baseweb="tab-list"] {{ border-bottom-color: rgba(255,255,255,.08) !important; }}
+[data-theme="dark"] .stDataFrame {{ border-color: rgba(255,255,255,.08) !important; }}
+[data-theme="dark"] [data-testid="stMetricValue"] {{ color: #F1F5F9 !important; }}
+[data-theme="dark"] .chat-container {{ background: #0d1728 !important; border-color: rgba(255,255,255,.08) !important; }}
+[data-theme="dark"] .chat-bubble-ai {{ background: #111e35 !important; border-color: rgba(255,255,255,.08) !important; color: #CBD5E1 !important; }}
+[data-theme="dark"] .chat-label {{ color: #64748B !important; }}
+[data-theme="dark"] .badge-valid {{ background: rgba(46,125,50,.2) !important; color: #86EFAC !important; border-color: rgba(134,239,172,.2) !important; }}
+[data-theme="dark"] .badge-invalid {{ background: rgba(198,40,40,.2) !important; color: #FCA5A5 !important; border-color: rgba(252,165,165,.2) !important; }}
+[data-theme="dark"] .badge-reliable {{ background: rgba(46,125,50,.2) !important; color: #86EFAC !important; border-color: rgba(134,239,172,.2) !important; }}
+[data-theme="dark"] .badge-unreliable {{ background: rgba(198,40,40,.2) !important; color: #FCA5A5 !important; border-color: rgba(252,165,165,.2) !important; }}
+
+/* ══ TOMBOL REKOMENDASI — main content area (bukan sidebar) ══ */
+/* Selector menarget tombol dengan key prefix p_ dan s_ via data-testid parent */
+[data-testid="stMain"] .stButton > button:not([kind="primary"]) {{
+    background: {BLUE} !important;
+    color: {WHITE} !important;
+    border: 1px solid {BLUE2} !important;
+    border-radius: var(--radius-sm) !important;
+    font-size: .82rem !important;
+    font-weight: 500 !important;
+    transition: all var(--transition) !important;
+}}
+[data-testid="stMain"] .stButton > button:not([kind="primary"]):hover {{
+    background: {BLUE2} !important;
+    color: {WHITE} !important;
+    border-color: {BLUE3} !important;
+    box-shadow: 0 2px 10px rgba(33,150,243,.35) !important;
+    transform: translateY(-1px) !important;
+}}
+
+/* Dark mode — pastikan warna tidak di-override balik oleh Streamlit default */
+[data-theme="dark"] [data-testid="stMain"] .stButton > button:not([kind="primary"]) {{
+    background: {BLUE} !important;
+    color: {WHITE} !important;
+    border-color: {BLUE2} !important;
+}}
+[data-theme="dark"] [data-testid="stMain"] .stButton > button:not([kind="primary"]):hover {{
+    background: {BLUE2} !important;
+    color: {WHITE} !important;
+}}
+
+/* Dark mode — rs-narasi di dalam expander (kartu rekomendasi) */
+[data-theme="dark"] [data-testid="stExpander"] .rs-narasi {{
+    background: rgba(21,101,192,.18) !important;
+    border-left-color: {BLUE3} !important;
+    color: #CBD5E1 !important;
+}}
+[data-theme="dark"] [data-testid="stExpander"] .rs-narasi b,
+[data-theme="dark"] [data-testid="stExpander"] .rs-narasi strong {{
+    color: #E2E8F0 !important;
+}}
+[data-theme="dark"] [data-testid="stExpander"] .rs-narasi span {{
+    color: {BLUE4} !important;
+}}
+</style>"""
+
+
+
+def inject_global_css() -> None:
+    """Inject CSS global. Konten di-cache — aman dipanggil tiap rerun."""
+    st.markdown(_global_css(), unsafe_allow_html=True)
+    st.markdown("""<script>
+(function() {
+    function applyThemeClass() {
+        try {
+            var isDark = null;
+            try {
+                var stored = localStorage.getItem('streamlit:theme');
+                if (!stored) stored = localStorage.getItem('stTheme');
+                if (stored) {
+                    var parsed = JSON.parse(stored);
+                    var base = (parsed.base || parsed.theme || '').toLowerCase();
+                    if (base === 'dark')  { isDark = true; }
+                    if (base === 'light') { isDark = false; }
+                }
+            } catch(e) {}
+            if (isDark === null) {
+                try {
+                    var bodyColor = window.getComputedStyle(document.body).color;
+                    var cm = bodyColor.replace(/\\s/g,'').match(/rgb[a]?\\((\\d+),(\\d+),(\\d+)/);
+                    if (cm) {
+                        var lum = 0.299*parseInt(cm[1]) + 0.587*parseInt(cm[2]) + 0.114*parseInt(cm[3]);
+                        isDark = lum > 128;
+                    }
+                } catch(e) {}
+            }
+            if (isDark === null) {
+                try {
+                    var targets = [
+                        document.querySelector('.stApp'),
+                        document.querySelector('[data-testid="stApp"]'),
+                        document.querySelector('body')
+                    ];
+                    for (var i = 0; i < targets.length; i++) {
+                        if (!targets[i]) continue;
+                        var bg = window.getComputedStyle(targets[i]).backgroundColor;
+                        var bm = bg.replace(/\\s/g,'').match(/rgb[a]?\\((\\d+),(\\d+),(\\d+)/);
+                        if (!bm) continue;
+                        var r=parseInt(bm[1]),g=parseInt(bm[2]),b=parseInt(bm[3]);
+                        if (r===0&&g===0&&b===0) continue;
+                        var lum2 = 0.299*r + 0.587*g + 0.114*b;
+                        isDark = lum2 < 128;
+                        break;
+                    }
+                } catch(e) {}
+            }
+            if (isDark === null) {
+                isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            }
+            document.body.classList.remove('rs-light','rs-dark');
+            document.body.classList.add(isDark ? 'rs-dark' : 'rs-light');
+        } catch(e) {}
     }
-
-    # ── RULE ENGINE ───────────────────────────────────────────────────────
-
-    # Hitung kolom biner
-    binary_cols = []
-    for col in numeric_cols:
-        s = pd.to_numeric(df[col], errors="coerce").dropna()
-        if set(s.unique()).issubset({0, 1, 0.0, 1.0}) and len(s) > 10:
-            binary_cols.append(col)
-    n_binary = len(binary_cols)
-
-    # Estimasi apakah data time series (ada kolom tanggal / nama kolom mengandung "tahun","bulan","date","year","time","periode")
-    _ts_keywords = {"tahun", "bulan", "date", "year", "time", "periode", "tanggal", "month", "quarter"}
-    has_time_col  = any(any(kw in c.lower() for kw in _ts_keywords) for c in df.columns)
-
-    # ── PRIMARY — selalu atau hampir selalu relevan ────────────────────────
-
-    # 1. Deskriptif — selalu
-    primary.append({
-        "uji":    "📊 Statistik Deskriptif",
-        "alasan": f"Dataset memiliki {n_numeric} variabel numerik — selalu mulai dari ringkasan deskriptif.",
-        "modul":  "Deskriptif",
-        "icon":   "✅",
-    })
-
-    # 2. Visualisasi EDA — selalu, deteksi pola & distribusi visual
-    primary.append({
-        "uji":    "🔍 Visualisasi EDA",
-        "alasan": "Eksplorasi distribusi, histogram, dan pola data secara visual sebelum analisis inferensial.",
-        "modul":  "EDA",
-        "icon":   "✅",
-    })
-
-    # 3. Uji Asumsi — selalu (prasyarat uji parametrik)
-    primary.append({
-        "uji":    "🔬 Uji Asumsi",
-        "alasan": "Periksa normalitas, homogenitas varians, dan linearitas sebelum analisis parametrik.",
-        "modul":  "Uji Asumsi",
-        "icon":   "✅",
-    })
-
-    # 4. Deteksi Outlier — selalu
-    primary.append({
-        "uji":    "🎯 Deteksi Outlier (IQR / Z-Score / Mahalanobis)",
-        "alasan": "Nilai ekstrem dapat mendistorsi hasil uji parametrik — periksa sebelum analisis lanjutan.",
-        "modul":  "Outlier",
-        "icon":   "✅",
-    })
-
-    # 5. Validitas & Reliabilitas — jika banyak numerik (indikasi kuesioner Likert)
-    if n_numeric >= 5:
-        primary.append({
-            "uji":    "✅ Validitas & Reliabilitas (Cronbach's Alpha)",
-            "alasan": f"{n_numeric} variabel numerik terdeteksi — kemungkinan data kuesioner/skala Likert.",
-            "modul":  "Validitas",
-            "icon":   "✅",
-        })
-
-    # 6. Korelasi — jika ≥ 2 numerik
-    if n_numeric >= 2:
-        primary.append({
-            "uji":    "🔗 Analisis Korelasi Pearson / Spearman",
-            "alasan": "Periksa arah dan kekuatan hubungan linear antar variabel sebelum regresi.",
-            "modul":  "Korelasi",
-            "icon":   "✅",
-        })
-
-    # 7. Analisis Kelompok — jika ada kategorik
-    if n_categorical > 0:
-        cat_preview = ", ".join(non_numeric[:3])
-        primary.append({
-            "uji":    "📂 Analisis Kelompok",
-            "alasan": f"Ditemukan {n_categorical} variabel kategorik ({cat_preview}) — bandingkan statistik antar kelompok.",
-            "modul":  "Kelompok",
-            "icon":   "✅",
-        })
-
-    # ── SECONDARY — berdasarkan kondisi data ──────────────────────────────
-
-    # 8. Uji Beda — jika ada kategorik (biner → t-test / 2 grup)
-    if n_categorical > 0 and n_numeric >= 1:
-        if n_binary > 0:
-            secondary.append({
-                "uji":    "🔢 Uji Beda (Independent t-test / Mann-Whitney)",
-                "alasan": f"Variabel biner ({binary_cols[0]}) cocok sebagai variabel pengelompok untuk uji beda dua kelompok.",
-                "modul":  "Uji Beda",
-                "icon":   "🟢",
-            })
-        else:
-            secondary.append({
-                "uji":    "🔢 Uji Beda (Independent t-test / Mann-Whitney)",
-                "alasan": f"Variabel kategorik ({non_numeric[0]}) dapat digunakan untuk membandingkan dua kelompok independen.",
-                "modul":  "Uji Beda",
-                "icon":   "🟢",
-            })
-
-    # 9. ANOVA — jika ada kategorik + data cukup normal
-    if n_categorical > 0 and n_numeric >= 1:
-        if pct_normal >= 50:
-            secondary.append({
-                "uji":    "📊 ANOVA & Post-hoc (One-Way / Two-Way)",
-                "alasan": f"Data cukup normal ({pct_normal}%) + variabel kategorik → ANOVA lebih tepat dari Kruskal-Wallis.",
-                "modul":  "ANOVA",
-                "icon":   "🟢",
-            })
-        else:
-            secondary.append({
-                "uji":    "📐 Uji Non-Parametrik (Kruskal-Wallis / Friedman)",
-                "alasan": f"{len(non_normal_cols)} variabel tidak normal — alternatif ANOVA tanpa asumsi distribusi.",
-                "modul":  "Uji Nonparametrik",
-                "icon":   "🟡",
-            })
-
-    # 10. Power Analysis — berguna untuk validasi ukuran sampel
-    secondary.append({
-        "uji":    "🔋 Power Analysis (Ukuran Sampel Minimum)",
-        "alasan": f"N = {n_rows}. Pastikan ukuran sampel cukup untuk mendeteksi efek yang diharapkan (Cohen, 1988).",
-        "modul":  "Power Analysis",
-        "icon":   "🟢" if n_rows >= 30 else "🟡",
-    })
-
-    # 11. Regresi Linier / OLS+ — jika ≥ 2 numerik
-    if n_numeric >= 2:
-        if pct_normal >= 70:
-            secondary.append({
-                "uji":    "📈 Regresi Linier Berganda (OLS)",
-                "alasan": f"{len(normal_cols)} variabel normal — uji parametrik OLS direkomendasikan untuk prediksi Y.",
-                "modul":  "Regresi",
-                "icon":   "🟢",
-            })
-            secondary.append({
-                "uji":    "📈 OLS+ (dengan Uji Asumsi Klasik Lengkap)",
-                "alasan": "Versi OLS dengan pemeriksaan multikolinearitas (VIF), heteroskedastisitas (White), dan autokorelasi (DW).",
-                "modul":  "OLS Plus",
-                "icon":   "🟢",
-            })
-        else:
-            secondary.append({
-                "uji":    "📈 OLS Robust (Huber / MM-Estimator)",
-                "alasan": f"Data tidak sepenuhnya normal ({pct_normal}%) — OLS Robust lebih tahan terhadap outlier dan heteroskedastisitas.",
-                "modul":  "OLS Robust",
-                "icon":   "🟡",
-            })
-
-    # 12. Regresi Logistik — jika ada variabel biner
-    if n_binary > 0:
-        secondary.append({
-            "uji":    f"📉 Regresi Logistik (variabel outcome: {binary_cols[0]})",
-            "alasan": f"Kolom '{binary_cols[0]}' terdeteksi sebagai variabel biner (0/1) — cocok sebagai variabel dependen logistik.",
-            "modul":  "Regresi Logistik",
-            "icon":   "🔵",
-        })
-
-    # 13. Mediasi — jika ≥ 3 numerik
-    if n_numeric >= 3:
-        secondary.append({
-            "uji":    "🔀 Analisis Mediasi (Bootstrap / Baron-Kenny)",
-            "alasan": f"Dengan {n_numeric} variabel numerik, uji jalur X → M → Y untuk mengidentifikasi mekanisme pengaruh.",
-            "modul":  "Mediasi",
-            "icon":   "🔵",
-        })
-
-    # 14. Moderasi — jika ≥ 3 numerik
-    if n_numeric >= 3:
-        secondary.append({
-            "uji":    "🎛️ Analisis Moderasi (Interaksi / Johnson-Neyman)",
-            "alasan": "Uji apakah variabel Z memoderasi kekuatan hubungan X → Y (efek interaksi).",
-            "modul":  "Moderasi",
-            "icon":   "🔵",
-        })
-
-    # 15. EFA — jika ≥ 5 numerik (indikasi konstruk laten)
-    if n_numeric >= 5:
-        secondary.append({
-            "uji":    "🔬 Analisis Faktor Eksploratori (EFA)",
-            "alasan": f"{n_numeric} variabel numerik — EFA cocok untuk mengidentifikasi faktor/konstruk laten yang mendasari data.",
-            "modul":  "EFA",
-            "icon":   "🔵",
-        })
-
-    # 16. CFA — jika ≥ 6 numerik (EFA dulu, lalu konfirmasi dengan CFA)
-    if n_numeric >= 6:
-        secondary.append({
-            "uji":    "🔬 CFA Standalone (Confirmatory Factor Analysis)",
-            "alasan": "Jika struktur faktor sudah dihipotesiskan, CFA menguji fit model pengukuran secara konfirmatori.",
-            "modul":  "CFA",
-            "icon":   "🔵",
-        })
-
-    # 17. SEM — jika ≥ 6 numerik (gabungan model pengukuran + struktural)
-    if n_numeric >= 6:
-        secondary.append({
-            "uji":    "🧩 SEM & CFA (Structural Equation Modeling)",
-            "alasan": f"{n_numeric} variabel — SEM menggabungkan CFA (model pengukuran) dan regresi jalur struktural sekaligus.",
-            "modul":  "SEM",
-            "icon":   "🔵",
-        })
-
-    # 18. Time Series — jika terdeteksi kolom waktu atau data cukup banyak baris
-    if has_time_col or n_rows >= 24:
-        secondary.append({
-            "uji":    "⏱️ Time Series Analysis (ARIMA / Auto-ARIMA)",
-            "alasan": (
-                "Kolom bertanda waktu terdeteksi — analisis tren, musiman, dan peramalan deret waktu."
-                if has_time_col
-                else f"N = {n_rows} baris — data longitudinal berpotensi untuk analisis time series dan forecasting."
-            ),
-            "modul":  "Time Series",
-            "icon":   "🔵",
-        })
-
-    # 19. Compute Variabel — jika ada banyak variabel numerik (potensi pembentukan indeks)
-    if n_numeric >= 4:
-        secondary.append({
-            "uji":    "🧮 Compute Variabel (Indeks / Transformasi)",
-            "alasan": f"{n_numeric} variabel numerik — bentuk variabel baru (mean score, z-score, interaksi, log) untuk analisis lanjutan.",
-            "modul":  "Compute",
-            "icon":   "🟡",
-        })
-
-    # 20. Reliabilitas ICC — jika ada variabel penilaian berulang / multi-rater
-    if n_numeric >= 3:
-        secondary.append({
-            "uji":    "📏 Reliabilitas ICC (Intraclass Correlation Coefficient)",
-            "alasan": "Jika data berasal dari penilaian berulang atau multi-rater, ICC mengukur konsistensi antar pengukur.",
-            "modul":  "Reliabilitas ICC",
-            "icon":   "🟡",
-        })
-
-    # ── Peringatan ────────────────────────────────────────────────────────
-    if total_missing > 0:
-        pct_miss = round(total_missing / (n_rows * max(n_numeric, 1)) * 100, 1)
-        warnings.append(f"⚠️ Ada {total_missing} missing values ({pct_miss}%). Pertimbangkan imputasi sebelum regresi.")
-
-    if n_rows < 30:
-        warnings.append(f"⚠️ Ukuran sampel kecil (N = {n_rows}). Hasil uji statistik mungkin tidak stabil.")
-
-    if non_normal_cols:
-        warnings.append(f"⚠️ Variabel tidak normal: {', '.join(non_normal_cols[:5])}. Pertimbangkan uji non-parametrik atau transformasi data.")
-
-    if n_binary > 0 and pct_normal < 50:
-        warnings.append(f"⚠️ Variabel biner ({binary_cols[0]}) terdeteksi — untuk outcome biner, gunakan Regresi Logistik, bukan OLS.")
-
-    return {
-        "primary":      primary,
-        "secondary":    secondary,
-        "warnings":     warnings,
-        "data_profile": data_profile,
-    }
+    applyThemeClass();
+    setTimeout(applyThemeClass, 200);
+    setTimeout(applyThemeClass, 600);
+    setTimeout(applyThemeClass, 1200);
+    setTimeout(applyThemeClass, 2500);
+    var origSetItem = localStorage.setItem.bind(localStorage);
+    try {
+        localStorage.setItem = function(k, v) {
+            origSetItem(k, v);
+            if (k === 'streamlit:theme' || k === 'stTheme') { setTimeout(applyThemeClass, 50); }
+        };
+    } catch(e) {}
+    var obs = new MutationObserver(applyThemeClass);
+    obs.observe(document.documentElement, { attributes: true });
+})();
+</script>""", unsafe_allow_html=True)
 
 
-# Modul yang memerlukan lisensi Pro
-_PRO_MODULES = {
-    "Mediasi", "Moderasi", "Time Series", "EFA", "SEM", "CFA",
-    "Scraping", "OLS Plus", "OLS Robust",
-}
+_LOGIN_CSS: str = f"""<style>
+.rs-footer {{ display:none; }}
+header[data-testid="stHeader"] {{ display:none; }}
+[data-testid="stSidebar"],
+[data-testid="collapsedControl"],
+[data-testid="stSidebarCollapsedControl"] {{ display:none !important; }}
+
+[data-testid="stAppViewContainer"],
+[data-testid="stApp"] {{
+    background: linear-gradient(145deg, {NAVY} 0%, #0d1f3c 45%, #122a50 70%, #0e2244 100%) !important;
+    position: relative;
+}}
+[data-testid="stAppViewContainer"]::before {{
+    content: ''; position: fixed; inset: 0;
+    background-image:
+        radial-gradient(ellipse at 20% 40%, rgba(33,150,243,.08) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 70%, rgba(99,102,241,.06) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 10%, rgba(255,255,255,.02) 0%, transparent 40%);
+    pointer-events: none; z-index: 0;
+}}
+[data-testid="stAppViewContainer"]::after {{
+    content: ''; position: fixed; inset: 0;
+    background-image: radial-gradient(rgba(255,255,255,.04) 1px, transparent 1px);
+    background-size: 24px 24px; pointer-events: none; z-index: 0;
+}}
+section[data-testid="stMain"] .block-container {{
+    padding-top: 6vh !important; max-width: 440px !important; margin: 0 auto !important;
+    padding-left: 1rem !important; padding-right: 1rem !important;
+    padding-bottom: 3rem !important; position: relative; z-index: 1;
+}}
+.signin-card {{
+    background: rgba(255,255,255,.06); backdrop-filter: blur(24px) saturate(1.4);
+    -webkit-backdrop-filter: blur(24px) saturate(1.4); border: 1px solid rgba(255,255,255,.1);
+    border-radius: 20px; overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,.4), 0 0 0 1px rgba(255,255,255,.04), inset 0 1px 0 rgba(255,255,255,.1);
+    width: 100%; max-width: 440px;
+}}
+.signin-card-header {{
+    background: linear-gradient(135deg, {NAVY} 0%, {NAVY3} 40%, {BLUE} 100%);
+    padding: 28px 24px 22px; text-align: center; position: relative; overflow: hidden;
+}}
+.signin-card-header::before {{
+    content: ''; position: absolute; right: -50px; top: -50px; width: 180px; height: 180px;
+    border-radius: 50%; background: radial-gradient(circle, rgba(33,150,243,.15) 0%, transparent 70%);
+    pointer-events: none;
+}}
+.signin-card-header::after {{
+    content: ''; position: absolute; left: -30px; bottom: -50px; width: 150px; height: 150px;
+    border-radius: 50%; background: radial-gradient(circle, rgba(255,255,255,.04) 0%, transparent 70%);
+    pointer-events: none;
+}}
+.signin-card-header .header-grid {{
+    position: absolute; inset: 0;
+    background-image: linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
+    background-size: 28px 28px; pointer-events: none;
+}}
+.signin-header-logo {{
+    position: relative; z-index: 1; width: 56px; height: 56px; border-radius: 14px;
+    background: rgba(255,255,255,.12); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,.18);
+    display: flex; align-items: center; justify-content: center; margin: 0 auto 12px;
+    box-shadow: 0 4px 14px rgba(0,0,0,.2), 0 0 0 1px rgba(255,255,255,.08);
+}}
+.signin-header-logo img {{ width: 36px; height: 36px; object-fit: contain; filter: drop-shadow(0 2px 8px rgba(0,0,0,.3)); }}
+.signin-header-title {{
+    font-family: 'DM Serif Display', Georgia, serif; font-size: 1.5rem; color: {WHITE};
+    letter-spacing: -.02em; position: relative; z-index: 1; margin: 0 0 5px;
+    text-shadow: 0 1px 8px rgba(0,0,0,.3);
+}}
+.signin-header-sub {{ font-size: .73rem; color: rgba(187,222,251,.75); position: relative; z-index: 1; letter-spacing: .02em; font-weight: 400; }}
+.signin-card-body {{ padding: 20px 22px 22px; }}
+.signin-tab-row {{ display: flex; border-bottom: 1px solid rgba(255,255,255,.1); margin-bottom: 1.4rem; gap: 0; }}
+.signin-tab-row .stButton {{ flex: 1; }}
+.signin-tab-row .stButton > button {{
+    background: transparent !important; border: none !important;
+    border-bottom: 2px solid transparent !important; border-radius: 0 !important;
+    color: rgba(255,255,255,.4) !important; font-size: .83rem !important; font-weight: 500 !important;
+    padding: 10px 4px !important; width: 100% !important; margin-bottom: -1px !important;
+    letter-spacing: .01em !important; transition: color .2s, border-color .2s !important;
+}}
+.signin-tab-row .stButton > button:hover {{ color: rgba(255,255,255,.8) !important; background: transparent !important; }}
+.signin-tab-active .stButton > button {{ color: {WHITE} !important; font-weight: 700 !important; border-bottom-color: {BLUE2} !important; }}
+section[data-testid="stMain"] .stTextInput label {{
+    font-size: .7rem !important; font-weight: 600 !important; color: rgba(255,255,255,.6) !important;
+    letter-spacing: .06em !important; text-transform: uppercase !important; margin-bottom: 5px !important;
+}}
+section[data-testid="stMain"] .stTextInput input,
+section[data-testid="stMain"] .stTextInput input[type="text"],
+section[data-testid="stMain"] .stTextInput input[type="password"],
+section[data-testid="stMain"] .stTextInput input[type="email"] {{
+    border: 1.5px solid rgba(255,255,255,.2) !important; border-radius: var(--radius-sm) !important;
+    padding: 10px 13px !important; font-size: .86rem !important;
+    background: rgba(13,31,60,.75) !important; background-color: rgba(13,31,60,.75) !important;
+    color: {WHITE} !important; -webkit-text-fill-color: {WHITE} !important; caret-color: {BLUE2} !important;
+    transition: border-color .2s, box-shadow .2s !important; letter-spacing: .01em !important;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,.3) !important;
+}}
+section[data-testid="stMain"] .stTextInput div[data-baseweb="input"],
+section[data-testid="stMain"] .stTextInput div[data-baseweb="base-input"] {{
+    background: rgba(13,31,60,.75) !important; background-color: rgba(13,31,60,.75) !important;
+    border-color: rgba(255,255,255,.2) !important;
+}}
+section[data-testid="stMain"] .stTextInput input:focus {{
+    border-color: rgba(33,150,243,.7) !important; background: rgba(13,31,60,.9) !important;
+    background-color: rgba(13,31,60,.9) !important;
+    box-shadow: 0 0 0 3px rgba(33,150,243,.15), inset 0 1px 3px rgba(0,0,0,.3) !important;
+    color: {WHITE} !important; -webkit-text-fill-color: {WHITE} !important;
+    caret-color: {BLUE2} !important; outline: none !important;
+}}
+section[data-testid="stMain"] .stTextInput input:-webkit-autofill,
+section[data-testid="stMain"] .stTextInput input:-webkit-autofill:hover,
+section[data-testid="stMain"] .stTextInput input:-webkit-autofill:focus {{
+    -webkit-text-fill-color: {WHITE} !important;
+    -webkit-box-shadow: 0 0 0 1000px rgba(13,31,60,.9) inset !important;
+    caret-color: {WHITE} !important;
+}}
+section[data-testid="stMain"] .stTextInput input::placeholder {{
+    color: rgba(255,255,255,.35) !important; -webkit-text-fill-color: rgba(255,255,255,.35) !important;
+}}
+section[data-testid="stMain"] .stTextInput [data-testid="textInputRootElement"] {{
+    background: rgba(13,31,60,.75) !important; background-color: rgba(13,31,60,.75) !important;
+    border-color: rgba(255,255,255,.2) !important;
+}}
+section[data-testid="stMain"] .stForm [data-testid="stFormSubmitButton"] > button {{
+    background: linear-gradient(135deg, {BLUE} 0%, {BLUE3} 100%) !important; color: {WHITE} !important;
+    border: none !important; border-radius: var(--radius-sm) !important; padding: 11px !important;
+    font-size: .88rem !important; font-weight: 600 !important; width: 100% !important;
+    letter-spacing: .02em !important; transition: opacity .2s, box-shadow .2s, transform .2s !important;
+    box-shadow: 0 4px 16px rgba(33,150,243,.35) !important;
+}}
+section[data-testid="stMain"] .stForm [data-testid="stFormSubmitButton"] > button:hover {{
+    opacity: .92 !important; box-shadow: 0 6px 20px rgba(33,150,243,.45) !important; transform: translateY(-1px) !important;
+}}
+section[data-testid="stMain"] .stButton > button {{
+    background: rgba(255,255,255,.08) !important; border: 1.5px solid rgba(255,255,255,.15) !important;
+    border-radius: var(--radius-sm) !important; color: {WHITE} !important; font-size: .83rem !important;
+    font-weight: 500 !important; padding: 9px !important; width: 100% !important;
+    letter-spacing: .01em !important; transition: background .2s, border-color .2s !important;
+}}
+section[data-testid="stMain"] .stButton > button:hover {{ background: rgba(255,255,255,.14) !important; border-color: rgba(255,255,255,.3) !important; }}
+.signin-link-btn-right {{ text-align:right; margin-top:-2px; margin-bottom:6px; }}
+.signin-link-btn-right .stButton > button {{
+    background: transparent !important; border: none !important; color: {BLUE3} !important;
+    font-size: .72rem !important; font-weight: 500 !important; padding: 0 !important;
+    height: auto !important; min-height: 0 !important; width: auto !important; float: right; letter-spacing: .01em !important;
+}}
+.signin-link-btn-right .stButton > button:hover {{ background: transparent !important; text-decoration: underline !important; }}
+.signin-link-btn .stButton > button {{
+    background: transparent !important; border: none !important; color: {BLUE3} !important;
+    font-size: .72rem !important; font-weight: 600 !important; padding: 2px 6px !important;
+    height: auto !important; min-height: 0 !important; letter-spacing: .01em !important;
+}}
+.signin-link-btn .stButton > button:hover {{ background: transparent !important; text-decoration: underline !important; }}
+.signin-link-btn-muted .stButton > button {{ color: rgba(148,163,184,.7) !important; font-weight: 400 !important; font-size: .7rem !important; }}
+.signin-divider {{
+    text-align: center; font-size: .68rem; color: rgba(255,255,255,.25); margin: 10px 0;
+    position: relative; letter-spacing: .08em; text-transform: uppercase; font-weight: 600;
+}}
+.signin-divider::before, .signin-divider::after {{
+    content: ''; position: absolute; top: 50%; width: 38%; height: 1px; background: rgba(255,255,255,.1);
+}}
+.signin-divider::before {{ left: 0; }}
+.signin-divider::after  {{ right: 0; }}
+.signin-footer {{ text-align: center; margin-top: 12px; font-size: .72rem; color: rgba(148,163,184,.6); }}
+.signin-footer a {{ color: {BLUE3}; font-weight: 600; text-decoration: none; }}
+.signin-footer a:hover {{ text-decoration: underline; }}
+.signin-page-footer {{ text-align: center; margin-top: 1.5rem; font-size: .7rem; color: rgba(148,163,184,.45); line-height: 1.8; }}
+.signin-page-footer a {{ color: rgba(66,165,245,.7); text-decoration: none; font-weight: 500; }}
+section[data-testid="stMain"] [data-testid="stAlert"] {{ border-radius: var(--radius-sm) !important; font-size: .82rem !important; }}
+.forgot-link {{ text-align:right; margin:-4px 0 10px; font-size:.72rem; }}
+.forgot-link a {{ color:{BLUE3}; text-decoration:none; }}
+.forgot-link a:hover {{ text-decoration:underline; }}
+.activate-link {{ text-align:center; margin-top:8px; font-size:.7rem; color:rgba(148,163,184,.5); }}
+.activate-link a {{ color:rgba(100,153,204,.8); text-decoration:none; }}
+.activate-link a:hover {{ text-decoration:underline; }}
+</style>"""
 
 
-def render_recommendation_card(rec: dict):
-    """Render kartu rekomendasi analisis di UI Streamlit."""
-    if not rec:
-        return
+def inject_login_css() -> None:
+    """Inject CSS halaman login. Panggil hanya saat belum login."""
+    st.markdown(_LOGIN_CSS, unsafe_allow_html=True)
 
-    profile = rec["data_profile"]
 
-    st.markdown("---")
+def inject_nav_highlight_css(active_idx: int) -> None:
+    """Highlight tombol nav aktif. active_idx: indeks 0-based item dalam flat list menu."""
+    st.markdown(f"""<style>
+[data-testid="stSidebar"] div[data-testid="stVerticalBlock"]
+    > div:nth-child({active_idx + 1}) .stButton > button,
+[data-testid="stSidebar"] div[data-testid="stVerticalBlockBorderWrapper"]
+    > div:nth-child({active_idx + 1}) .stButton > button {{
+    background: rgba(33,150,243,.1) !important;
+    color: #E0F2FE !important;
+    font-weight: 600 !important;
+    border-left-color: {BLUE2} !important;
+    letter-spacing: .01em !important;
+    padding-left: 18px !important;
+}}
+</style>""", unsafe_allow_html=True)
+
+
+_NAV_LOCKED_CSS: str = f"""<style>
+[data-testid="stSidebar"] .stButton > button {{
+    opacity: .22 !important; pointer-events: none !important; cursor: not-allowed !important;
+}}
+</style>
+<div style='margin:10px 14px 4px;padding:10px 12px;
+            background:rgba(255,255,255,.04);
+            border:1px solid rgba(255,255,255,.07);
+            border-radius:8px;
+            font-size:.7rem;color:rgba(100,116,139,.7);line-height:1.6;text-align:center;'>
+    🔒 Selesaikan langkah awal<br>di halaman utama dulu
+</div>"""
+
+
+def inject_nav_locked_css() -> None:
+    st.markdown(_NAV_LOCKED_CSS, unsafe_allow_html=True)
+
+
+def render_greeting(user_name: str, is_pro: bool) -> None:
+    """Render greeting bar. user_name boleh kosong (mode gratis)."""
+    import datetime as _dt
+    import zoneinfo
+    tz_wib = zoneinfo.ZoneInfo("Asia/Jakarta")
+    hour = _dt.datetime.now(tz_wib).hour
+    salam = (
+        "Selamat pagi"   if hour < 11 else
+        "Selamat siang"  if hour < 15 else
+        "Selamat sore"   if hour < 18 else
+        "Selamat malam"
+    )
+    tier_badge = (
+        "<span style='background:linear-gradient(135deg,#FFB300,#F57F17);"
+        "color:#1a1000;font-size:.62rem;font-weight:800;letter-spacing:.06em;"
+        "padding:2px 9px;border-radius:5px;margin-left:7px;"
+        "box-shadow:0 2px 8px rgba(255,179,0,.35);vertical-align:middle;'>✦ PRO</span>"
+        if is_pro else ""
+    )
+    display_name = user_name if user_name else "Pengguna"
+    greeting_text = f"{salam}, {display_name}! 👋" if user_name else f"{salam}! 👋"
     st.markdown(
-        '<p class="rs-section-title">💡 Rekomendasi Analisis</p>',
+        f"<div class='rs-greeting'>"
+        f"<div>"
+        f"<div class='rs-greeting-text'>{greeting_text}{tier_badge}</div>"
+        f"<div class='rs-greeting-sub'>Siap membantu analisis statistik Anda hari ini.</div>"
+        f"</div>"
+        f"</div>",
         unsafe_allow_html=True,
     )
-    st.markdown(
-        f'<p class="rs-section-sub">Berdasarkan profil data Anda: '
-        f'{profile["n_baris"]} baris, {profile["n_numerik"]} variabel numerik, '
-        f'{profile["n_kategorik"]} kategorik, '
-        f'{profile["pct_normal"]}% variabel normal.</p>',
-        unsafe_allow_html=True,
-    )
 
-    # ── Peringatan ────────────────────────────────────────────────────────────
-    if rec["warnings"]:
-        for w in rec["warnings"]:
-            st.warning(w)
 
-    # ── Rekomendasi Utama ─────────────────────────────────────────────────────
-    if rec["primary"]:
-        st.markdown("**✅ Analisis yang Disarankan (Mulai dari Sini):**")
-        cols_per_row = 2
-        items = rec["primary"]
-        for row_start in range(0, len(items), cols_per_row):
-            row_items = items[row_start : row_start + cols_per_row]
-            cols = st.columns(len(row_items))
-            for col, item in zip(cols, row_items):
-                is_pro = item["modul"] in _PRO_MODULES
-                pro_tag = "  ★ Pro" if is_pro else ""
-                with col:
+def render_hero_header() -> None:
+    """Render hero header Ruang Statistika dengan ikon."""
+    st.markdown("""
+<div class="rs-header">
+    <div class="rs-header-texture"></div>
+    <div class="rs-header-icon">
+        <img src="https://i.imgur.com/RF4mzxf.png" width="36" height="36"
+             style="object-fit:contain;filter:drop-shadow(0 2px 8px rgba(0,0,0,.25));" alt="logo">
+    </div>
+    <div>
+        <h1 style="margin:0;">Ruang Statistika</h1>
+        <p style="margin:0;">
+            AI-Powered Research &amp; Stats Reporting —
+            Data Anda Berbicara, AI Menjelaskan
+        </p>
+    </div>
+</div>""", unsafe_allow_html=True)
+
+
+def render_metrics_row() -> None:
+    """Render 4 metric card di baris atas beranda."""
+    metrics = [
+        ("Modul Analisis", "30+",  "Statistik lengkap"),
+        ("AI Interpreter", "8×",   "Groq · Gemini · Claude"),
+        ("Chat Analyst",   "💬",   "Tanya jawab data"),
+        ("Export Laporan", "📄",   "Word / Markdown"),
+    ]
+    cols = st.columns(4)
+    for col, (label, val, sub) in zip(cols, metrics):
+        with col:
+            st.markdown(
+                f'<div class="rs-metric">'
+                f'<div class="rs-metric-label">{label}</div>'
+                f'<div class="rs-metric-value">{val}</div>'
+                f'<div class="rs-metric-sub">{sub}</div>'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
+
+
+def render_steps_grid() -> None:
+    """Render 5 langkah cara pakai dalam 2-col grid."""
+    steps = [
+        ("Wizard Analisis",       "Panduan 3 langkah pilih uji yang tepat"),
+        ("Upload & Cleaning",     "CSV, Excel, SPSS, Stata — auto-bersihkan"),
+        ("Compute (Opsional)",    "Skor komposit, recode, transformasi"),
+        ("Jalankan Analisis",     "Modul terbuka otomatis dari Wizard"),
+        ("Generate Laporan",      "Export .docx / .md — satu klik"),
+    ]
+    pairs = [(steps[i], steps[i+1] if i+1 < len(steps) else None)
+             for i in range(0, len(steps), 2)]
+    for pair_idx, (left, right) in enumerate(pairs):
+        base_num = pair_idx * 2 + 1
+        if right is None:
+            i, (title, desc) = base_num, left
+            st.markdown(
+                f'<div class="rs-step rs-step-full">'
+                f'<div class="rs-step-num">{i}</div>'
+                f'<div>'
+                f'<div class="rs-step-title">{title}</div>'
+                f'<div class="rs-step-desc">{desc}</div>'
+                f'</div></div>',
+                unsafe_allow_html=True,
+            )
+        else:
+            cols = st.columns(2)
+            for ci, (i, (title, desc)) in enumerate([(base_num, left), (base_num+1, right)]):
+                with cols[ci]:
                     st.markdown(
-                        f'<div class="rs-narasi" style="margin-bottom:6px;min-height:80px;">'
-                        f'{item["icon"]} <b>{item["uji"]}</b>'
-                        + (
-                            '&nbsp;<span style="font-size:0.68rem;background:#e8d5a3;'
-                            'color:#7a5c00;padding:1px 6px;border-radius:4px;'
-                            'vertical-align:middle;">★ Pro</span>'
-                            if is_pro else ""
-                        )
-                        + f'<br/><span style="font-size:0.82rem;color:#5f8ab5;">'
-                        f'{item["alasan"]}</span></div>',
+                        f'<div class="rs-step">'
+                        f'<div class="rs-step-num">{i}</div>'
+                        f'<div>'
+                        f'<div class="rs-step-title">{title}</div>'
+                        f'<div class="rs-step-desc">{desc}</div>'
+                        f'</div></div>',
                         unsafe_allow_html=True,
                     )
-                    btn_label = f"→ {item['modul']}{pro_tag}"
-                    btn_key   = f"p_{item['modul']}"
-                    if st.button(btn_label, key=btn_key, use_container_width=True):
-                        st.session_state.active_menu = item["modul"]
-                        st.rerun()
-
-    # ── Analisis Lanjutan ─────────────────────────────────────────────────────
-    if rec["secondary"]:
-        st.markdown("<br/>", unsafe_allow_html=True)
-        with st.expander("🔍 Analisis Lanjutan yang Relevan", expanded=False):
-            st.caption(
-                "Modul berikut relevan berdasarkan profil data Anda. "
-                "Klik tombol untuk langsung membuka modul. "
-                "Modul bertanda ★ Pro memerlukan lisensi Pro."
-            )
-
-            _GROUP_ORDER = [
-                ("🟢", "Direkomendasikan Kuat"),
-                ("🔵", "Analisis Lanjutan"),
-                ("🟡", "Opsional / Kondisional"),
-            ]
-
-            for icon_key, group_label in _GROUP_ORDER:
-                group_items = [
-                    it for it in rec["secondary"] if it.get("icon") == icon_key
-                ]
-                if not group_items:
-                    continue
-
-                st.markdown(
-                    f'<div style="font-size:0.8rem;font-weight:700;color:#185fa5;'
-                    f'letter-spacing:0.03em;margin:14px 0 6px 0;">'
-                    f'{icon_key} {group_label}</div>',
-                    unsafe_allow_html=True,
-                )
-
-                cols_per_row = 2
-                for row_start in range(0, len(group_items), cols_per_row):
-                    row_items = group_items[row_start : row_start + cols_per_row]
-                    cols = st.columns(len(row_items))
-                    for col, item in zip(cols, row_items):
-                        is_pro = item["modul"] in _PRO_MODULES
-                        pro_tag = "  ★ Pro" if is_pro else ""
-                        with col:
-                            st.markdown(
-                                f'<div class="rs-narasi" style="margin-bottom:6px;'
-                                f'min-height:80px;">'
-                                f'<b>{item["uji"]}</b>'
-                                + (
-                                    '&nbsp;<span style="font-size:0.68rem;background:#e8d5a3;'
-                                    'color:#7a5c00;padding:1px 6px;border-radius:4px;">'
-                                    '★ Pro</span>'
-                                    if is_pro else ""
-                                )
-                                + f'<br/><span style="font-size:0.8rem;color:#5f8ab5;">'
-                                f'{item["alasan"]}</span></div>',
-                                unsafe_allow_html=True,
-                            )
-                            btn_label = f"→ {item['modul']}{pro_tag}"
-                            btn_key   = f"s_{item['modul']}"
-                            if st.button(btn_label, key=btn_key, use_container_width=True):
-                                st.session_state.active_menu = item["modul"]
-                                st.rerun()
 
 
-def render(ctx: dict):
-    st.markdown('<p class="rs-section-title">📁 Upload & Auto Cleaning</p>',
-                unsafe_allow_html=True)
+def render_cta_wizard(on_click_key: str = "cta_wizard_btn") -> bool:
+    """Render CTA Wizard block. Return True jika tombol diklik."""
     st.markdown(
-        '<p class="rs-section-sub">Unggah file data Anda. Sistem otomatis memeriksa kualitas data. '
-        'Format didukung: CSV, Excel, SPSS (.sav), Stata (.dta), TXT.</p>',
+        '<div class="rs-cta-wizard">'
+        '<div>'
+        '<div class="rs-cta-title">🧭 Bingung pilih uji statistik?</div>'
+        '<div class="rs-cta-desc">Jawab 3 sampai 4 pertanyaan singkat dan Wizard akan '
+        'merekomendasikan uji yang tepat dan langsung membuka modulnya.</div>'
+        '</div>'
+        '</div>',
         unsafe_allow_html=True,
     )
-
-    uploaded = st.file_uploader(
-        "Pilih file data Anda",
-        type=["csv", "xlsx", "xls", "sav", "dta", "txt"],
-        help="Format yang didukung: CSV, Excel (.xlsx/.xls), SPSS (.sav), Stata (.dta), Teks (.txt)",
+    return st.button(
+        "🚀 Mulai Wizard",
+        key=on_click_key,
+        type="primary",
+        use_container_width=True,
     )
 
-    if uploaded:
-        if st.session_state.get("last_uploaded_filename") != uploaded.name:
-            st.session_state.df_clean = None
-            st.session_state.report = None
-            st.session_state.last_uploaded_filename = uploaded.name
-            st.session_state.pop("var_types", None)   # reset tipe saat file baru
-            
-        with st.spinner("🔄 Memuat dan memeriksa data..."):
-            raw_df = load_data(uploaded)
-        if raw_df is None:
-            st.error("❌ Gagal membaca file. Pastikan format CSV, Excel, SPSS (.sav), Stata (.dta), atau TXT.")
-            st.stop()
 
-        # Pembersihan otomatis awal
-        df_clean, report = auto_clean(raw_df)
-
-        # ✅ Hanya pakai session_state jika file SAMA (sudah ada encoding sebelumnya)
-        # Cukup load session state untuk display, bukan untuk overwrite df_clean aktif
-        display_df = ss_get("df_clean") if ss_get("df_clean") is not None else df_clean
-        display_report = ss_get("report") if ss_get("report") is not None else report
-
-        c1, c2, c3, c4 = st.columns(4)
-        with c1:
-            st.markdown(f"""<div class="rs-metric">
-                <div class="rs-metric-label">Baris Awal</div>
-                <div class="rs-metric-value">{report['original_rows']}</div></div>""",
-                unsafe_allow_html=True)
-        with c2:
-            st.markdown(f"""<div class="rs-metric">
-                <div class="rs-metric-label">Baris Valid</div>
-                <div class="rs-metric-value">{report['rows_after_clean']}</div>
-                <div class="rs-metric-sub">setelah cleaning</div></div>""",
-                unsafe_allow_html=True)
-        with c3:
-            col_miss = "#a32d2d" if report["total_missing"] > 0 else "#3b6d11"
-            st.markdown(f"""<div class="rs-metric">
-                <div class="rs-metric-label">Missing Values</div>
-                <div class="rs-metric-value" style="color:{col_miss}">{report['total_missing']}</div>
-                </div>""", unsafe_allow_html=True)
-        with c4:
-            col_dup = "#a32d2d" if report["duplicates"] > 0 else "#3b6d11"
-            st.markdown(f"""<div class="rs-metric">
-                <div class="rs-metric-label">Duplikat Dihapus</div>
-                <div class="rs-metric-value" style="color:{col_dup}">{report['duplicates']}</div>
-                </div>""", unsafe_allow_html=True)
-
-        # ─── FITUR BARU: AUTO-ENCODE KATEGORIK ───
-        if report.get("encodable_cols"):
-            st.markdown("<br/>", unsafe_allow_html=True)
-            with st.expander("🛠️ Transformasi Variabel Kategorik (Gender, Pendidikan, dll)", expanded=True):
-                st.info(f"Ditemukan kolom teks yang bisa diubah ke angka: **{', '.join(report['encodable_cols'])}**")
-                
-                to_encode = st.multiselect(
-                    "Pilih kolom untuk dijadikan numerik (Label Encoding):",
-                    options=report["encodable_cols"],
-                    default=report["encodable_cols"]
-                )
-                
-                if st.button("🚀 Jalankan Encoding", type="secondary"):
-                    # 1. Jalankan proses encoding
-                    encoded_df, mapping = encode_categorical(df_clean, to_encode)
-                    
-                    # 2. Update report secara lokal agar pilihan numerik bertambah
-                    for col in to_encode:
-                        if col in report["non_numeric_cols"]:
-                            report["non_numeric_cols"].remove(col)
-                        if col not in report["numeric_cols"]:
-                            report["numeric_cols"].append(col)
-                    
-                    # 3. Simpan ke session state agar permanen
-                    st.session_state.df_clean = encoded_df
-                    st.session_state.report = report
-                    st.session_state.mapping_info = mapping
-                    
-                    # 4. Tambahkan ke selected_cols secara otomatis
-                    current_selected = st.session_state.get("selected_cols", [])
-                    for col in to_encode:
-                        if col not in current_selected:
-                            current_selected.append(col)
-                    st.session_state.selected_cols = current_selected
-
-                    st.success(f"✅ Berhasil mengonversi: {', '.join(to_encode)}")
-                    st.rerun()
-
-        st.markdown("<br/>", unsafe_allow_html=True)
-
-        # ─── TIPE VARIABEL ────────────────────────────────────────────────────
-        with st.expander(
-            "🏷️ Tipe Variabel (Opsional — untuk rekomendasi lebih akurat)",
-            expanded=False,
-        ):
-            st.caption(
-                "Sistem mendeteksi tipe variabel secara otomatis. "
-                "Ubah jika ada yang tidak sesuai — hasilnya dipakai untuk rekomendasi analisis "
-                "dan pemilihan kolom analitik."
-            )
-
-            # Gabungkan: var_types tersimpan (prioritas) + auto-detect (fallback)
-            _saved_types   = st.session_state.get("var_types", {})
-            _auto_types    = _auto_detect_var_types(display_df, display_report)
-            _current_types = {
-                col: _saved_types.get(col, _auto_types.get(col, "Numerik Kontinu"))
-                for col in display_df.columns
-            }
-
-            _type_df = pd.DataFrame({
-                "Kolom":         list(display_df.columns),
-                "Tipe Variabel": [_current_types[c] for c in display_df.columns],
-            })
-
-            _edited = st.data_editor(
-                _type_df,
-                column_config={
-                    "Kolom": st.column_config.TextColumn(
-                        "Kolom", disabled=True, width="medium"
-                    ),
-                    "Tipe Variabel": st.column_config.SelectboxColumn(
-                        "Tipe Variabel",
-                        options=TYPE_OPTIONS,
-                        required=True,
-                        width="medium",
-                    ),
-                },
-                hide_index=True,
-                use_container_width=True,
-                key="var_type_editor",
-            )
-
-            if st.button(
-                "💾 Terapkan Tipe Variabel",
-                key="btn_apply_var_types",
-                type="secondary",
-            ):
-                _new_var_types = dict(zip(_edited["Kolom"], _edited["Tipe Variabel"]))
-                st.session_state["var_types"] = _new_var_types
-
-                # Update report hanya jika data sudah di-save (hindari konflik)
-                if st.session_state.get("report") is not None:
-                    _rep = st.session_state["report"].copy()
-                    _rep["numeric_cols"] = [
-                        c for c in display_df.columns
-                        if _new_var_types.get(c) in _NUMERIC_TYPES
-                    ]
-                    _rep["non_numeric_cols"] = [
-                        c for c in display_df.columns
-                        if _new_var_types.get(c) not in _NUMERIC_TYPES
-                    ]
-                    st.session_state["report"] = _rep
-
-                    # Sesuaikan selected_cols — hapus kolom non-analitik
-                    _sel = [
-                        c for c in st.session_state.get("selected_cols", [])
-                        if _new_var_types.get(c) in _NUMERIC_TYPES
-                    ]
-                    st.session_state["selected_cols"] = _sel
-
-                st.success(
-                    f"✅ Tipe variabel diterapkan untuk {len(_new_var_types)} kolom."
-                )
-                st.rerun()
-
-        st.markdown("<br/>", unsafe_allow_html=True)
-
-        tab1, tab2 = st.tabs(["📋 Preview Data", "🔧 Detail Cleaning"])
-        with tab1:
-            st.markdown(f"**{len(df_clean)} baris × {len(df_clean.columns)} kolom**")
-            st.dataframe(display_df.head(30), use_container_width=True, height=300)
-        with tab2:
-            if report["missing_per_col"]:
-                st.warning("**Missing values per kolom:**")
-                st.dataframe(
-                    pd.DataFrame.from_dict(
-                        report["missing_per_col"], orient="index", columns=["Jumlah Missing"]
-                    ),
-                    use_container_width=True,
-                )
-            else:
-                st.success("Tidak ada missing values.")
-            st.markdown(
-                f"**Kolom numerik ({len(report['numeric_cols'])}):** "
-                f"{', '.join(report['numeric_cols']) or '–'}"
-            )
-            st.markdown(
-                f"**Kolom non-numerik ({len(report['non_numeric_cols'])}):** "
-                f"{', '.join(report['non_numeric_cols']) or '–'}"
-            )
-
-        if st.button("✅ Simpan & Gunakan Data Ini", type="primary"):
-            # Pakai display_df & display_report agar hasil encoding ikut tersimpan
-            st.session_state.df_clean  = display_df
-            st.session_state.report    = display_report
-            st.session_state.ai_cache  = {}
-
-            # Tentukan selected_cols: hormati var_types jika sudah diset,
-            # fallback ke perilaku lama (numeric_cols[:10]) agar backward compat
-            _vt = st.session_state.get("var_types", {})
-            if _vt:
-                _analytic = [
-                    c for c in display_report["numeric_cols"]
-                    if _vt.get(c, "Numerik Kontinu") in _NUMERIC_TYPES
-                ]
-                st.session_state.selected_cols = _analytic[:10]
-            else:
-                st.session_state.selected_cols = display_report["numeric_cols"][:10]
-
-            st.success("✅ Data siap dianalisis! Lanjutkan ke modul berikutnya.")
-
-        # Menampilkan pilihan kolom jika data sudah tersimpan
-        if ss_get("df_clean") is not None:
-            st.markdown("---")
-            st.markdown("**🎯 Pilih Kolom untuk Analisis:**")
-            selected = st.multiselect(
-                "Kolom numerik yang akan dianalisis",
-                options=display_report["numeric_cols"],
-                default=[c for c in ss_get("selected_cols", []) if c in display_report["numeric_cols"]],
-            )
-            st.session_state.selected_cols = selected
-
-        # ── Auto-Rekomendasi Uji ──────────────────────────────────────────────────────
-    if ss_get("df_clean") is not None and ss_get("report") is not None:
-        rec = recommend_analysis(ss_get("df_clean"), ss_get("report"))
-        render_recommendation_card(rec)
-
-    elif ss_get("df_clean") is not None:
-        st.info("✅ Data sudah tersimpan. Lanjutkan ke modul analisis.")
-        st.dataframe(ss_get("df_clean").head(10), use_container_width=True)
-    else:
-        st.markdown("""
-        <div style='text-align:center; padding:3rem; color:#5f8ab5;'>
-            <div style='font-size:3rem;'>📂</div>
-            <p>Belum ada data. Unggah file <b>CSV, Excel, SPSS (.sav), Stata (.dta),</b> atau <b>TXT</b> untuk memulai.</p>
-        </div>""", unsafe_allow_html=True)
+def render_changelog() -> None:
+    """Render changelog versi sebagai rs-ai-narasi yang lebih ringkas."""
+    st.markdown("""
+<div class="rs-ai-narasi">
+<span class="rs-ai-badge">✨ v4.8 — Supabase Auth + Google OAuth</span><br/>
+<b>v4.3:</b> Login berbasis nama pengguna &amp; nama peneliti di laporan tersedia<br/><br/>
+<b>v4.2:</b> <b>Regresi, ANOVA, Regresi Logistik</b> gratis terbatas — analisis dasar tanpa
+License Key. Fitur lanjutan (VIF, post-hoc, ROC, AI) tetap eksklusif Pro.<br/><br/>
+<b>v4.2:</b> Generate Laporan gratis <b>1×/hari</b> (tanpa AI).
+Pro: tak terbatas + narasi AI + grafik tertanam.<br/><br/>
+<b>v4.2:</b> Web Scraping, Power Analysis, Compute Variabel, navigasi sidebar per kategori.<br/><br/>
+<b>v4.1 (Pro):</b> Item-Total Statistics &amp; Alpha jika Item Dihapus — CITC,
+α-if-deleted, inter-item correlation matrix.
+</div>""", unsafe_allow_html=True)
