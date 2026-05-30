@@ -518,6 +518,50 @@ body.rs-light [data-testid="stMetricValue"],
 [data-theme="dark"] .badge-invalid {{ background: rgba(198,40,40,.2) !important; color: #FCA5A5 !important; border-color: rgba(252,165,165,.2) !important; }}
 [data-theme="dark"] .badge-reliable {{ background: rgba(46,125,50,.2) !important; color: #86EFAC !important; border-color: rgba(134,239,172,.2) !important; }}
 [data-theme="dark"] .badge-unreliable {{ background: rgba(198,40,40,.2) !important; color: #FCA5A5 !important; border-color: rgba(252,165,165,.2) !important; }}
+
+/* ══ TOMBOL REKOMENDASI — main content area (bukan sidebar) ══ */
+/* Selector menarget tombol dengan key prefix p_ dan s_ via data-testid parent */
+[data-testid="stMain"] .stButton > button:not([kind="primary"]) {{
+    background: {BLUE} !important;
+    color: {WHITE} !important;
+    border: 1px solid {BLUE2} !important;
+    border-radius: var(--radius-sm) !important;
+    font-size: .82rem !important;
+    font-weight: 500 !important;
+    transition: all var(--transition) !important;
+}}
+[data-testid="stMain"] .stButton > button:not([kind="primary"]):hover {{
+    background: {BLUE2} !important;
+    color: {WHITE} !important;
+    border-color: {BLUE3} !important;
+    box-shadow: 0 2px 10px rgba(33,150,243,.35) !important;
+    transform: translateY(-1px) !important;
+}}
+
+/* Dark mode — pastikan warna tidak di-override balik oleh Streamlit default */
+[data-theme="dark"] [data-testid="stMain"] .stButton > button:not([kind="primary"]) {{
+    background: {BLUE} !important;
+    color: {WHITE} !important;
+    border-color: {BLUE2} !important;
+}}
+[data-theme="dark"] [data-testid="stMain"] .stButton > button:not([kind="primary"]):hover {{
+    background: {BLUE2} !important;
+    color: {WHITE} !important;
+}}
+
+/* Dark mode — rs-narasi di dalam expander (kartu rekomendasi) */
+[data-theme="dark"] [data-testid="stExpander"] .rs-narasi {{
+    background: rgba(21,101,192,.18) !important;
+    border-left-color: {BLUE3} !important;
+    color: #CBD5E1 !important;
+}}
+[data-theme="dark"] [data-testid="stExpander"] .rs-narasi b,
+[data-theme="dark"] [data-testid="stExpander"] .rs-narasi strong {{
+    color: #E2E8F0 !important;
+}}
+[data-theme="dark"] [data-testid="stExpander"] .rs-narasi span {{
+    color: {BLUE4} !important;
+}}
 </style>"""
 
 
