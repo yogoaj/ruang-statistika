@@ -51,8 +51,8 @@ def render(ctx: dict):
     st.dataframe(desc_df, use_container_width=True, hide_index=True)
 
     st.markdown(
-        '<div class="rs-narasi">💬 <b>Interpretasi Otomatis</b><br/>' +
-        narrate_descriptive(desc_df).replace("\n\n", "<br/><br/>") +
+        '<div class="rs-narasi">💬 <b>Interpretasi Otomatis</b><br/><br/>' +
+        narrate_descriptive(desc_df) +
         "</div>",
         unsafe_allow_html=True,
     )
