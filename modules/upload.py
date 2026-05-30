@@ -395,31 +395,29 @@ def render_recommendation_card(rec: dict):
         st.markdown("**✅ Analisis yang Disarankan (Mulai dari Sini):**")
         cols_per_row = 2
         items = rec["primary"]
-        for i in range(0, len(items), cols_per_row):
-            row_items = items[i : i + cols_per_row]
+        for row_start in range(0, len(items), cols_per_row):
+            row_items = items[row_start : row_start + cols_per_row]
             cols = st.columns(len(row_items))
             for col, item in zip(cols, row_items):
                 is_pro = item["modul"] in _PRO_MODULES
-                badge = (
-                    ' <span style="font-size:0.68rem;background:#e8d5a3;'
-                    'color:#7a5c00;padding:1px 6px;border-radius:4px;'
-                    'vertical-align:middle;">★ Pro</span>'
-                    if is_pro else ""
-                )
+                pro_tag = "  ★ Pro" if is_pro else ""
                 with col:
                     st.markdown(
                         f'<div class="rs-narasi" style="margin-bottom:6px;min-height:80px;">'
-                        f'{item["icon"]} <b>{item["uji"]}</b>{badge}<br/>'
-                        f'<span style="font-size:0.82rem;color:#5f8ab5;">'
-                        f'{item["alasan"]}</span>'
-                        f'</div>',
+                        f'{item["icon"]} <b>{item["uji"]}</b>'
+                        + (
+                            '&nbsp;<span style="font-size:0.68rem;background:#e8d5a3;'
+                            'color:#7a5c00;padding:1px 6px;border-radius:4px;'
+                            'vertical-align:middle;">★ Pro</span>'
+                            if is_pro else ""
+                        )
+                        + f'<br/><span style="font-size:0.82rem;color:#5f8ab5;">'
+                        f'{item["alasan"]}</span></div>',
                         unsafe_allow_html=True,
                     )
-                    if st.button(
-                        f"Buka → {item['modul']}",
-                        key=f"rec_primary_{item['modul']}_{i}",
-                        use_container_width=True,
-                    ):
+                    btn_label = f"→ {item['modul']}{pro_tag}"
+                    btn_key   = f"p_{item['modul']}"
+                    if st.button(btn_label, key=btn_key, use_container_width=True):
                         st.session_state.active_menu = item["modul"]
                         st.rerun()
 
@@ -454,32 +452,30 @@ def render_recommendation_card(rec: dict):
                 )
 
                 cols_per_row = 2
-                for i in range(0, len(group_items), cols_per_row):
-                    row_items = group_items[i : i + cols_per_row]
+                for row_start in range(0, len(group_items), cols_per_row):
+                    row_items = group_items[row_start : row_start + cols_per_row]
                     cols = st.columns(len(row_items))
                     for col, item in zip(cols, row_items):
                         is_pro = item["modul"] in _PRO_MODULES
-                        badge = (
-                            ' <span style="font-size:0.68rem;background:#e8d5a3;'
-                            'color:#7a5c00;padding:1px 6px;border-radius:4px;">'
-                            '★ Pro</span>'
-                            if is_pro else ""
-                        )
+                        pro_tag = "  ★ Pro" if is_pro else ""
                         with col:
                             st.markdown(
                                 f'<div class="rs-narasi" style="margin-bottom:6px;'
                                 f'min-height:80px;">'
-                                f'<b>{item["uji"]}</b>{badge}<br/>'
-                                f'<span style="font-size:0.8rem;color:#5f8ab5;">'
-                                f'{item["alasan"]}</span>'
-                                f'</div>',
+                                f'<b>{item["uji"]}</b>'
+                                + (
+                                    '&nbsp;<span style="font-size:0.68rem;background:#e8d5a3;'
+                                    'color:#7a5c00;padding:1px 6px;border-radius:4px;">'
+                                    '★ Pro</span>'
+                                    if is_pro else ""
+                                )
+                                + f'<br/><span style="font-size:0.8rem;color:#5f8ab5;">'
+                                f'{item["alasan"]}</span></div>',
                                 unsafe_allow_html=True,
                             )
-                            if st.button(
-                                f"→ {item['modul']}",
-                                key=f"rec_sec_{item['modul']}_{i}",
-                                use_container_width=True,
-                            ):
+                            btn_label = f"→ {item['modul']}{pro_tag}"
+                            btn_key   = f"s_{item['modul']}"
+                            if st.button(btn_label, key=btn_key, use_container_width=True):
                                 st.session_state.active_menu = item["modul"]
                                 st.rerun()
 
