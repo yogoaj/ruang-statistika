@@ -15,6 +15,7 @@
 - [Menambah Modul Baru](#menambah-modul-baru)
 - [Alur Data & Export Laporan](#alur-data--export-laporan)
 - [Referensi Effect Size](#referensi-effect-size)
+- [Troubleshooting](#troubleshooting)
 - [Changelog](#changelog)
 - [Bug yang Diperbaiki](#bug-yang-diperbaiki)
 
@@ -165,7 +166,7 @@ Tambahkan user Pro dengan menyisipkan baris ke tabel `pro_licenses`:
 |---|---|---|
 | `email` | text | Email user (lowercase) |
 | `name` | text | Nama tampil |
-| `password` | text | Password plaintext (fallback login sebelum sign-up Supabase) |
+| `password` | text | ⚠️ **Deprecated sejak v4.5** — kolom ini tidak digunakan lagi. Jangan isi dengan password plaintext. Autentikasi sepenuhnya ditangani oleh Supabase Auth. |
 | `license_key` | text | Kode lisensi, opsional |
 | `tier` | text | `starter` / `premium` / `professional` |
 | `expires_at` | timestamptz | Tanggal kedaluwarsa, `NULL` = permanen |
@@ -191,7 +192,7 @@ Semua tombol dan link "Upgrade" di dalam aplikasi mengarah ke: **[lynk.id/ruangs
 ## Setup & Menjalankan Aplikasi
 
 ```bash
-git clone <repo-url>
+git clone <repo-url>   # URL repo tersedia dari pengelola proyek — repo ini bersifat privat
 cd ruang-statistika-main
 pip install -r requirements.txt
 streamlit run app.py
@@ -304,7 +305,7 @@ AI provider dikonfigurasi oleh masing-masing user dari sidebar aplikasi (input A
 | Claude (Anthropic) | Claude Sonnet 4, Claude Haiku | Berbayar | [console.anthropic.com](https://console.anthropic.com) |
 | GPT-4o (OpenAI) | GPT-4o, GPT-4o Mini | Berbayar | [platform.openai.com](https://platform.openai.com) |
 | Gemini (Google) | Gemini 2.0 Flash | **Gratis** (terbatas) | [aistudio.google.com](https://aistudio.google.com) |
-| Groq | Llama 3.3 70B, Mixtral 8x7B, Gemma2 9B | **Gratis** | [console.groq.com](https://console.groq.com) |
+| Groq | Llama 3.3 70B, Mixtral 8x7B, Gemma2 9B | **Gratis** | [console.groq.com](https://console.groq.com) | <!-- TODO: verifikasi model aktif di ai_helpers.py --> |
 | OpenRouter | Llama 4 Scout, DeepSeek R1, Gemma 3 27B | **Gratis** (model tertentu) | [openrouter.ai](https://openrouter.ai) |
 | HuggingFace | Qwen 2.5 72B, Phi-3.5 | **Gratis** | [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens) |
 | Mistral AI | Nemo, Mixtral 8x7B | Trial gratis | [console.mistral.ai](https://console.mistral.ai) |
@@ -335,7 +336,7 @@ def render(ctx: dict):
       alpha_level      — float: tingkat signifikansi (default 0.05)
       r_tab            — tab aktif (jika ada multi-tab di modul)
       ai_enabled       — bool: apakah AI aktif
-      anthropic_api_key — str: API key aktif
+      active_api_key   — str: API key provider yang sedang aktif (Groq, Gemini, Claude, dll.)
       ai_provider      — str: provider AI aktif
       user_name        — str: nama user untuk cover laporan
     """
@@ -448,6 +449,42 @@ Diimplementasikan di `utils/effect_size.py`, konsisten di seluruh modul.
 | Odds Ratio | Regresi Logistik | < 1.5 | 1.5–2.5 | ≥ 4.0 |
 
 *(Cohen, 1988; Hair et al., 2010)*
+
+---
+
+## Troubleshooting
+
+### Instalasi
+
+| Masalah | Penyebab | Solusi |
+|---|---|---|
+| `kaleido` gagal di Linux/server | Versi tidak kompatibel | Coba `pip install kaleido==0.2.1` atau `pip install kaleido --pre` |
+| `semopy` gagal install | Dependensi opsional | Aman diabaikan — modul SEM & CFA tidak aktif, modul lain tetap berjalan normal |
+| `pyreadstat` error di Windows | Kompilasi C extension | Install via conda: `conda install -c conda-forge pyreadstat` |
+
+### Autentikasi
+
+| Masalah | Penyebab | Solusi |
+|---|---|---|
+| Google OAuth error 403 | `redirect_to` diisi di kode | Hapus parameter `redirect_to` — biarkan Supabase pakai callback URL default. Lihat `supabase_auth.py → supabase_sign_in_google()` |
+| User Pro tidak dikenali setelah login Google | `save_supabase_session()` tidak query `pro_licenses` | Pastikan versi `supabase_auth.py` sudah v4.8 — bug ini sudah diperbaiki |
+| Login berhasil tapi role tetap `free` | Email di `pro_licenses` tidak cocok (case-sensitive) | Pastikan email di tabel `pro_licenses` seluruhnya lowercase |
+
+### Laporan & Export
+
+| Masalah | Penyebab | Solusi |
+|---|---|---|
+| `NameError: pd` saat generate laporan CFA/EFA | `_docx_narasi.py` versi lama tanpa import | Pastikan versi `_docx_narasi.py` sudah v4.8 |
+| Grafik tidak muncul di .docx | `kaleido` tidak terinstall atau versi salah | Install ulang: `pip install kaleido==0.2.1` |
+| Kuota laporan gratis tidak reset | Sebelum v4.8, kuota disimpan di file `.quota_cache.json` yang tidak persisten | Sudah diperbaiki di v4.8 — kuota disimpan di `st.session_state` |
+
+### AI Provider
+
+| Masalah | Penyebab | Solusi |
+|---|---|---|
+| Interpretasi AI tidak muncul meski API key sudah diisi | Provider tidak aktif atau key salah | Cek sidebar — pastikan provider dipilih dan key valid. Test key langsung di console provider |
+| Error `NameError` untuk request AI Time Series | `system_prompt` didefinisikan setelah dipakai di `_export_ai_prompt.py` | Sudah diperbaiki di v4.8 |
+| Rate limit Groq cepat habis | Free tier Groq ~30 req/menit berbasis per API key | Coba provider lain (Gemini, OpenRouter) atau tunggu beberapa menit |
 
 ---
 
