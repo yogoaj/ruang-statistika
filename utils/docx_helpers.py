@@ -49,6 +49,32 @@ from utils._docx_primitives import (
 from utils._docx_narasi    import _fallback_narasi
 from utils._docx_renderers import _MODULE_RENDERERS
 
+
+# ── HTML → plain text converter untuk narasi rule-based ──────────────────────
+def _strip_html(html: str) -> str:
+    """
+    Konversi string HTML narasi ke plain text layak docx.
+    Menangani tag yang dihasilkan narrate_descriptive / narrate_validity / narrate_alpha.
+    """
+    if not html:
+        return ""
+    # <br/> dan <br> → newline
+    text = re.sub(r"<br\s*/?>", "\n", html, flags=re.IGNORECASE)
+    # <b>...</b> dan <strong> → teks saja (bold ditangani _add_ai_narasi)
+    text = re.sub(r"</?(?:b|strong)>", "", text, flags=re.IGNORECASE)
+    # <i>...</i> dan <em> → teks saja
+    text = re.sub(r"</?(?:i|em)>", "", text, flags=re.IGNORECASE)
+    # Hapus semua tag HTML tersisa
+    text = re.sub(r"<[^>]+>", "", text)
+    # HTML entities
+    text = text.replace("&amp;", "&").replace("&lt;", "<").replace("&gt;", ">") \
+               .replace("&nbsp;", " ").replace("&#39;", "'").replace("&quot;", '"') \
+               .replace("&ndash;", "–").replace("&mdash;", "—")
+    # Rapikan whitespace: multiple newlines → max dua, multiple spasi → satu
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    text = re.sub(r"[ \t]+", " ", text)
+    return text.strip()
+
 def generate_pro_docx(
     df,
     report: dict,
@@ -132,7 +158,7 @@ def generate_pro_docx(
         _style_table(doc, desc_df, profile, f"Tabel {bab_no}.1. Statistik Deskriptif Variabel")
         narr = ai_texts.get("descriptive","")
         if not narr and _has_narr:
-            try: narr = narrate_descriptive(desc_df).replace("**","")
+            try: narr = _strip_html(narrate_descriptive(desc_df))
             except Exception: narr = ""
         _add_ai_narasi(doc, profile, narr, "Interpretasi Statistik Deskriptif")
         if figs_png.get("histogram"):
@@ -184,7 +210,7 @@ def generate_pro_docx(
             _style_table(doc, df_val, profile, f"Tabel {bab_no}.1. Hasil Uji Validitas Pearson")
             narr = ai_texts.get("validity","")
             if not narr and _has_narr:
-                try: narr = narrate_validity(val_df, r_tabel).replace("**","")
+                try: narr = _strip_html(narrate_validity(val_df, r_tabel))
                 except Exception: narr = ""
             if not narr:
                 try:
