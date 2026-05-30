@@ -763,7 +763,7 @@ def render(ctx: dict):
                     return "color: #A32D2D; font-weight: 600"
                 return ""
             st.dataframe(
-                norm_df_uni.style.applymap(_color_normal, subset=["Normal (α=0.05)"]),
+                norm_df_uni.style.map(_color_normal, subset=["Normal (α=0.05)"]),
                 use_container_width=True, hide_index=True
             )
             n_normal   = norm_df_uni["Normal (α=0.05)"].str.contains("Ya").sum()
