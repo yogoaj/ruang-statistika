@@ -1,16 +1,43 @@
 """
 utils/ai_helpers.py — AI API integration (8 Provider)
-Ruang Statistika v4.5
+Ruang Statistika v4.6
 
 Provider yang didukung:
-  ✅ Gratis  : Groq — update Sept 2026: GPT-OSS 120B, GPT-OSS 20B, Compound
-  ✅ Gratis  : Gemini 2.0 Flash (Google)
-  ✅ Gratis  : OpenRouter — model :free (Llama, Gemma, DeepSeek)
-  ✅ Gratis  : HuggingFace (Qwen 2.5 72B, Phi-3.5)
-  ✅ Trial   : Mistral AI (Nemo, Mixtral 8x7B)
-  ✅ Trial   : Cohere (Command-R, Command-R+)
+  ✅ Gratis  : Groq — GPT-OSS 120B, GPT-OSS 20B, Compound
+  ✅ Gratis  : Gemini (Google) — via alias gemini-flash-latest
+  ✅ Gratis  : OpenRouter — model :free (dicek live, lihat catatan v4.6)
+  ✅ Gratis  : HuggingFace (Qwen 2.5 72B, Gemma 3 12B)
+  ✅ Trial   : Mistral AI (Nemo, Small)
+  ✅ Trial   : Cohere (Command-R 08-2024, Command-R+ 08-2024)
   💳 Berbayar: Claude / Anthropic (Sonnet 4, Haiku)
   💳 Berbayar: ChatGPT / OpenAI (GPT-4o, GPT-4o-mini)
+
+Changelog v4.6 (Sept 2026) — perbaikan struktural anti-"model ID basi":
+- MASALAH: sejak v4.5, 5 dari 8 provider punya model ID hardcoded yang
+  ternyata sudah dipensiunkan/diganti provider-nya masing-masing:
+    Gemini gemini-2.0-flash (shutdown 1 Jun 2026), OpenRouter 3 model :free
+    (lineup free-nya memang berputar cepat), Mistral open-mixtral-8x7b
+    (retired 30 Mar 2025), Cohere command-r/command-r-plus (deprecated
+    4 Apr 2026), HuggingFace Phi-3.5-mini-instruct (tidak lagi di-serve
+    Inference Providers manapun). Groq sudah diperbaiki di commit sebelumnya.
+- PERBAIKAN ID: semua di atas diarahkan ke ID yang aktif per Sept 2026.
+- PERBAIKAN STRUKTURAL (bukan cuma tambal):
+    * Groq & OpenRouter — punya endpoint publik GET /v1/models. _call_groq()
+      dan _call_openrouter() sekarang otomatis fetch live model list dan
+      RETRY ke model yang masih aktif kalau model hardcoded ternyata sudah
+      mati (bukan cuma gagal dengan pesan error). User diberi tahu lewat
+      catatan di akhir jawaban kalau auto-fallback ini terpakai, supaya
+      tahu perlu update pilihan provider di aplikasi.
+    * Gemini — pindah dari ID model spesifik (gemini-2.0-flash) ke alias
+      `gemini-flash-latest`, yang otomatis di-mapping ulang oleh Google ke
+      model stabil terbaru. Tidak perlu update manual lagi di sisi kita.
+    * Mistral Small pakai alias `mistral-small-latest` dengan alasan sama.
+    * Cohere & HuggingFace TIDAK dapat auto-fallback di rilis ini (Cohere
+      tak punya endpoint /models publik yang simpel, HuggingFace Inference
+      Providers routing-nya multi-provider dan lebih rumit untuk difilter
+      otomatis) — hanya ID hardcoded yang diperbaiki. Perlu verifikasi
+      manual berkala; tanggal verifikasi terakhir dicatat di komentar
+      masing-masing dict di bawah.
 
 Changelog v4.5:
 - Tambah OpenRouter, Mistral AI, Cohere sebagai provider baru
@@ -28,6 +55,7 @@ Changelog v4.1:
 """
 
 import json
+import time
 import requests
 import pandas as pd
 
@@ -83,7 +111,11 @@ CLAUDE_MODEL    = "claude-sonnet-4-20250514"
 CLAUDE_HAIKU    = "claude-haiku-4-5-20251001"
 OPENAI_MODEL    = "gpt-4o"
 OPENAI_MINI     = "gpt-4o-mini"
-GEMINI_MODEL    = "gemini-2.0-flash"
+# Terverifikasi 2026-09-16. Pakai alias "-latest" (bukan snapshot spesifik)
+# karena Google rutin mematikan versi ber-tanggal — gemini-2.0-flash sendiri
+# yang jadi penyebab bug ini sudah shutdown 1 Juni 2026. Alias ini otomatis
+# di-remap Google ke model stabil terbaru, jadi tidak perlu update manual.
+GEMINI_MODEL    = "gemini-flash-latest"
 
 GROQ_MODELS = {
     # Update Sept 2026: llama-3.3-70b-versatile & llama-3.1-8b-instant sudah
@@ -98,25 +130,47 @@ GROQ_MODELS = {
     "⚡ Groq — Compound":      "groq/compound",
 }
 
+# Terverifikasi 2026-09-16. microsoft/Phi-3.5-mini-instruct (dipakai s.d.
+# v4.5) sudah tidak di-serve oleh Inference Provider manapun di router HF
+# ("isn't deployed by any Inference Provider") — diganti ke Gemma 3 12B
+# yang terkonfirmasi masih aktif di router gratis. TIDAK ada auto-fallback
+# untuk provider ini (lihat changelog v4.6) — perlu dicek manual berkala.
 HF_MODELS = {
     "🤗 HuggingFace — Qwen 2.5 72B": "Qwen/Qwen2.5-72B-Instruct",
-    "🤗 HuggingFace — Phi-3.5":      "microsoft/Phi-3.5-mini-instruct",
+    "🤗 HuggingFace — Gemma 3 12B":  "google/gemma-3-12b-it",
 }
 
+# Terverifikasi 2026-09-16. open-mixtral-8x7b (dipakai s.d. v4.5) sudah
+# RETIRED oleh Mistral sejak 30 Maret 2025 — diganti ke alias "-latest"
+# yang otomatis mengikuti model generasi terbaru dari Mistral, supaya tidak
+# jadi masalah "ID basi" lagi kalau Mistral pensiunkan model berikutnya.
 MISTRAL_MODELS = {
-    "🌊 Mistral AI — Nemo":         "open-mistral-nemo",
-    "🌊 Mistral AI — Mixtral 8x7B": "open-mixtral-8x7b",
+    "🌊 Mistral AI — Nemo":  "open-mistral-nemo",
+    "🌊 Mistral AI — Small": "mistral-small-latest",
 }
 
+# Terverifikasi 2026-09-16. "command-r"/"command-r-plus" (alias tanpa
+# tanggal, dipakai s.d. v4.5) DIHENTIKAN Cohere efektif 4 April 2026 —
+# request dengan ID tersebut sekarang gagal. Cohere tidak punya alias
+# "-latest" seperti Mistral, jadi dipakai snapshot ber-tanggal terbaru yang
+# resmi disarankan Cohere sebagai pengganti. TIDAK ada auto-fallback untuk
+# provider ini (lihat changelog v4.6) — perlu dicek manual berkala.
 COHERE_MODELS = {
-    "🔗 Cohere — Command-R":  "command-r",
-    "🔗 Cohere — Command-R+": "command-r-plus",
+    "🔗 Cohere — Command-R":  "command-r-08-2024",
+    "🔗 Cohere — Command-R+": "command-r-plus-08-2024",
 }
 
+# Dicek 2026-09-16 — lineup :free OpenRouter ini yang PALING cepat berubah
+# dari semua provider (bisa jadi berbayar/ditarik dalam hitungan bulan).
+# google/gemma-3-27b-it:free diganti ke gemma-3-4b-it:free (terkonfirmasi
+# masih ada); 2 lainnya per pengecekan terakhir statusnya meragukan (ada
+# laporan sudah tidak gratis). Tapi karena _call_openrouter() sekarang
+# auto-retry ke model :free live kalau ID ini gagal (lihat changelog v4.6),
+# ID di bawah ini cuma "starting point" — bukan lagi satu-satunya jalan.
 OPENROUTER_MODELS = {
     "🌐 OpenRouter — Llama 4 Scout": "meta-llama/llama-4-scout:free",
     "🌐 OpenRouter — DeepSeek R1":   "deepseek/deepseek-r1:free",
-    "🌐 OpenRouter — Gemma 3 27B":   "google/gemma-3-27b-it:free",
+    "🌐 OpenRouter — Gemma 3 4B":    "google/gemma-3-4b-it:free",
 }
 
 ALL_PROVIDERS = [
@@ -124,15 +178,15 @@ ALL_PROVIDERS = [
     "⚡ Groq — GPT-OSS 120B",
     "⚡ Groq — GPT-OSS 20B",
     "⚡ Groq — Compound",
-    "✨ Gemini — 2.0 Flash",
+    "✨ Gemini — Flash",
     "🌐 OpenRouter — Llama 4 Scout",
     "🌐 OpenRouter — DeepSeek R1",
-    "🌐 OpenRouter — Gemma 3 27B",
+    "🌐 OpenRouter — Gemma 3 4B",
     "🤗 HuggingFace — Qwen 2.5 72B",
-    "🤗 HuggingFace — Phi-3.5",
+    "🤗 HuggingFace — Gemma 3 12B",
     # ── 🟡 Trial Gratis ────────────────────────────────────────────────────────
     "🌊 Mistral AI — Nemo",
-    "🌊 Mistral AI — Mixtral 8x7B",
+    "🌊 Mistral AI — Small",
     "🔗 Cohere — Command-R",
     "🔗 Cohere — Command-R+",
     # ── 💳 Berbayar ────────────────────────────────────────────────────────────
@@ -152,17 +206,19 @@ PROVIDER_KEY_INFO = {
     "⚡ Groq — GPT-OSS 20B":          ("Groq API Key (Gratis)",          "console.groq.com"),
     "⚡ Groq — Compound":             ("Groq API Key (Gratis)",          "console.groq.com"),
     # Gemini
-    "✨ Gemini — 2.0 Flash":           ("Gemini API Key (Gratis)",        "aistudio.google.com"),
+    "✨ Gemini — Flash":               ("Gemini API Key (Gratis)",        "aistudio.google.com"),
+    # ↑ label "Flash" tanpa nomor versi krn ID aktualnya kini alias
+    #   gemini-flash-latest yang auto-update (lihat GEMINI_MODEL, changelog v4.6)
     # OpenRouter
     "🌐 OpenRouter — Llama 4 Scout":   ("OpenRouter API Key (Gratis)",    "openrouter.ai"),
     "🌐 OpenRouter — DeepSeek R1":     ("OpenRouter API Key (Gratis)",    "openrouter.ai"),
-    "🌐 OpenRouter — Gemma 3 27B":     ("OpenRouter API Key (Gratis)",    "openrouter.ai"),
+    "🌐 OpenRouter — Gemma 3 4B":      ("OpenRouter API Key (Gratis)",    "openrouter.ai"),
     # HuggingFace
     "🤗 HuggingFace — Qwen 2.5 72B":  ("HuggingFace Token (Gratis)",     "huggingface.co/settings/tokens"),
-    "🤗 HuggingFace — Phi-3.5":        ("HuggingFace Token (Gratis)",     "huggingface.co/settings/tokens"),
+    "🤗 HuggingFace — Gemma 3 12B":    ("HuggingFace Token (Gratis)",     "huggingface.co/settings/tokens"),
     # Mistral
     "🌊 Mistral AI — Nemo":            ("Mistral API Key (Trial Gratis)", "console.mistral.ai"),
-    "🌊 Mistral AI — Mixtral 8x7B":    ("Mistral API Key (Trial Gratis)", "console.mistral.ai"),
+    "🌊 Mistral AI — Small":           ("Mistral API Key (Trial Gratis)", "console.mistral.ai"),
     # Cohere
     "🔗 Cohere — Command-R":           ("Cohere API Key (Trial Gratis)",  "dashboard.cohere.com"),
     "🔗 Cohere — Command-R+":          ("Cohere API Key (Trial Gratis)",  "dashboard.cohere.com"),
@@ -209,13 +265,21 @@ def call_ai_api(
         return _call_custom(prompt, _system, api_key, _base_url, _model_id)
 
     if "Groq" in provider:
-        model_id = GROQ_MODELS.get(provider, "llama-3.3-70b-versatile")
+        # Default fallback juga diarahkan ke ID yang aktif per 2026-09-16
+        # (bukan lagi llama-3.3-70b-versatile, yang sudah pindah tier
+        # Enterprise) — dan kalaupun ini ikut basi lagi nanti, _call_groq()
+        # akan otomatis retry ke model live (lihat changelog v4.6).
+        model_id = GROQ_MODELS.get(provider, "openai/gpt-oss-120b")
         return _call_groq(prompt, _system, api_key, model_id)
 
     elif "Gemini" in provider:
         return _call_gemini(prompt, _system, api_key)
 
     elif "OpenRouter" in provider:
+        # Default fallback: kalau label provider tidak dikenali,
+        # _call_openrouter() sendiri yang akan cari model :free aktif
+        # secara live lewat _pick_free_openrouter_model() kalau ID ini
+        # ternyata juga sudah tidak berlaku.
         model_id = OPENROUTER_MODELS.get(provider, "meta-llama/llama-4-scout:free")
         return _call_openrouter(prompt, _system, api_key, model_id)
 
@@ -228,7 +292,7 @@ def call_ai_api(
         return _call_mistral(prompt, _system, api_key, model_id)
 
     elif "Cohere" in provider:
-        model_id = COHERE_MODELS.get(provider, "command-r-plus")
+        model_id = COHERE_MODELS.get(provider, "command-r-plus-08-2024")
         return _call_cohere(prompt, _system, api_key, model_id)
 
     elif "Claude" in provider:
@@ -240,6 +304,94 @@ def call_ai_api(
         return _call_openai(prompt, _system, api_key, model_id)
 
     return "❌ Provider AI tidak dikenali. Pilih provider lain di sidebar."
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Live model discovery — jaring pengaman anti "ID basi" (lihat changelog v4.6)
+#
+# Groq & OpenRouter menyediakan endpoint publik GET /v1/models yang selalu
+# mencerminkan model yang BENAR-BENAR aktif saat ini — lebih bisa dipercaya
+# daripada dict Python yang kita tulis manual dan gampang basi. Helper di
+# bawah dipakai _call_groq()/_call_openrouter() sebagai fallback: dicoba
+# HANYA kalau panggilan pertama dengan model hardcoded gagal karena model
+# tidak ditemukan, bukan dipanggil di setiap request (biar hemat & cepat).
+# ─────────────────────────────────────────────────────────────────────────────
+
+_LIVE_MODEL_CACHE_TTL = 3600  # detik — cache in-memory 1 jam per proses
+_groq_models_cache    = {"ts": 0.0, "ids": []}
+_openrouter_models_cache = {"ts": 0.0, "data": []}
+
+
+def _is_model_not_found_error(resp) -> bool:
+    """
+    Deteksi pola error 'model ID sudah tidak berlaku' lintas provider — tiap
+    provider punya format pesan beda, jadi dicek longgar lewat kata kunci.
+    """
+    if resp.status_code not in (400, 404):
+        return False
+    text = resp.text.lower()
+    return any(s in text for s in (
+        "model_not_found", "model not found", "does not exist",
+        "no endpoints found", "invalid model", "decommissioned",
+        "has been deprecated", "unknown model",
+    ))
+
+
+def _fetch_groq_live_models(api_key: str) -> list:
+    """Ambil daftar model aktif dari Groq (GET /v1/models), dengan cache 1 jam."""
+    now = time.time()
+    if _groq_models_cache["ids"] and (now - _groq_models_cache["ts"] < _LIVE_MODEL_CACHE_TTL):
+        return _groq_models_cache["ids"]
+    try:
+        resp = requests.get(
+            "https://api.groq.com/openai/v1/models",
+            headers={"Authorization": f"Bearer {api_key}"},
+            timeout=15,
+        )
+        if resp.status_code == 200:
+            ids = [m.get("id", "") for m in resp.json().get("data", []) if m.get("id")]
+            _groq_models_cache["ids"], _groq_models_cache["ts"] = ids, now
+            return ids
+    except Exception:
+        pass
+    return []
+
+
+def _fetch_openrouter_models() -> list:
+    """
+    Ambil katalog lengkap model OpenRouter (GET /v1/models — endpoint publik,
+    tidak perlu API key), dengan cache 1 jam. Dipakai untuk cari model :free
+    yang masih benar-benar aktif, karena lineup gratis OpenRouter berputar
+    cepat (model :free hari ini bisa jadi berbayar bulan depan).
+    """
+    now = time.time()
+    if _openrouter_models_cache["data"] and (now - _openrouter_models_cache["ts"] < _LIVE_MODEL_CACHE_TTL):
+        return _openrouter_models_cache["data"]
+    try:
+        resp = requests.get("https://openrouter.ai/api/v1/models", timeout=15)
+        if resp.status_code == 200:
+            data = resp.json().get("data", [])
+            _openrouter_models_cache["data"], _openrouter_models_cache["ts"] = data, now
+            return data
+    except Exception:
+        pass
+    return []
+
+
+def _pick_free_openrouter_model(exclude: str = "") -> str:
+    """Pilih satu model :free OpenRouter yang live & harganya benar-benar $0."""
+    for m in _fetch_openrouter_models():
+        mid = m.get("id", "")
+        if not mid or mid == exclude or not mid.endswith(":free"):
+            continue
+        pricing = m.get("pricing", {})
+        try:
+            if float(pricing.get("prompt", "1") or "1") == 0.0 and \
+               float(pricing.get("completion", "1") or "1") == 0.0:
+                return mid
+        except (TypeError, ValueError):
+            continue
+    return ""
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -336,7 +488,7 @@ def _call_gemini(prompt: str, system: str, api_key: str) -> str:
 
 def _call_openrouter(prompt: str, system: str, api_key: str, model_id: str) -> str:
     """OpenRouter — gateway ke ratusan model, termasuk model :free."""
-    try:
+    def _post(mid: str):
         headers = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
@@ -344,7 +496,7 @@ def _call_openrouter(prompt: str, system: str, api_key: str, model_id: str) -> s
             "X-Title": "Ruang Statistika",
         }
         payload = {
-            "model": model_id,
+            "model": mid,
             "max_tokens": 2500,
             "temperature": 0.7,
             "messages": [
@@ -352,12 +504,32 @@ def _call_openrouter(prompt: str, system: str, api_key: str, model_id: str) -> s
                 {"role": "user",   "content": prompt},
             ],
         }
-        resp = requests.post(
+        return requests.post(
             "https://openrouter.ai/api/v1/chat/completions",
             headers=headers, json=payload, timeout=90,
         )
+
+    try:
+        resp = _post(model_id)
+        fallback_note = ""
+
+        if _is_model_not_found_error(resp) and model_id.endswith(":free"):
+            # Lineup model :free OpenRouter berputar cepat (bisa jadi
+            # berbayar atau ditarik bulan berikutnya) — cek katalog live
+            # dan coba sekali lagi dengan model :free lain yang masih aktif.
+            fallback_id = _pick_free_openrouter_model(exclude=model_id)
+            if fallback_id:
+                resp2 = _post(fallback_id)
+                if resp2.status_code == 200:
+                    resp = resp2
+                    fallback_note = (
+                        f"\n\n---\n⚠️ *Model `{model_id}` sudah tidak tersedia gratis di "
+                        f"OpenRouter — jawaban di atas otomatis dialihkan ke `{fallback_id}`. "
+                        f"Mohon perbarui pilihan provider di aplikasi.*"
+                    )
+
         if resp.status_code == 200:
-            return resp.json()["choices"][0]["message"]["content"]
+            return resp.json()["choices"][0]["message"]["content"] + fallback_note
         elif resp.status_code == 401:
             return "❌ OpenRouter API Key tidak valid."
         elif resp.status_code == 429:
@@ -438,13 +610,13 @@ def _call_cohere(prompt: str, system: str, api_key: str, model_id: str) -> str:
 
 
 def _call_groq(prompt: str, system: str, api_key: str, model_id: str) -> str:
-    try:
+    def _post(mid: str):
         headers = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
         }
         payload = {
-            "model": model_id,
+            "model": mid,
             "max_tokens": 2500,
             "temperature": 0.7,
             "messages": [
@@ -452,12 +624,39 @@ def _call_groq(prompt: str, system: str, api_key: str, model_id: str) -> str:
                 {"role": "user",   "content": prompt},
             ],
         }
-        resp = requests.post(
+        return requests.post(
             "https://api.groq.com/openai/v1/chat/completions",
             headers=headers, json=payload, timeout=60,
         )
+
+    try:
+        resp = _post(model_id)
+        fallback_note = ""
+
+        if _is_model_not_found_error(resp):
+            # Model hardcoded ternyata sudah mati di sisi Groq — cek katalog
+            # live dan coba sekali lagi dengan model aktif, alih-alih
+            # langsung menyerah. Prioritaskan model satu "keluarga" (mis.
+            # openai/gpt-oss-*) dulu supaya karakter output relatif mirip
+            # dengan yang dipilih user.
+            live_ids = _fetch_groq_live_models(api_key)
+            family = model_id.split("/")[0] if "/" in model_id else ""
+            fallback_id = (
+                next((m for m in live_ids if m != model_id and family and m.startswith(family)), None)
+                or next((m for m in live_ids if m != model_id), None)
+            )
+            if fallback_id:
+                resp2 = _post(fallback_id)
+                if resp2.status_code == 200:
+                    resp = resp2
+                    fallback_note = (
+                        f"\n\n---\n⚠️ *Model `{model_id}` sudah tidak aktif di Groq — "
+                        f"jawaban di atas otomatis dialihkan ke `{fallback_id}`. "
+                        f"Mohon perbarui pilihan provider di aplikasi.*"
+                    )
+
         if resp.status_code == 200:
-            return resp.json()["choices"][0]["message"]["content"]
+            return resp.json()["choices"][0]["message"]["content"] + fallback_note
         elif resp.status_code == 429:
             return "⚠️ Rate limit Groq tercapai. Tunggu sebentar lalu coba lagi."
         elif resp.status_code == 401:
@@ -1770,4 +1969,3 @@ Tulis 3–4 paragraf akademis, Bahasa Indonesia baku.
 Referensi: Shrout & Fleiss (1979), Koo & Mae (2016), McGraw & Wong (1996).
 """
     return call_ai_api(prompt, system="", api_key=api_key, provider=provider)
-
