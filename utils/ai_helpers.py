@@ -265,22 +265,32 @@ def call_ai_api(
         return _call_custom(prompt, _system, api_key, _base_url, _model_id)
 
     if "Groq" in provider:
-        # Default fallback juga diarahkan ke ID yang aktif per 2026-09-16
-        # (bukan lagi llama-3.3-70b-versatile, yang sudah pindah tier
-        # Enterprise) — dan kalaupun ini ikut basi lagi nanti, _call_groq()
-        # akan otomatis retry ke model live (lihat changelog v4.6).
-        model_id = GROQ_MODELS.get(provider, "openai/gpt-oss-120b")
+        # Kalau app.py mengirim pilihan model live (lihat list_groq_models()
+        # & catatan di atasnya), formatnya "<label> · <model_id>" — pakai
+        # model_id itu langsung, jangan tengok GROQ_MODELS (yang statis).
+        if " · " in provider:
+            model_id = provider.rsplit(" · ", 1)[1].strip()
+        else:
+            # Default fallback juga diarahkan ke ID yang aktif per 2026-09-16
+            # (bukan lagi llama-3.3-70b-versatile, yang sudah pindah tier
+            # Enterprise) — dan kalaupun ini ikut basi lagi nanti, _call_groq()
+            # akan otomatis retry ke model live (lihat changelog v4.6).
+            model_id = GROQ_MODELS.get(provider, "openai/gpt-oss-120b")
         return _call_groq(prompt, _system, api_key, model_id)
 
     elif "Gemini" in provider:
         return _call_gemini(prompt, _system, api_key)
 
     elif "OpenRouter" in provider:
-        # Default fallback: kalau label provider tidak dikenali,
-        # _call_openrouter() sendiri yang akan cari model :free aktif
-        # secara live lewat _pick_free_openrouter_model() kalau ID ini
-        # ternyata juga sudah tidak berlaku.
-        model_id = OPENROUTER_MODELS.get(provider, "meta-llama/llama-4-scout:free")
+        # Sama seperti Groq di atas — dukung pilihan model live dari app.py.
+        if " · " in provider:
+            model_id = provider.rsplit(" · ", 1)[1].strip()
+        else:
+            # Default fallback: kalau label provider tidak dikenali,
+            # _call_openrouter() sendiri yang akan cari model :free aktif
+            # secara live lewat _pick_free_openrouter_model() kalau ID ini
+            # ternyata juga sudah tidak berlaku.
+            model_id = OPENROUTER_MODELS.get(provider, "meta-llama/llama-4-scout:free")
         return _call_openrouter(prompt, _system, api_key, model_id)
 
     elif "HuggingFace" in provider:
@@ -392,6 +402,45 @@ def _pick_free_openrouter_model(exclude: str = "") -> str:
         except (TypeError, ValueError):
             continue
     return ""
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# API publik untuk UI (dipakai app.py) — "Pilih dari model live"
+#
+# Selain jadi jaring pengaman otomatis di _call_groq()/_call_openrouter(),
+# daftar model live ini juga diekspos supaya sidebar app.py bisa menawarkan
+# opsi eksplisit: user pilih langsung dari model yang BENAR-BENAR aktif saat
+# ini, bukan dari dict berlabel statis yang bisa basi (GROQ_MODELS/
+# OPENROUTER_MODELS). Kalau user memilih lewat jalur ini, app.py meng-encode
+# pilihannya ke dalam string provider sebagai "<label> · <model_id>" — lihat
+# parsing-nya di call_ai_api() di bawah.
+# ─────────────────────────────────────────────────────────────────────────────
+
+def list_groq_models(api_key: str) -> list:
+    """Daftar ID model yang benar-benar aktif di Groq saat ini (GET /v1/models)."""
+    return _fetch_groq_live_models(api_key)
+
+
+def list_openrouter_free_models() -> list:
+    """
+    Daftar model :free OpenRouter yang live saat ini (harga prompt &
+    completion = 0). Return: list of dict {"id": str, "context_length": int|None}.
+    """
+    out = []
+    for m in _fetch_openrouter_models():
+        mid = m.get("id", "")
+        if not mid.endswith(":free"):
+            continue
+        pricing = m.get("pricing", {})
+        try:
+            if float(pricing.get("prompt", "1") or "1") != 0.0:
+                continue
+            if float(pricing.get("completion", "1") or "1") != 0.0:
+                continue
+        except (TypeError, ValueError):
+            continue
+        out.append({"id": mid, "context_length": m.get("context_length")})
+    return out
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1969,3 +2018,4 @@ Tulis 3–4 paragraf akademis, Bahasa Indonesia baku.
 Referensi: Shrout & Fleiss (1979), Koo & Mae (2016), McGraw & Wong (1996).
 """
     return call_ai_api(prompt, system="", api_key=api_key, provider=provider)
+
