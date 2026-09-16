@@ -373,6 +373,68 @@ with st.sidebar:
         key_label, type="password",
         help=f"Daftar/login di: https://{key_url}" if key_url else "",
     )
+
+    # ── Live model picker — Groq & OpenRouter ───────────────────────────────
+    # Dropdown provider di atas berisi label model yang di-hardcode di
+    # GROQ_MODELS/OPENROUTER_MODELS (utils/ai_helpers.py) dan BISA BASI kalau
+    # provider mempensiunkan model itu (lihat changelog v4.6 di sana).
+    # Groq & OpenRouter kebetulan punya endpoint publik GET /v1/models, jadi
+    # untuk dua provider ini user bisa opsional pilih langsung dari model
+    # yang BENAR-BENAR aktif saat ini, alih-alih dari daftar statis.
+    # Provider lain (Gemini/Mistral/Cohere/HuggingFace) tidak punya endpoint
+    # semudah ini untuk di-query dari sisi browser tanpa key backend
+    # tambahan, jadi tetap pakai daftar statis untuk saat ini.
+    _is_groq_provider       = (not is_custom_provider) and ("Groq" in ai_provider)
+    _is_openrouter_provider = (not is_custom_provider) and ("OpenRouter" in ai_provider)
+
+    if (_is_groq_provider or _is_openrouter_provider) and anthropic_api_key:
+        from utils.ai_helpers import list_groq_models, list_openrouter_free_models
+
+        _live_kind      = "groq" if _is_groq_provider else "openrouter"
+        _live_cache_key = f"_live_models_{_live_kind}"
+
+        _live_toggle = st.checkbox(
+            "🔄 Pilih dari model live (bukan daftar statis)",
+            key=f"live_toggle_{_live_kind}",
+            help=(
+                "Ambil daftar model yang sedang benar-benar aktif langsung "
+                "dari API provider, supaya tidak terdampak model ID yang "
+                "sudah dipensiunkan provider tapi belum sempat kita update."
+            ),
+        )
+
+        if _live_toggle:
+            _refresh_clicked = st.button(
+                "↻ Muat ulang daftar model", key=f"refresh_{_live_cache_key}"
+            )
+            if _live_cache_key not in st.session_state or _refresh_clicked:
+                with st.spinner("Mengambil daftar model aktif..."):
+                    if _is_groq_provider:
+                        st.session_state[_live_cache_key] = list_groq_models(anthropic_api_key)
+                    else:
+                        st.session_state[_live_cache_key] = [
+                            m["id"] for m in list_openrouter_free_models()
+                        ]
+
+            _live_ids = st.session_state.get(_live_cache_key, [])
+            if _live_ids:
+                _picked_model = st.selectbox(
+                    "Model aktif saat ini",
+                    _live_ids,
+                    key=f"picked_{_live_cache_key}",
+                    help="Diambil langsung dari provider, bukan dari daftar hardcoded.",
+                )
+                # Encode ke ai_provider (pola sama seperti provider Custom di
+                # atas): call_ai_api() di ai_helpers.py membaca segmen setelah
+                # " · " terakhir sebagai model_id langsung, melewati dict
+                # statis GROQ_MODELS/OPENROUTER_MODELS.
+                ai_provider = f"{ai_provider} · {_picked_model}"
+            else:
+                st.warning(
+                    "Gagal mengambil daftar model live — tetap memakai "
+                    "pilihan statis di atas. Cek API Key atau koneksi internet."
+                )
+
     ai_enabled = bool(anthropic_api_key) and (
         not is_custom_provider or bool(ai_base_url.strip() and ai_model_id.strip())
     )
@@ -381,7 +443,9 @@ with st.sidebar:
         if is_custom_provider:
             st.success(f"🤖 Custom · {ai_model_id} Aktif")
         else:
-            # Ambil nama singkat provider untuk pesan sukses
+            # Ambil nama singkat provider untuk pesan sukses (termasuk model
+            # live kalau dipilih — bagian setelah "—" pertama sudah membawa
+            # info itu karena ai_provider sudah di-encode di atas)
             provider_short = ai_provider.split("—")[1].strip() if "—" in ai_provider else ai_provider
             st.success(f"🤖 {provider_short} Aktif")
     else:
