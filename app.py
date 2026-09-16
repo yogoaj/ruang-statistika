@@ -277,6 +277,12 @@ with st.sidebar:
         "🤖 Claude — Sonnet 4":   "── 💳 Berbayar ─────────────────",
     }
 
+    # Opsi "provider apa saja" — endpoint custom yang kompatibel format OpenAI
+    # chat/completions (Together AI, Fireworks, DeepInfra, Perplexity, vLLM/Ollama
+    # self-hosted, dsb). Ini membuat daftar provider tidak lagi tertutup/hardcoded:
+    # user bisa memasukkan AI apa pun tanpa perlu ALL_PROVIDERS diubah dulu.
+    CUSTOM_PROVIDER_LABEL = "🧩 Provider Lain (Custom / OpenAI-Compatible)"
+
     provider_display = []
     for p in ALL_PROVIDERS:
         if p in _separator_before:
@@ -284,11 +290,17 @@ with st.sidebar:
         provider_display.append(p)
     # Tambah separator di awal untuk grup Gratis
     provider_display.insert(0, "── ✅ Gratis ────────────────────")
+    # Tambah grup "Lainnya" di akhir untuk opsi custom
+    provider_display.append("── 🧩 Lainnya ───────────────────")
+    provider_display.append(CUSTOM_PROVIDER_LABEL)
 
     ai_provider_raw = st.selectbox(
         "Pilih Provider AI",
         provider_display,
-        help="Groq, Gemini, OpenRouter & HuggingFace GRATIS · Mistral & Cohere Trial Gratis",
+        help=(
+            "Groq, Gemini, OpenRouter & HuggingFace GRATIS · Mistral & Cohere Trial "
+            "Gratis · atau pilih 'Provider Lain' untuk memasukkan endpoint AI apa saja"
+        ),
     )
 
     # Jika user pilih separator (baris pemisah), default ke provider pertama
@@ -297,26 +309,63 @@ with st.sidebar:
         else ALL_PROVIDERS[0]
     )
 
-    key_label, key_url = PROVIDER_KEY_INFO.get(ai_provider, ("API Key", ""))
+    is_custom_provider = (ai_provider == CUSTOM_PROVIDER_LABEL)
+
+    ai_base_url = ""
+    ai_model_id = ""
+
+    if is_custom_provider:
+        key_label, key_url = "API Key", ""
+        st.caption(
+            "Masukkan endpoint apa saja yang kompatibel dengan format "
+            "`chat/completions` ala OpenAI — Together AI, Fireworks, DeepInfra, "
+            "Perplexity, atau server sendiri (vLLM/Ollama/LM Studio)."
+        )
+        ai_base_url = st.text_input(
+            "Base URL",
+            placeholder="https://api.contoh.com/v1/chat/completions",
+            help="URL endpoint chat completion provider tersebut.",
+        )
+        ai_model_id = st.text_input(
+            "Nama Model",
+            placeholder="mis. llama-3.3-70b-versatile",
+            help="ID model persis seperti yang diminta provider tersebut.",
+        )
+        # Encode ke dalam ai_provider itu sendiri: semua fungsi ai_interpret_*/
+        # ai_chat_analyst di utils/ai_helpers.py hanya menerima satu string
+        # `provider` dan meneruskannya ke call_ai_api() — dengan encoding ini,
+        # provider custom otomatis "ikut nebeng" channel yang sama tanpa perlu
+        # mengubah puluhan signature fungsi lain.
+        if ai_base_url.strip() and ai_model_id.strip():
+            ai_provider = f"🧩 Custom · {ai_model_id.strip()} · {ai_base_url.strip()}"
+    else:
+        key_label, key_url = PROVIDER_KEY_INFO.get(ai_provider, ("API Key", ""))
 
     # ── Badge status provider ─────────────────────────────────────────────────
-    _prov_keyword = next(
-        (k for k in FREE_PROVIDER_KEYS if k in ai_provider), None
-    )
-    _trial_keyword = next(
-        (k for k in TRIAL_PROVIDER_KEYS if k in ai_provider), None
-    )
-
-    if _prov_keyword:
-        st.markdown(
-            "<span style='background:#eaf3de;color:#3b6d11;padding:2px 10px;"
-            "border-radius:10px;font-size:0.72rem;font-weight:600;'>✅ GRATIS</span>",
-            unsafe_allow_html=True,
+    if not is_custom_provider:
+        _prov_keyword = next(
+            (k for k in FREE_PROVIDER_KEYS if k in ai_provider), None
         )
-    elif _trial_keyword:
+        _trial_keyword = next(
+            (k for k in TRIAL_PROVIDER_KEYS if k in ai_provider), None
+        )
+
+        if _prov_keyword:
+            st.markdown(
+                "<span style='background:#eaf3de;color:#3b6d11;padding:2px 10px;"
+                "border-radius:10px;font-size:0.72rem;font-weight:600;'>✅ GRATIS</span>",
+                unsafe_allow_html=True,
+            )
+        elif _trial_keyword:
+            st.markdown(
+                "<span style='background:#fff8e1;color:#b45309;padding:2px 10px;"
+                "border-radius:10px;font-size:0.72rem;font-weight:600;'>🟡 TRIAL GRATIS</span>",
+                unsafe_allow_html=True,
+            )
+    else:
         st.markdown(
-            "<span style='background:#fff8e1;color:#b45309;padding:2px 10px;"
-            "border-radius:10px;font-size:0.72rem;font-weight:600;'>🟡 TRIAL GRATIS</span>",
+            "<span style='background:#e8eefc;color:#1d4ed8;padding:2px 10px;"
+            "border-radius:10px;font-size:0.72rem;font-weight:600;'>🧩 CUSTOM</span>",
             unsafe_allow_html=True,
         )
 
@@ -324,14 +373,21 @@ with st.sidebar:
         key_label, type="password",
         help=f"Daftar/login di: https://{key_url}" if key_url else "",
     )
-    ai_enabled = bool(anthropic_api_key)
+    ai_enabled = bool(anthropic_api_key) and (
+        not is_custom_provider or bool(ai_base_url.strip() and ai_model_id.strip())
+    )
 
     if ai_enabled:
-        # Ambil nama singkat provider untuk pesan sukses
-        provider_short = ai_provider.split("—")[1].strip() if "—" in ai_provider else ai_provider
-        st.success(f"🤖 {provider_short} Aktif")
+        if is_custom_provider:
+            st.success(f"🤖 Custom · {ai_model_id} Aktif")
+        else:
+            # Ambil nama singkat provider untuk pesan sukses
+            provider_short = ai_provider.split("—")[1].strip() if "—" in ai_provider else ai_provider
+            st.success(f"🤖 {provider_short} Aktif")
     else:
-        if key_url:
+        if is_custom_provider and anthropic_api_key and not (ai_base_url.strip() and ai_model_id.strip()):
+            st.warning("Lengkapi Base URL dan Nama Model untuk mengaktifkan provider custom.")
+        elif key_url:
             st.caption(f"Daftar di [{key_url}](https://{key_url})")
 
     # ── Grouped Navigation ────────────────────────────────────────────────────
@@ -425,7 +481,11 @@ ctx = {
     "r_tab":             r_tab,
     "ai_enabled":        ai_enabled,
     "anthropic_api_key": anthropic_api_key,
+    "active_api_key":    anthropic_api_key,  # alias — README mendokumentasikan ctx["active_api_key"]; lihat catatan dampak
     "ai_provider":       ai_provider,
+    "ai_is_custom":       is_custom_provider,
+    "ai_base_url":        ai_base_url,
+    "ai_model_id":        ai_model_id,
     "user_name":         st.session_state.get("user_name", ""),
 }
 
