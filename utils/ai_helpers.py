@@ -3,7 +3,7 @@ utils/ai_helpers.py — AI API integration (8 Provider)
 Ruang Statistika v4.5
 
 Provider yang didukung:
-  ✅ Gratis  : Groq (Llama 3.3 70B, Mixtral 8x7B, Gemma2 9B)
+  ✅ Gratis  : Groq — update Sept 2026: GPT-OSS 120B, GPT-OSS 20B, Compound
   ✅ Gratis  : Gemini 2.0 Flash (Google)
   ✅ Gratis  : OpenRouter — model :free (Llama, Gemma, DeepSeek)
   ✅ Gratis  : HuggingFace (Qwen 2.5 72B, Phi-3.5)
@@ -86,9 +86,16 @@ OPENAI_MINI     = "gpt-4o-mini"
 GEMINI_MODEL    = "gemini-2.0-flash"
 
 GROQ_MODELS = {
-    "⚡ Groq — Llama 3.3 70B":   "llama-3.3-70b-versatile",
-    "⚡ Groq — Mixtral 8x7B":    "mixtral-8x7b-32768",
-    "⚡ Groq — Gemma2 9B":       "gemma2-9b-it",
+    # Update Sept 2026: llama-3.3-70b-versatile & llama-3.1-8b-instant sudah
+    # pindah ke tier Enterprise (Contact Sales) di console.groq.com/docs/models
+    # dan tidak lagi bisa diakses API key developer biasa (404 model_not_found).
+    # mixtral-8x7b-32768 & gemma2-9b-it juga sudah tidak muncul di tabel model
+    # aktif — kemungkinan deprecated. Diganti ke model yang aktif untuk tier
+    # developer per console.groq.com/docs/models — verifikasi ulang berkala,
+    # Groq mengganti lineup model relatif cepat.
+    "⚡ Groq — GPT-OSS 120B":  "openai/gpt-oss-120b",
+    "⚡ Groq — GPT-OSS 20B":   "openai/gpt-oss-20b",
+    "⚡ Groq — Compound":      "groq/compound",
 }
 
 HF_MODELS = {
@@ -114,9 +121,9 @@ OPENROUTER_MODELS = {
 
 ALL_PROVIDERS = [
     # ── ✅ Gratis ──────────────────────────────────────────────────────────────
-    "⚡ Groq — Llama 3.3 70B",
-    "⚡ Groq — Mixtral 8x7B",
-    "⚡ Groq — Gemma2 9B",
+    "⚡ Groq — GPT-OSS 120B",
+    "⚡ Groq — GPT-OSS 20B",
+    "⚡ Groq — Compound",
     "✨ Gemini — 2.0 Flash",
     "🌐 OpenRouter — Llama 4 Scout",
     "🌐 OpenRouter — DeepSeek R1",
@@ -141,9 +148,9 @@ TRIAL_PROVIDER_KEYS = {"Mistral", "Cohere"}
 
 PROVIDER_KEY_INFO = {
     # Groq
-    "⚡ Groq — Llama 3.3 70B":        ("Groq API Key (Gratis)",          "console.groq.com"),
-    "⚡ Groq — Mixtral 8x7B":          ("Groq API Key (Gratis)",          "console.groq.com"),
-    "⚡ Groq — Gemma2 9B":             ("Groq API Key (Gratis)",          "console.groq.com"),
+    "⚡ Groq — GPT-OSS 120B":         ("Groq API Key (Gratis)",          "console.groq.com"),
+    "⚡ Groq — GPT-OSS 20B":          ("Groq API Key (Gratis)",          "console.groq.com"),
+    "⚡ Groq — Compound":             ("Groq API Key (Gratis)",          "console.groq.com"),
     # Gemini
     "✨ Gemini — 2.0 Flash":           ("Gemini API Key (Gratis)",        "aistudio.google.com"),
     # OpenRouter
@@ -175,17 +182,31 @@ PROVIDER_KEY_INFO = {
 def call_ai_api(
     prompt: str,
     system: str = "",
-    provider: str = "⚡ Groq — Llama 3.3 70B",
+    provider: str = "⚡ Groq — GPT-OSS 120B",
     api_key: str = "",
 ) -> str:
     """
     Dispatcher utama ke semua provider AI.
     Routing berdasarkan emoji/nama provider di string.
     """
-    if not api_key:
+    _CUSTOM_MARKER = "🧩 Custom ·"
+    _is_custom = _CUSTOM_MARKER in provider
+
+    if not api_key and not _is_custom:
         return "❌ API Key tidak tersedia. Masukkan API Key di sidebar."
 
     _system = system if (system and system.strip()) else ACADEMIC_SYSTEM_PROMPT
+
+    if _is_custom:
+        # Format encoding dari sidebar: "🧩 Custom · <model_id> · <base_url>"
+        # Dicari sebagai substring (bukan startswith) supaya tetap dikenali
+        # walau ada teks lain menempel di depannya.
+        _tail = provider[provider.index(_CUSTOM_MARKER):]
+        _parts = [p.strip() for p in _tail.split("·", 2)]
+        if len(_parts) < 3 or not _parts[1] or not _parts[2]:
+            return "❌ Konfigurasi provider custom tidak lengkap (Base URL/Nama Model kosong)."
+        _model_id, _base_url = _parts[1], _parts[2]
+        return _call_custom(prompt, _system, api_key, _base_url, _model_id)
 
     if "Groq" in provider:
         model_id = GROQ_MODELS.get(provider, "llama-3.3-70b-versatile")
@@ -483,6 +504,53 @@ def _call_huggingface(prompt: str, system: str, api_key: str, model_id: str) -> 
         return f"❌ Error HuggingFace ({resp.status_code}): {resp.text[:300]}"
     except Exception as e:
         return f"⚠️ Error Koneksi HuggingFace: {str(e)}"
+
+
+def _call_custom(prompt: str, system: str, api_key: str, base_url: str, model_id: str) -> str:
+    """
+    Provider custom apa saja yang kompatibel dengan format `chat/completions`
+    ala OpenAI (Together AI, Fireworks, DeepInfra, Perplexity, OpenRouter model
+    lain, atau server sendiri: vLLM/Ollama/LM Studio). Ini yang membuat daftar
+    provider tidak lagi tertutup — user cukup isi Base URL + Nama Model di
+    sidebar, tanpa perlu fungsi `_call_xxx()` baru untuk tiap provider baru.
+
+    Catatan: kalau provider custom-mu TIDAK pakai skema OpenAI (mis. payload
+    Anthropic-style atau Gemini-style), fungsi ini tidak akan cocok — perlu
+    fungsi `_call_xxx()` khusus seperti provider lain di atas.
+    """
+    if not base_url or not model_id:
+        return "❌ Base URL atau Nama Model provider custom belum diisi."
+    try:
+        headers = {"Content-Type": "application/json"}
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
+        payload = {
+            "model": model_id,
+            "max_tokens": 2500,
+            "temperature": 0.7,
+            "messages": [
+                {"role": "system", "content": system},
+                {"role": "user",   "content": prompt},
+            ],
+        }
+        resp = requests.post(base_url, headers=headers, json=payload, timeout=90)
+        if resp.status_code == 200:
+            data = resp.json()
+            try:
+                return data["choices"][0]["message"]["content"]
+            except (KeyError, IndexError, TypeError):
+                return str(data)[:2000]
+        elif resp.status_code == 401:
+            return "❌ API Key tidak valid untuk provider custom ini."
+        elif resp.status_code == 429:
+            return "⚠️ Rate limit tercapai di provider custom. Tunggu sebentar lalu coba lagi."
+        elif resp.status_code == 404:
+            return f"❌ Endpoint atau model '{model_id}' tidak ditemukan (404). Periksa Base URL."
+        return f"❌ Error provider custom ({resp.status_code}): {resp.text[:300]}"
+    except requests.exceptions.MissingSchema:
+        return "❌ Base URL tidak valid — pastikan URL lengkap diawali https://"
+    except Exception as e:
+        return f"⚠️ Error Koneksi provider custom: {str(e)}"
 
 
 # ─────────────────────────────────────────────────────────────────────────────
