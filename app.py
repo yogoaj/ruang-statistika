@@ -165,20 +165,23 @@ _ALL_MENU_ITEMS = {
 
 with st.sidebar:
     st.markdown(
-        """<div style='text-align:center;padding:16px 0 10px;
-                    border-bottom:1px solid rgba(255,255,255,.06);margin-bottom:4px;'>
-        <div style='width:44px;height:44px;border-radius:10px;
-                    background:rgba(255,255,255,.08);
+        """<div style='display:flex;align-items:center;gap:12px;padding:14px 10px 14px;
+                    border-bottom:1px solid rgba(255,255,255,.07);margin-bottom:8px;'>
+        <div style='width:42px;height:42px;border-radius:11px;
+                    background:linear-gradient(135deg,rgba(255,255,255,.12),rgba(255,255,255,.04));
+                    border:1px solid rgba(255,255,255,.14);
                     display:flex;align-items:center;justify-content:center;
-                    margin:0 auto 8px;padding:6px;'>
-            <img src='https://i.imgur.com/RF4mzxf.png' width='32' height='32'
+                    flex-shrink:0;box-shadow:0 4px 12px rgba(0,0,0,.25);'>
+            <img src='https://i.imgur.com/RF4mzxf.png' width='26' height='26'
                  style='object-fit:contain;filter:drop-shadow(0 2px 6px rgba(0,0,0,.25));'
                  alt='logo'></div>
-        <div style='font-size:.9rem;color:#ffffff;font-weight:600;letter-spacing:-.1px;'>
-            Ruang Statistika</div>
-        <div style='font-size:.6rem;color:#2d5a87;letter-spacing:.1em;
-                    text-transform:uppercase;margin-top:3px;'>
-            v4.8 &#183; AI-Powered</div>
+        <div style='min-width:0;'>
+            <div style='font-size:.92rem;color:#F8FAFC;font-weight:700;letter-spacing:-.02em;line-height:1.2;'>
+                Ruang Statistika</div>
+            <div style='font-size:.62rem;color:#60A5FA;font-weight:600;letter-spacing:.08em;
+                        text-transform:uppercase;margin-top:3px;'>
+                v4.8 &#183; AI-Powered</div>
+        </div>
         </div>""",
         unsafe_allow_html=True,
     )
@@ -203,38 +206,41 @@ with st.sidebar:
         _is_pro_user  = _user_data.get("role") == "pro"
         _user_tier    = _user_data.get("tier", "starter") if _is_pro_user else "free"
         _TIER_COLORS  = {
-            "starter":      ("#378add", "#1a4a7a"),   # biru terang — kontras di navy
-            "premium":      ("#a78bfa", "#5b21b6"),   # ungu terang
-            "professional": ("#fbbf24", "#92400e"),   # amber terang
+            "starter":      ("#3B82F6", "#1D4ED8"),   # biru terang
+            "premium":      ("#8B5CF6", "#5B21B6"),   # ungu terang
+            "professional": ("#F59E0B", "#B45309"),   # amber terang
         }
-        _tc = _TIER_COLORS.get(_user_tier, ("#378add", "#1a4a7a"))
+        _tc = _TIER_COLORS.get(_user_tier, ("#3B82F6", "#1D4ED8"))
         _tier_badge   = (
             f"<span style='background:linear-gradient(90deg,{_tc[0]},{_tc[1]});"
-            "color:#fff;font-size:0.65rem;font-weight:700;letter-spacing:0.06em;"
-            f"padding:2px 8px;border-radius:10px;margin-left:6px;"
-            f"box-shadow:0 1px 4px rgba(0,0,0,.3);'>"
+            "color:#fff;font-size:0.58rem;font-weight:700;letter-spacing:0.06em;"
+            f"padding:2px 7px;border-radius:999px;margin-left:6px;"
+            f"box-shadow:0 1px 4px rgba(0,0,0,.3);vertical-align:middle;'>"
             f"{_user_tier.upper()}</span>"
             if _is_pro_user else
-            "<span style='background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);"
-            "color:rgba(255,255,255,.65);font-weight:600;"
-            "font-size:0.65rem;padding:2px 8px;border-radius:10px;margin-left:6px;letter-spacing:.2px;'>"
+            "<span style='background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);"
+            "color:#94A3B8;font-weight:600;"
+            "font-size:0.58rem;padding:2px 7px;border-radius:999px;margin-left:6px;letter-spacing:.04em;vertical-align:middle;'>"
             "GRATIS</span>"
         )
         _sb_init  = "".join(w[0].upper() for w in _display_name.split()[:2]) if _display_name else "?"
         _sb_email = st.session_state.get("_user_data", {}).get("email", "") or "Mode Gratis"
         st.markdown(
-            f"""<div style='margin:8px 12px 4px;background:rgba(24,95,165,.18);
-                    border-radius:8px;padding:8px 10px;
-                    display:flex;align-items:center;gap:8px;'>
-                <div style='width:30px;height:30px;border-radius:50%;background:#185FA5;
+            f"""<div style='margin:4px 0 6px;background:rgba(255,255,255,.035);
+                    border:1px solid rgba(255,255,255,.08);
+                    border-radius:10px;padding:10px 12px;
+                    display:flex;align-items:center;gap:10px;'>
+                <div style='width:34px;height:34px;border-radius:9px;
+                            background:linear-gradient(135deg,#2563EB,#4F46E5);
                             display:flex;align-items:center;justify-content:center;
-                            font-size:.65rem;color:#fff;font-weight:600;flex-shrink:0;'
+                            font-size:.7rem;color:#fff;font-weight:700;flex-shrink:0;
+                            box-shadow:0 2px 8px rgba(37,99,235,.3);'
                     >{_sb_init}</div>
-                <div style='min-width:0;overflow:hidden;'>
-                    <div style='font-size:.82rem;color:#fff;font-weight:600;
+                <div style='min-width:0;overflow:hidden;flex:1;'>
+                    <div style='font-size:.81rem;color:#F8FAFC;font-weight:600;
                                 white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'
                         >{_display_name}{_tier_badge}</div>
-                    <div style='font-size:.62rem;color:#4a7aaa;margin-top:1px;
+                    <div style='font-size:.66rem;color:#64748B;margin-top:2px;
                                 white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'
                         >{_sb_email}</div>
                 </div></div>""",
@@ -352,20 +358,23 @@ with st.sidebar:
 
         if _prov_keyword:
             st.markdown(
-                "<span style='background:#eaf3de;color:#3b6d11;padding:2px 10px;"
-                "border-radius:10px;font-size:0.72rem;font-weight:600;'>✅ GRATIS</span>",
+                "<div style='margin:4px 0 8px;'><span style='background:rgba(16,185,129,.15);"
+                "border:1px solid rgba(16,185,129,.3);color:#6EE7B7;padding:2px 10px;"
+                "border-radius:999px;font-size:0.68rem;font-weight:700;letter-spacing:.04em;'>✅ GRATIS</span></div>",
                 unsafe_allow_html=True,
             )
         elif _trial_keyword:
             st.markdown(
-                "<span style='background:#fff8e1;color:#b45309;padding:2px 10px;"
-                "border-radius:10px;font-size:0.72rem;font-weight:600;'>🟡 TRIAL GRATIS</span>",
+                "<div style='margin:4px 0 8px;'><span style='background:rgba(245,158,11,.15);"
+                "border:1px solid rgba(245,158,11,.3);color:#FCD34D;padding:2px 10px;"
+                "border-radius:999px;font-size:0.68rem;font-weight:700;letter-spacing:.04em;'>🟡 TRIAL GRATIS</span></div>",
                 unsafe_allow_html=True,
             )
     else:
         st.markdown(
-            "<span style='background:#e8eefc;color:#1d4ed8;padding:2px 10px;"
-            "border-radius:10px;font-size:0.72rem;font-weight:600;'>🧩 CUSTOM</span>",
+            "<div style='margin:4px 0 8px;'><span style='background:rgba(59,130,246,.15);"
+            "border:1px solid rgba(59,130,246,.3);color:#93C5FD;padding:2px 10px;"
+            "border-radius:999px;font-size:0.68rem;font-weight:700;letter-spacing:.04em;'>🧩 CUSTOM</span></div>",
             unsafe_allow_html=True,
         )
 
@@ -375,15 +384,6 @@ with st.sidebar:
     )
 
     # ── Live model picker — Groq & OpenRouter ───────────────────────────────
-    # Dropdown provider di atas berisi label model yang di-hardcode di
-    # GROQ_MODELS/OPENROUTER_MODELS (utils/ai_helpers.py) dan BISA BASI kalau
-    # provider mempensiunkan model itu (lihat changelog v4.6 di sana).
-    # Groq & OpenRouter kebetulan punya endpoint publik GET /v1/models, jadi
-    # untuk dua provider ini user bisa opsional pilih langsung dari model
-    # yang BENAR-BENAR aktif saat ini, alih-alih dari daftar statis.
-    # Provider lain (Gemini/Mistral/Cohere/HuggingFace) tidak punya endpoint
-    # semudah ini untuk di-query dari sisi browser tanpa key backend
-    # tambahan, jadi tetap pakai daftar statis untuk saat ini.
     _is_groq_provider       = (not is_custom_provider) and ("Groq" in ai_provider)
     _is_openrouter_provider = (not is_custom_provider) and ("OpenRouter" in ai_provider)
 
@@ -424,10 +424,6 @@ with st.sidebar:
                     key=f"picked_{_live_cache_key}",
                     help="Diambil langsung dari provider, bukan dari daftar hardcoded.",
                 )
-                # Encode ke ai_provider (pola sama seperti provider Custom di
-                # atas): call_ai_api() di ai_helpers.py membaca segmen setelah
-                # " · " terakhir sebagai model_id langsung, melewati dict
-                # statis GROQ_MODELS/OPENROUTER_MODELS.
                 ai_provider = f"{ai_provider} · {_picked_model}"
             else:
                 st.warning(
@@ -443,9 +439,6 @@ with st.sidebar:
         if is_custom_provider:
             st.success(f"🤖 Custom · {ai_model_id} Aktif")
         else:
-            # Ambil nama singkat provider untuk pesan sukses (termasuk model
-            # live kalau dipilih — bagian setelah "—" pertama sudah membawa
-            # info itu karena ai_provider sudah di-encode di atas)
             provider_short = ai_provider.split("—")[1].strip() if "—" in ai_provider else ai_provider
             st.success(f"🤖 {provider_short} Aktif")
     else:
@@ -488,7 +481,6 @@ with st.sidebar:
             is_locked   = needs_pro and not is_pro
             display_lbl = label + (LOCK if is_locked else "")
 
-
             # Guard Python: klik diabaikan saat nav terkunci
             _clicked = st.button(
                 display_lbl,
@@ -499,16 +491,13 @@ with st.sidebar:
                 st.session_state.active_menu = key
 
         # Tambah sedikit spasi antar grup
-        st.markdown("<div style='margin-bottom:2px;'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='margin-bottom:4px;'></div>", unsafe_allow_html=True)
 
     # Ambil nilai menu aktif saat ini
     menu = st.session_state.active_menu
 
     # ── Highlight tombol aktif via CSS dinamis ────────────────────────────────
-    # Karena Streamlit button tidak support kelas aktif native, kita inject CSS
-    # yang mentarget label teks tombol aktif
     active_label, _ = _ALL_MENU_ITEMS.get(menu, ("", False))
-    # Hapus emoji + strip untuk selector yang aman
     _active_text_clean = active_label.strip()
 
     # Hitung indeks 0-based posisi menu aktif dalam flat list (untuk CSS nth-child)
@@ -547,9 +536,9 @@ ctx = {
     "anthropic_api_key": anthropic_api_key,
     "active_api_key":    anthropic_api_key,  # alias — README mendokumentasikan ctx["active_api_key"]; lihat catatan dampak
     "ai_provider":       ai_provider,
-    "ai_is_custom":       is_custom_provider,
-    "ai_base_url":        ai_base_url,
-    "ai_model_id":        ai_model_id,
+    "ai_is_custom":      is_custom_provider,
+    "ai_base_url":       ai_base_url,
+    "ai_model_id":       ai_model_id,
     "user_name":         st.session_state.get("user_name", ""),
 }
 
@@ -615,9 +604,6 @@ if menu == "Beranda":
         tab = st.session_state.modal_tab
 
         # ── Intercept: jika ada access_token di query_params tapi belum diproses ──
-        # Ini terjadi saat JS sudah berhasil konversi fragment → query params,
-        # tapi handle_google_callback() di atas belum berjalan (rerun belum terjadi).
-        # Paksa rerun supaya handle_google_callback() membaca token yang baru masuk.
         if st.query_params.get("access_token") and not st.session_state.get("_recovery_access_token") and not st.session_state.get("user_logged_in"):
             _token_type = st.query_params.get("type", "")
             if _token_type == "recovery":
@@ -632,7 +618,7 @@ if menu == "Beranda":
         # ── CSS: halaman login (utils/styles.py) ────────────────────────────
         inject_login_css()
 
-        # ── Header kartu: gradient biru (nada email konfirmasi) ─────────────
+        # ── Header kartu: gradient biru ─────────────────────────────────────
         st.markdown("""
         <div class="signin-card">
           <div class="signin-card-header">
@@ -646,8 +632,6 @@ if menu == "Beranda":
         """, unsafe_allow_html=True)
 
         # ── JS: baca URL fragment dari Supabase callback ────────────────────
-        # Pakai st.markdown (bukan components.html) agar script jalan di main document,
-        # bukan di dalam iframe sandbox yang tidak bisa akses window.location parent.
         st.markdown("""
         <script>
         (function() {
@@ -725,33 +709,17 @@ if menu == "Beranda":
 
             # ── Info: sudah beli Pro, login langsung pakai email + password ──
             st.markdown("""
-            <div style='background:rgba(21,101,192,.15);
-                        border:1px solid rgba(33,150,243,.3); border-radius:10px;
-                        padding:11px 15px; margin:14px 0 4px;
-                        font-size:0.80rem; color:rgba(187,222,251,.9); line-height:1.7;'>
-                <div style='font-weight:700; font-size:0.82rem; margin-bottom:3px; color:#90CAF9;'>
+            <div style='background:rgba(37,99,235,.12);
+                        border:1px solid rgba(59,130,246,.28); border-radius:10px;
+                        padding:12px 15px; margin:14px 0 6px;
+                        font-size:0.79rem; color:#DBEAFE; line-height:1.65;'>
+                <div style='font-weight:700; font-size:0.81rem; margin-bottom:3px; color:#93C5FD;'>
                     🎫 Sudah membeli Pro?
                 </div>
                 Masuk dengan <b>email</b> dan <b>password</b> yang dikirim ke emailmu
                 setelah pembelian. Tidak perlu daftar ulang.
             </div>
             """, unsafe_allow_html=True)
-
-            # ── Tombol Google OAuth — SEMENTARA DINONAKTIFKAN (error callback) ──
-            # st.markdown('<div class="signin-divider">atau masuk dengan</div>', unsafe_allow_html=True)
-            # if st.button("🔵  Lanjutkan dengan Google", key="btn_google_login",
-            #              use_container_width=True):
-            #     from utils.supabase_auth import supabase_sign_in_google
-            #     _ok, _url_or_err = supabase_sign_in_google()
-            #     if _ok:
-            #         st.markdown(
-            #             f'<meta http-equiv="refresh" content="0; url={_url_or_err}">',
-            #             unsafe_allow_html=True,
-            #         )
-            #         st.stop()
-            #     else:
-            #         st.session_state["_auth_msg_error"] = _url_or_err
-            #         st.rerun()
 
             # Divider + CTA Coba Gratis
             st.markdown('<div class="signin-divider">atau</div>', unsafe_allow_html=True)
@@ -827,11 +795,11 @@ if menu == "Beranda":
 
             # ── Info: sudah beli Pro, tidak perlu daftar ────────────────────
             st.markdown("""
-            <div style='background:rgba(21,101,192,.15);
-                        border:1px solid rgba(33,150,243,.3); border-radius:10px;
-                        padding:11px 15px; margin:12px 0 4px;
-                        font-size:0.80rem; color:rgba(187,222,251,.9); line-height:1.7;'>
-                <div style='font-weight:700; font-size:0.82rem; margin-bottom:3px; color:#90CAF9;'>
+            <div style='background:rgba(37,99,235,.12);
+                        border:1px solid rgba(59,130,246,.28); border-radius:10px;
+                        padding:12px 15px; margin:12px 0 6px;
+                        font-size:0.79rem; color:#DBEAFE; line-height:1.65;'>
+                <div style='font-weight:700; font-size:0.81rem; margin-bottom:3px; color:#93C5FD;'>
                     🎫 Sudah membeli Pro?
                 </div>
                 Coba tab <b>Masuk</b> dengan email &amp; password yang dikirim setelah
@@ -884,7 +852,7 @@ if menu == "Beranda":
             else:
                 # ── State: form input email ───────────────────────────────────
                 st.markdown(
-                    "<p style='font-size:0.82rem;color:#5f8ab5;margin:0 0 12px;'>"
+                    "<p style='font-size:0.82rem;color:#94A3B8;margin:0 0 12px;'>"
                     "Masukkan email saat daftar, kami kirimkan link reset.</p>",
                     unsafe_allow_html=True)
                 with st.form("form_lupa", clear_on_submit=True):
@@ -913,10 +881,8 @@ if menu == "Beranda":
                 st.markdown('</div>', unsafe_allow_html=True)
 
         elif tab == "reset_password":
-            # Tab ini hanya muncul setelah user klik link reset dari email Supabase.
-            # handle_google_callback() mendeteksi type=recovery lalu set modal_tab = 'reset_password'.
             st.markdown(
-                "<p style='font-size:0.82rem;color:#5f8ab5;margin:0 0 12px;'>"
+                "<p style='font-size:0.82rem;color:#94A3B8;margin:0 0 12px;'>"
                 "Masukkan password baru kamu di bawah ini.</p>",
                 unsafe_allow_html=True)
             if not st.session_state.get("_recovery_access_token"):
@@ -981,12 +947,8 @@ if menu == "Beranda":
                                 }
 
                         if _info.get("status") == "pro":
-                            # Nama: dari input → dari pro_licenses → default
                             _dname = _pro_name.strip() or _info.get("name", "") or "Pengguna Pro"
                             st.session_state["_modal_license_key"] = _k
-                            # sidebar_license_key adalah key widget st.text_input
-                            # tidak bisa di-set manual — render_license_sidebar()
-                            # otomatis baca dari _modal_license_key
                             st.session_state["user_logged_in"] = True
                             st.session_state["user_name"]      = _dname
                             st.session_state["_user_data"] = {
@@ -1018,9 +980,9 @@ if menu == "Beranda":
 
         elif tab == "gratis":
             st.markdown("""
-            <div style='background:rgba(21,101,192,.07);border:1px solid rgba(21,101,192,.18);
+            <div style='background:rgba(37,99,235,.12);border:1px solid rgba(59,130,246,.28);
                         border-radius:10px;padding:12px 15px;margin-bottom:14px;
-                        font-size:0.82rem;color:#0d2a4e;line-height:1.8;'>
+                        font-size:0.81rem;color:#DBEAFE;line-height:1.8;'>
               ✅ Semua modul analisis dasar tersedia<br/>
               📄 Generate Laporan: <b>1×/hari</b><br/>
               🔒 Fitur lanjutan → butuh lisensi Pro
