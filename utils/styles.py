@@ -191,22 +191,24 @@ body:not(.rs-logged-in) [data-testid="stSidebarCollapsedControl"] {{ display: no
 [data-testid="stSidebar"] .stSelectbox > div > div,
 [data-testid="stSidebar"] .stTextInput input,
 [data-testid="stSidebar"] .stNumberInput input {{
-    background: rgba(15, 23, 42, 0.65) !important;
-    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    background: #0B1326 !important;
+    background-color: #0B1326 !important;
+    border: 1px solid rgba(255, 255, 255, 0.14) !important;
     border-radius: 8px !important;
-    color: #F1F5F9 !important;
+    color: #F8FAFC !important;
+    -webkit-text-fill-color: #F8FAFC !important;
     font-size: 0.8rem !important;
     transition: border-color var(--transition), box-shadow var(--transition) !important;
 }}
 [data-testid="stSidebar"] .stSelectbox > div > div:hover,
 [data-testid="stSidebar"] .stTextInput input:hover,
 [data-testid="stSidebar"] .stNumberInput input:hover {{
-    border-color: rgba(255, 255, 255, 0.22) !important;
+    border-color: rgba(255, 255, 255, 0.25) !important;
 }}
 [data-testid="stSidebar"] .stTextInput input:focus,
 [data-testid="stSidebar"] .stNumberInput input:focus {{
     border-color: {BLUE3} !important;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18) !important;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2) !important;
 }}
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -1245,73 +1247,142 @@ header[data-testid="stHeader"] {{ display: none !important; }}
     box-shadow: 0 4px 12px rgba(37, 99, 235, 0.18) !important;
 }}
 
-/* ── Form Container & Input Fields (Email / Password) ── */
+/* ══════════════════════════════════════════════════════════════════════════
+   FORM CONTAINER & HIGH-CONTRAST INPUT FIELDS (EMAIL / PASSWORD / TEXT)
+   ══════════════════════════════════════════════════════════════════════════ */
 [data-testid="stMain"] [data-testid="stForm"] {{
     border: none !important;
     padding: 2px 0 0 0 !important;
     background: transparent !important;
 }}
+
+/* Label Input */
+[data-testid="stMain"] [data-testid="stTextInput"] label,
+[data-testid="stMain"] [data-testid="stTextInput"] label p,
 [data-testid="stMain"] .stTextInput label,
 [data-testid="stMain"] .stTextInput label p {{
     font-size: 0.71rem !important;
-    font-weight: 600 !important;
+    font-weight: 700 !important;
     color: #CBD5E1 !important;
-    letter-spacing: 0.05em !important;
+    letter-spacing: 0.06em !important;
     text-transform: uppercase !important;
     margin-bottom: 4px !important;
 }}
-[data-testid="stMain"] .stTextInput div[data-baseweb="input"],
-[data-testid="stMain"] .stTextInput div[data-baseweb="base-input"],
-[data-testid="stMain"] .stTextInput [data-testid="textInputRootElement"] {{
-    background: rgba(9, 14, 26, 0.75) !important;
-    background-color: rgba(9, 14, 26, 0.75) !important;
-    border: 1px solid rgba(255, 255, 255, 0.16) !important;
+
+/* Wrapper Luar Kotak Input (Tempat Border & Focus Ring berada) */
+[data-testid="stMain"] [data-testid="stTextInputRootElement"],
+[data-testid="stMain"] [data-testid="stTextInput"] [data-baseweb="input"],
+[data-testid="stMain"] .stTextInput [data-baseweb="input"] {{
+    background: #0B1326 !important;
+    background-color: #0B1326 !important;
+    border: 1.5px solid rgba(148, 163, 184, 0.28) !important;
     border-radius: 10px !important;
-    transition: all var(--transition) !important;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.45) !important;
+    transition: border-color 180ms ease, box-shadow 180ms ease !important;
+    overflow: hidden !important;
 }}
-[data-testid="stMain"] .stTextInput div[data-baseweb="input"]:focus-within,
-[data-testid="stMain"] .stTextInput [data-testid="textInputRootElement"]:focus-within {{
+
+/* Hover & Focus State pada Kotak Input (Menggantikan border merah bawaan) */
+[data-testid="stMain"] [data-testid="stTextInputRootElement"]:hover,
+[data-testid="stMain"] [data-testid="stTextInput"] [data-baseweb="input"]:hover,
+[data-testid="stMain"] .stTextInput [data-baseweb="input"]:hover {{
+    border-color: rgba(148, 163, 184, 0.48) !important;
+}}
+[data-testid="stMain"] [data-testid="stTextInputRootElement"]:focus-within,
+[data-testid="stMain"] [data-testid="stTextInput"] [data-baseweb="input"]:focus-within,
+[data-testid="stMain"] .stTextInput [data-baseweb="input"]:focus-within {{
     border-color: {BLUE3} !important;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.22) !important;
-    background: rgba(9, 14, 26, 0.92) !important;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25), inset 0 1px 3px rgba(0, 0, 0, 0.45) !important;
+    background: #091020 !important;
+    background-color: #091020 !important;
 }}
-[data-testid="stMain"] .stTextInput input,
-[data-testid="stMain"] .stTextInput input[type="text"],
-[data-testid="stMain"] .stTextInput input[type="password"],
-[data-testid="stMain"] .stTextInput input[type="email"] {{
+
+/* Wrapper Dalam BaseWeb (Hilangkan warna putih bawaan) */
+[data-testid="stMain"] [data-testid="stTextInput"] [data-baseweb="base-input"],
+[data-testid="stMain"] .stTextInput [data-baseweb="base-input"],
+[data-testid="stMain"] [data-baseweb="input"] > div {{
+    background: #0B1326 !important;
+    background-color: #0B1326 !important;
     border: none !important;
-    border-radius: 10px !important;
-    padding: 10px 14px !important;
-    font-size: 0.86rem !important;
-    background: transparent !important;
-    background-color: transparent !important;
-    color: {WHITE} !important;
-    -webkit-text-fill-color: {WHITE} !important;
-    caret-color: {BLUE3} !important;
     box-shadow: none !important;
 }}
-[data-testid="stMain"] .stTextInput input:focus {{
+
+/* Elemen <input> Utama — Latar Gelap Solid + Teks Putih Tajam */
+[data-testid="stMain"] [data-testid="stTextInput"] input,
+[data-testid="stMain"] .stTextInput input,
+[data-testid="stMain"] input[type="text"],
+[data-testid="stMain"] input[type="password"],
+[data-testid="stMain"] input[type="email"] {{
+    background: #0B1326 !important;
+    background-color: #0B1326 !important;
+    color: #FFFFFF !important;
+    -webkit-text-fill-color: #FFFFFF !important;
+    caret-color: #60A5FA !important;
+    font-size: 0.88rem !important;
+    font-weight: 500 !important;
+    padding: 10px 14px !important;
+    border: none !important;
     outline: none !important;
     box-shadow: none !important;
 }}
-[data-testid="stMain"] .stTextInput button {{
-    color: #94A3B8 !important;
-    background: transparent !important;
-    border: none !important;
-}}
-[data-testid="stMain"] .stTextInput input:-webkit-autofill,
-[data-testid="stMain"] .stTextInput input:-webkit-autofill:hover,
-[data-testid="stMain"] .stTextInput input:-webkit-autofill:focus {{
-    -webkit-text-fill-color: {WHITE} !important;
-    -webkit-box-shadow: 0 0 0 1000px #090E1A inset !important;
-    caret-color: {WHITE} !important;
-}}
-[data-testid="stMain"] .stTextInput input::placeholder {{
-    color: rgba(148, 163, 184, 0.5) !important;
-    -webkit-text-fill-color: rgba(148, 163, 184, 0.5) !important;
+[data-testid="stMain"] [data-testid="stTextInput"] input:focus,
+[data-testid="stMain"] .stTextInput input:focus {{
+    background: #091020 !important;
+    background-color: #091020 !important;
+    color: #FFFFFF !important;
+    -webkit-text-fill-color: #FFFFFF !important;
+    outline: none !important;
+    box-shadow: none !important;
 }}
 
-/* ── Tombol Submit Utama Form (Masuk → / Daftar Sekarang →) ── */
+/* Placeholder Input */
+[data-testid="stMain"] [data-testid="stTextInput"] input::placeholder,
+[data-testid="stMain"] .stTextInput input::placeholder {{
+    color: #64748B !important;
+    -webkit-text-fill-color: #64748B !important;
+    opacity: 1 !important;
+}}
+
+/* Browser Autofill Override (Agar tidak berubah putih/kuning saat autofill) */
+[data-testid="stMain"] input:-webkit-autofill,
+[data-testid="stMain"] input:-webkit-autofill:hover,
+[data-testid="stMain"] input:-webkit-autofill:focus,
+[data-testid="stMain"] input:-webkit-autofill:active {{
+    -webkit-text-fill-color: #FFFFFF !important;
+    -webkit-box-shadow: 0 0 0 1000px #0B1326 inset !important;
+    box-shadow: 0 0 0 1000px #0B1326 inset !important;
+    caret-color: #60A5FA !important;
+    transition: background-color 5000s ease-in-out 0s !important;
+}}
+
+/* Tombol Mata (Show/Hide Password) di Kanan Kotak Input */
+[data-testid="stMain"] [data-baseweb="input"] button,
+[data-testid="stMain"] [data-testid="stTextInput"] button {{
+    background: #0B1326 !important;
+    background-color: #0B1326 !important;
+    color: #94A3B8 !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 12px !important;
+    width: auto !important;
+    min-height: 100% !important;
+}}
+[data-testid="stMain"] [data-baseweb="input"] button:hover,
+[data-testid="stMain"] [data-testid="stTextInput"] button:hover {{
+    background: #0B1326 !important;
+    color: #F8FAFC !important;
+    transform: none !important;
+}}
+[data-testid="stMain"] [data-baseweb="input"] button svg {{
+    fill: currentColor !important;
+}}
+
+/* Sembunyikan teks "Press Enter to submit form" yang menumpuk di dalam input */
+[data-testid="stMain"] [data-testid="InputInstructions"] {{
+    display: none !important;
+}}
+
+/* ── Tombol Submit Utama Form (Masuk → / Daftar Sekarang → / Aktifkan Pro →) ── */
 [data-testid="stMain"] [data-testid="stFormSubmitButton"] button,
 [data-testid="stMain"] [data-testid="stFormSubmitButton"] > button,
 [data-testid="stMain"] button[kind="primaryFormSubmit"],
