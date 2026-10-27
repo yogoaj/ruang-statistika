@@ -212,7 +212,9 @@ body:not(.rs-logged-in) [data-testid="stSidebarCollapsedControl"] {{ display: no
 /* ══════════════════════════════════════════════════════════════════════════
    MAIN CONTAINER & HERO HEADER
    ══════════════════════════════════════════════════════════════════════════ */
-section[data-testid="stMain"] .block-container {{
+[data-testid="stMainBlockContainer"],
+[data-testid="stAppViewBlockContainer"],
+[data-testid="stMain"] .block-container {{
     padding-top: 1.75rem !important;
     padding-bottom: 3.5rem !important;
     max-width: 1140px !important;
@@ -718,9 +720,10 @@ section[data-testid="stMain"] .block-container {{
     border-bottom: 2.5px solid {BLUE2} !important;
 }}
 
-/* Primary Button */
+/* Primary Button & Form Submit Button */
 [data-testid="stMain"] .stButton > button[kind="primary"],
-[data-testid="stMain"] .stButton > button[data-testid*="primary"] {{
+[data-testid="stMain"] .stButton > button[data-testid*="primary"],
+[data-testid="stMain"] [data-testid="stFormSubmitButton"] button {{
     background: linear-gradient(135deg, {BLUE} 0%, {BLUE3} 100%) !important;
     color: {WHITE} !important;
     border: 1px solid rgba(255, 255, 255, 0.12) !important;
@@ -732,14 +735,16 @@ section[data-testid="stMain"] .block-container {{
     box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
     transition: all var(--transition) !important;
 }}
-[data-testid="stMain"] .stButton > button[kind="primary"]:hover {{
+[data-testid="stMain"] .stButton > button[kind="primary"]:hover,
+[data-testid="stMain"] .stButton > button[data-testid*="primary"]:hover,
+[data-testid="stMain"] [data-testid="stFormSubmitButton"] button:hover {{
     box-shadow: 0 6px 18px rgba(37, 99, 235, 0.36) !important;
     transform: translateY(-1px) !important;
     filter: brightness(1.05) !important;
 }}
 
-/* Secondary Button in Main Content */
-[data-testid="stMain"] .stButton > button:not([kind="primary"]) {{
+/* Secondary Button in Main Content (Hanya saat sudah login) */
+body.rs-logged-in [data-testid="stMain"] .stButton > button:not([kind="primary"]) {{
     background: {BLUE2} !important;
     color: {WHITE} !important;
     border: 1px solid {BLUE3} !important;
@@ -750,7 +755,7 @@ section[data-testid="stMain"] .block-container {{
     box-shadow: 0 2px 6px rgba(37, 99, 235, 0.18) !important;
     transition: all var(--transition) !important;
 }}
-[data-testid="stMain"] .stButton > button:not([kind="primary"]):hover {{
+body.rs-logged-in [data-testid="stMain"] .stButton > button:not([kind="primary"]):hover {{
     background: {BLUE} !important;
     color: {WHITE} !important;
     border-color: {BLUE2} !important;
@@ -1049,18 +1054,19 @@ def inject_global_css() -> None:
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# LOGIN PAGE CSS — UNIFIED GLASSMORPHIC AUTH CARD
+# LOGIN PAGE CSS — COMPACT CENTERED 440PX GLASS CARD
 # ══════════════════════════════════════════════════════════════════════════════
-_LOGIN_CSS: str = f"""<style>
-.rs-footer {{ display: none; }}
-header[data-testid="stHeader"] {{ display: none; }}
+def _build_login_css(active_tab: str = "masuk") -> str:
+    return f"""<style>
+.rs-footer {{ display: none !important; }}
+header[data-testid="stHeader"] {{ display: none !important; }}
 [data-testid="stSidebar"],
 [data-testid="collapsedControl"],
 [data-testid="stSidebarCollapsedControl"] {{ display: none !important; }}
 
 [data-testid="stAppViewContainer"],
 [data-testid="stApp"] {{
-    background: radial-gradient(circle at 15% 20%, #172554 0%, #090E1A 52%, #060A12 100%) !important;
+    background: radial-gradient(circle at 18% 20%, #172554 0%, #090E1A 52%, #060A12 100%) !important;
     position: relative;
 }}
 [data-testid="stAppViewContainer"]::before {{
@@ -1068,8 +1074,8 @@ header[data-testid="stHeader"] {{ display: none; }}
     position: fixed;
     inset: 0;
     background-image:
-        radial-gradient(ellipse at 20% 30%, rgba(37, 99, 235, 0.14) 0%, transparent 50%),
-        radial-gradient(ellipse at 80% 75%, rgba(79, 70, 229, 0.12) 0%, transparent 50%);
+        radial-gradient(ellipse at 20% 30%, rgba(37, 99, 235, 0.16) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 75%, rgba(79, 70, 229, 0.14) 0%, transparent 50%);
     pointer-events: none;
     z-index: 0;
 }}
@@ -1087,18 +1093,21 @@ header[data-testid="stHeader"] {{ display: none; }}
     z-index: 0;
 }}
 
-/* Unified Auth Card Container */
-section[data-testid="stMain"] .block-container {{
-    margin-top: 4.5vh !important;
-    margin-bottom: 4vh !important;
+/* ── Kunci Lebar Kontainer Utama Menjadi Kartu 440px di Tengah Layar ── */
+[data-testid="stMainBlockContainer"],
+[data-testid="stAppViewBlockContainer"],
+[data-testid="stMain"] > div.block-container,
+[data-testid="stMain"] .block-container,
+.main .block-container,
+.block-container {{
     max-width: 440px !important;
-    margin-left: auto !important;
-    margin-right: auto !important;
-    padding: 0 1.75rem 1.85rem !important;
-    background: rgba(15, 23, 42, 0.72) !important;
+    width: calc(100% - 2rem) !important;
+    margin: 4.5vh auto 4vh auto !important;
+    padding: 0 1.75rem 1.75rem 1.75rem !important;
+    background: rgba(15, 23, 42, 0.78) !important;
     backdrop-filter: blur(24px) saturate(1.5) !important;
     -webkit-backdrop-filter: blur(24px) saturate(1.5) !important;
-    border: 1px solid rgba(255, 255, 255, 0.11) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
     border-radius: 22px !important;
     box-shadow:
         0 25px 60px -12px rgba(0, 0, 0, 0.65),
@@ -1108,15 +1117,45 @@ section[data-testid="stMain"] .block-container {{
     z-index: 1;
 }}
 
+/* Rapikan jarak vertikal antar elemen di dalam kartu login */
+[data-testid="stMain"] [data-testid="stVerticalBlock"] {{
+    gap: 0.45rem !important;
+}}
+
+/* Sembunyikan div pembungkus kosong yang dirender terpisah oleh st.markdown */
+.signin-tab-row,
+.signin-link-btn-right,
+.signin-link-btn {{
+    display: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    height: 0 !important;
+    border: none !important;
+}}
+.element-container:has(.signin-tab-row),
+.element-container:has(.signin-link-btn-right),
+.element-container:has(.signin-link-btn),
+.element-container:has(script) {{
+    display: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}}
+
+/* ── Header Banner di Bagian Atas Kartu Login ── */
 .signin-card {{
-    margin: 0 -1.75rem 1.25rem !important;
+    margin: 0 -1.75rem 0.6rem -1.75rem !important;
+    width: calc(100% + 3.5rem) !important;
+    max-width: none !important;
     border-radius: 21px 21px 0 0 !important;
     overflow: hidden;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    border: none !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.09) !important;
+    background: transparent !important;
+    box-shadow: none !important;
 }}
 .signin-card-header {{
     background: linear-gradient(135deg, #090E1A 0%, #1E293B 45%, #1D4ED8 100%);
-    padding: 30px 24px 24px;
+    padding: 28px 24px 22px;
     text-align: center;
     position: relative;
     overflow: hidden;
@@ -1135,16 +1174,16 @@ section[data-testid="stMain"] .block-container {{
 .signin-header-logo {{
     position: relative;
     z-index: 1;
-    width: 58px;
-    height: 58px;
-    border-radius: 16px;
+    width: 56px;
+    height: 56px;
+    border-radius: 15px;
     background: rgba(255, 255, 255, 0.12);
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.22);
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 0 auto 14px;
+    margin: 0 auto 12px;
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }}
 .signin-header-logo img {{
@@ -1155,7 +1194,7 @@ section[data-testid="stMain"] .block-container {{
 }}
 .signin-header-title {{
     font-family: var(--font-display);
-    font-size: 1.5rem;
+    font-size: 1.45rem;
     font-weight: 800;
     color: {WHITE};
     letter-spacing: -0.025em;
@@ -1164,191 +1203,248 @@ section[data-testid="stMain"] .block-container {{
     margin: 0 0 4px;
 }}
 .signin-header-sub {{
-    font-size: 0.76rem;
+    font-size: 0.75rem;
     color: #BFDBFE;
     position: relative;
     z-index: 1;
     letter-spacing: 0.01em;
     font-weight: 400;
 }}
-.signin-card-body {{ padding: 20px 22px 22px; }}
 
-/* Segmented Control Tab Row */
-.signin-tab-row {{
-    display: flex;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    margin-bottom: 1.25rem;
-    gap: 0;
-}}
-.signin-tab-row .stButton {{ flex: 1; }}
-.signin-tab-row .stButton > button {{
+/* ── Segmented Tab Buttons (Masuk & Daftar) via Key Class ── */
+[data-testid="stMain"] .st-key-tab_btn_masuk .stButton > button,
+[data-testid="stMain"] .st-key-tab_btn_daftar .stButton > button {{
     background: rgba(255, 255, 255, 0.03) !important;
-    border: 1px solid rgba(255, 255, 255, 0.07) !important;
-    border-bottom: 2px solid transparent !important;
-    border-radius: 8px 8px 0 0 !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.12) !important;
+    border-radius: 9px !important;
     color: #94A3B8 !important;
     font-size: 0.83rem !important;
     font-weight: 600 !important;
-    padding: 9px 6px !important;
+    padding: 8px 12px !important;
+    min-height: 38px !important;
     width: 100% !important;
-    margin-bottom: -1px !important;
-    transition: all var(--transition) !important;
+    margin-bottom: 6px !important;
     box-shadow: none !important;
+    transition: all var(--transition) !important;
 }}
-.signin-tab-row .stButton > button:hover {{
+[data-testid="stMain"] .st-key-tab_btn_masuk .stButton > button:hover,
+[data-testid="stMain"] .st-key-tab_btn_daftar .stButton > button:hover {{
+    background: rgba(255, 255, 255, 0.07) !important;
     color: #F8FAFC !important;
-    background: rgba(255, 255, 255, 0.06) !important;
-}}
-.signin-tab-active .stButton > button {{
-    background: rgba(37, 99, 235, 0.15) !important;
-    color: {WHITE} !important;
-    font-weight: 700 !important;
-    border-color: rgba(59, 130, 246, 0.25) !important;
-    border-bottom: 2.5px solid {BLUE3} !important;
+    transform: none !important;
 }}
 
-/* Form Container & Inputs */
-section[data-testid="stMain"] [data-testid="stForm"] {{
+/* Highlight Tab Aktif (Masuk / Daftar) */
+[data-testid="stMain"] .st-key-tab_btn_{active_tab} .stButton > button {{
+    background: rgba(37, 99, 235, 0.18) !important;
+    color: {WHITE} !important;
+    font-weight: 700 !important;
+    border: 1px solid rgba(59, 130, 246, 0.35) !important;
+    border-bottom: 2.5px solid {BLUE3} !important;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.18) !important;
+}}
+
+/* ── Form Container & Input Fields (Email / Password) ── */
+[data-testid="stMain"] [data-testid="stForm"] {{
     border: none !important;
-    padding: 0 !important;
+    padding: 2px 0 0 0 !important;
     background: transparent !important;
 }}
-section[data-testid="stMain"] .stTextInput label {{
-    font-size: 0.7rem !important;
+[data-testid="stMain"] .stTextInput label,
+[data-testid="stMain"] .stTextInput label p {{
+    font-size: 0.71rem !important;
     font-weight: 600 !important;
     color: #CBD5E1 !important;
     letter-spacing: 0.05em !important;
     text-transform: uppercase !important;
     margin-bottom: 4px !important;
 }}
-section[data-testid="stMain"] .stTextInput input,
-section[data-testid="stMain"] .stTextInput input[type="text"],
-section[data-testid="stMain"] .stTextInput input[type="password"],
-section[data-testid="stMain"] .stTextInput input[type="email"] {{
+[data-testid="stMain"] .stTextInput div[data-baseweb="input"],
+[data-testid="stMain"] .stTextInput div[data-baseweb="base-input"],
+[data-testid="stMain"] .stTextInput [data-testid="textInputRootElement"] {{
+    background: rgba(9, 14, 26, 0.75) !important;
+    background-color: rgba(9, 14, 26, 0.75) !important;
     border: 1px solid rgba(255, 255, 255, 0.16) !important;
+    border-radius: 10px !important;
+    transition: all var(--transition) !important;
+}}
+[data-testid="stMain"] .stTextInput div[data-baseweb="input"]:focus-within,
+[data-testid="stMain"] .stTextInput [data-testid="textInputRootElement"]:focus-within {{
+    border-color: {BLUE3} !important;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.22) !important;
+    background: rgba(9, 14, 26, 0.92) !important;
+}}
+[data-testid="stMain"] .stTextInput input,
+[data-testid="stMain"] .stTextInput input[type="text"],
+[data-testid="stMain"] .stTextInput input[type="password"],
+[data-testid="stMain"] .stTextInput input[type="email"] {{
+    border: none !important;
     border-radius: 10px !important;
     padding: 10px 14px !important;
     font-size: 0.86rem !important;
-    background: rgba(9, 14, 26, 0.65) !important;
-    background-color: rgba(9, 14, 26, 0.65) !important;
+    background: transparent !important;
+    background-color: transparent !important;
     color: {WHITE} !important;
     -webkit-text-fill-color: {WHITE} !important;
     caret-color: {BLUE3} !important;
-    transition: all var(--transition) !important;
-    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35) !important;
+    box-shadow: none !important;
 }}
-section[data-testid="stMain"] .stTextInput div[data-baseweb="input"],
-section[data-testid="stMain"] .stTextInput div[data-baseweb="base-input"],
-section[data-testid="stMain"] .stTextInput [data-testid="textInputRootElement"] {{
-    background: transparent !important;
-    border-color: transparent !important;
-}}
-section[data-testid="stMain"] .stTextInput input:focus {{
-    border-color: {BLUE3} !important;
-    background: rgba(9, 14, 26, 0.88) !important;
-    background-color: rgba(9, 14, 26, 0.88) !important;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2), inset 0 1px 2px rgba(0, 0, 0, 0.35) !important;
-    color: {WHITE} !important;
-    -webkit-text-fill-color: {WHITE} !important;
+[data-testid="stMain"] .stTextInput input:focus {{
     outline: none !important;
+    box-shadow: none !important;
 }}
-section[data-testid="stMain"] .stTextInput input:-webkit-autofill,
-section[data-testid="stMain"] .stTextInput input:-webkit-autofill:hover,
-section[data-testid="stMain"] .stTextInput input:-webkit-autofill:focus {{
+[data-testid="stMain"] .stTextInput button {{
+    color: #94A3B8 !important;
+    background: transparent !important;
+    border: none !important;
+}}
+[data-testid="stMain"] .stTextInput input:-webkit-autofill,
+[data-testid="stMain"] .stTextInput input:-webkit-autofill:hover,
+[data-testid="stMain"] .stTextInput input:-webkit-autofill:focus {{
     -webkit-text-fill-color: {WHITE} !important;
-    -webkit-box-shadow: 0 0 0 1000px #0B1324 inset !important;
+    -webkit-box-shadow: 0 0 0 1000px #090E1A inset !important;
     caret-color: {WHITE} !important;
 }}
-section[data-testid="stMain"] .stTextInput input::placeholder {{
+[data-testid="stMain"] .stTextInput input::placeholder {{
     color: rgba(148, 163, 184, 0.5) !important;
     -webkit-text-fill-color: rgba(148, 163, 184, 0.5) !important;
 }}
 
-/* Submit & Secondary Buttons in Auth */
-section[data-testid="stMain"] .stForm [data-testid="stFormSubmitButton"] > button {{
+/* ── Tombol Submit Utama Form (Masuk → / Daftar Sekarang →) ── */
+[data-testid="stMain"] [data-testid="stFormSubmitButton"] button,
+[data-testid="stMain"] [data-testid="stFormSubmitButton"] > button,
+[data-testid="stMain"] button[kind="primaryFormSubmit"],
+[data-testid="stMain"] button[data-testid="stBaseButton-primaryFormSubmit"] {{
     background: linear-gradient(135deg, {BLUE} 0%, {BLUE3} 100%) !important;
     color: {WHITE} !important;
-    border: 1px solid rgba(255, 255, 255, 0.14) !important;
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
     border-radius: 10px !important;
-    padding: 11px !important;
+    padding: 10px 16px !important;
+    min-height: 42px !important;
     font-size: 0.88rem !important;
     font-weight: 700 !important;
     width: 100% !important;
-    margin-top: 4px !important;
+    margin-top: 6px !important;
     letter-spacing: 0.01em !important;
     transition: all var(--transition) !important;
-    box-shadow: 0 4px 16px rgba(37, 99, 235, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+    box-shadow: 0 4px 16px rgba(37, 99, 235, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
 }}
-section[data-testid="stMain"] .stForm [data-testid="stFormSubmitButton"] > button:hover {{
-    box-shadow: 0 6px 22px rgba(37, 99, 235, 0.5) !important;
+[data-testid="stMain"] [data-testid="stFormSubmitButton"] button:hover {{
+    box-shadow: 0 6px 22px rgba(37, 99, 235, 0.55) !important;
     transform: translateY(-1px) !important;
     filter: brightness(1.06) !important;
 }}
-section[data-testid="stMain"] .stButton > button {{
+
+/* ── Tombol Sekunder Default di Kartu Login (Coba Gratis — tanpa akun) ── */
+[data-testid="stMain"] .stButton > button {{
     background: rgba(255, 255, 255, 0.06) !important;
-    border: 1px solid rgba(255, 255, 255, 0.14) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
     border-radius: 10px !important;
-    color: #F1F5F9 !important;
+    color: #F8FAFC !important;
     font-size: 0.83rem !important;
     font-weight: 600 !important;
-    padding: 9px 12px !important;
+    padding: 9px 14px !important;
+    min-height: 40px !important;
     width: 100% !important;
     box-shadow: none !important;
     transition: all var(--transition) !important;
 }}
-section[data-testid="stMain"] .stButton > button:hover {{
+[data-testid="stMain"] .stButton > button:hover {{
     background: rgba(255, 255, 255, 0.11) !important;
-    border-color: rgba(255, 255, 255, 0.25) !important;
+    border-color: rgba(255, 255, 255, 0.28) !important;
+    color: {WHITE} !important;
     transform: translateY(-1px) !important;
 }}
 
-/* Auth Text Links */
-.signin-link-btn-right {{ text-align: right; margin-top: 2px; margin-bottom: 6px; }}
-.signin-link-btn-right .stButton > button {{
-    background: transparent !important;
-    border: none !important;
-    color: #60A5FA !important;
-    font-size: 0.74rem !important;
-    font-weight: 600 !important;
-    padding: 0 !important;
-    height: auto !important;
-    min-height: 0 !important;
+/* ── Link "Lupa password?" Rata Kanan ── */
+[data-testid="stMain"] .st-key-btn_ke_lupa {{
+    display: flex !important;
+    justify-content: flex-end !important;
+    margin-top: -2px !important;
+    margin-bottom: 2px !important;
+}}
+[data-testid="stMain"] .st-key-btn_ke_lupa .stButton {{
     width: auto !important;
-    float: right;
-    box-shadow: none !important;
 }}
-.signin-link-btn-right .stButton > button:hover {{
-    background: transparent !important;
-    text-decoration: underline !important;
-    transform: none !important;
-}}
-.signin-link-btn .stButton > button {{
+[data-testid="stMain"] .st-key-btn_ke_lupa .stButton > button {{
     background: transparent !important;
     border: none !important;
     color: #60A5FA !important;
     font-size: 0.75rem !important;
     font-weight: 600 !important;
-    padding: 4px 6px !important;
-    height: auto !important;
+    padding: 2px 4px !important;
     min-height: 0 !important;
+    height: auto !important;
+    width: auto !important;
     box-shadow: none !important;
 }}
-.signin-link-btn .stButton > button:hover {{
-    background: rgba(59, 130, 246, 0.08) !important;
+[data-testid="stMain"] .st-key-btn_ke_lupa .stButton > button:hover {{
+    background: transparent !important;
+    color: #93C5FD !important;
     text-decoration: underline !important;
     transform: none !important;
 }}
-.signin-link-btn-muted .stButton > button {{
-    color: #94A3B8 !important;
-    font-weight: 500 !important;
-    font-size: 0.74rem !important;
+
+/* ── Tombol Navigasi Bawah (Daftar gratis / Aktivasi Pro / Kembali) ── */
+[data-testid="stMain"] .st-key-go_daftar_from_masuk .stButton > button,
+[data-testid="stMain"] .st-key-go_masuk_from_daftar .stButton > button,
+[data-testid="stMain"] .st-key-go_masuk_from_lupa .stButton > button,
+[data-testid="stMain"] .st-key-go_masuk_from_lupa_sent .stButton > button,
+[data-testid="stMain"] .st-key-go_lupa_from_reset .stButton > button,
+[data-testid="stMain"] .st-key-go_masuk_from_pro .stButton > button,
+[data-testid="stMain"] .st-key-go_daftar_from_gratis .stButton > button {{
+    background: rgba(59, 130, 246, 0.1) !important;
+    border: 1px solid rgba(59, 130, 246, 0.25) !important;
+    border-radius: 8px !important;
+    color: #60A5FA !important;
+    font-size: 0.76rem !important;
+    font-weight: 600 !important;
+    padding: 6px 10px !important;
+    min-height: 34px !important;
+    box-shadow: none !important;
+}}
+[data-testid="stMain"] .st-key-go_daftar_from_masuk .stButton > button:hover,
+[data-testid="stMain"] .st-key-go_masuk_from_daftar .stButton > button:hover,
+[data-testid="stMain"] .st-key-go_masuk_from_lupa .stButton > button:hover,
+[data-testid="stMain"] .st-key-go_masuk_from_lupa_sent .stButton > button:hover,
+[data-testid="stMain"] .st-key-go_lupa_from_reset .stButton > button:hover,
+[data-testid="stMain"] .st-key-go_masuk_from_pro .stButton > button:hover,
+[data-testid="stMain"] .st-key-go_daftar_from_gratis .stButton > button:hover {{
+    background: rgba(59, 130, 246, 0.18) !important;
+    border-color: rgba(59, 130, 246, 0.4) !important;
+    color: #93C5FD !important;
+    transform: none !important;
 }}
 
+[data-testid="stMain"] .st-key-go_pro_from_masuk .stButton > button,
+[data-testid="stMain"] .st-key-go_pro_from_daftar .stButton > button,
+[data-testid="stMain"] .st-key-go_pro_from_gratis .stButton > button {{
+    background: rgba(255, 255, 255, 0.03) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 8px !important;
+    color: #94A3B8 !important;
+    font-size: 0.76rem !important;
+    font-weight: 600 !important;
+    padding: 6px 10px !important;
+    min-height: 34px !important;
+    box-shadow: none !important;
+}}
+[data-testid="stMain"] .st-key-go_pro_from_masuk .stButton > button:hover,
+[data-testid="stMain"] .st-key-go_pro_from_daftar .stButton > button:hover,
+[data-testid="stMain"] .st-key-go_pro_from_gratis .stButton > button:hover {{
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-color: rgba(255, 255, 255, 0.2) !important;
+    color: #E2E8F0 !important;
+    transform: none !important;
+}}
+
+/* ── Divider & Footer Kartu Login ── */
 .signin-divider {{
     text-align: center;
     font-size: 0.68rem;
     color: #64748B;
-    margin: 14px 0;
+    margin: 10px 0 6px;
     position: relative;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -1360,15 +1456,15 @@ section[data-testid="stMain"] .stButton > button:hover {{
     top: 50%;
     width: 38%;
     height: 1px;
-    background: rgba(255, 255, 255, 0.09);
+    background: rgba(255, 255, 255, 0.1);
 }}
 .signin-divider::before {{ left: 0; }}
 .signin-divider::after  {{ right: 0; }}
 
 .signin-footer {{
     text-align: center;
-    margin-top: 14px;
-    margin-bottom: 4px;
+    margin-top: 10px;
+    margin-bottom: 2px;
     font-size: 0.74rem;
     color: #94A3B8;
 }}
@@ -1377,28 +1473,23 @@ section[data-testid="stMain"] .stButton > button:hover {{
 
 .signin-page-footer {{
     text-align: center;
-    margin-top: 1.4rem;
-    padding-top: 1rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.07);
-    font-size: 0.71rem;
+    margin-top: 1.1rem;
+    padding-top: 0.9rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    font-size: 0.7rem;
     color: #64748B;
-    line-height: 1.7;
+    line-height: 1.6;
 }}
 .signin-page-footer a {{ color: #60A5FA; text-decoration: none; font-weight: 600; }}
 .signin-page-footer a:hover {{ text-decoration: underline; }}
-section[data-testid="stMain"] [data-testid="stAlert"] {{ border-radius: 10px !important; font-size: 0.82rem !important; }}
-.forgot-link {{ text-align: right; margin: -4px 0 10px; font-size: 0.72rem; }}
-.forgot-link a {{ color: {BLUE3}; text-decoration: none; }}
-.forgot-link a:hover {{ text-decoration: underline; }}
-.activate-link {{ text-align: center; margin-top: 8px; font-size: 0.7rem; color: rgba(148, 163, 184, 0.5); }}
-.activate-link a {{ color: rgba(100, 153, 204, 0.8); text-decoration: none; }}
-.activate-link a:hover {{ text-decoration: underline; }}
+[data-testid="stMain"] [data-testid="stAlert"] {{ border-radius: 10px !important; font-size: 0.82rem !important; }}
 </style>"""
 
 
 def inject_login_css() -> None:
     """Inject CSS halaman login. Panggil hanya saat belum login."""
-    st.markdown(_LOGIN_CSS, unsafe_allow_html=True)
+    active_tab = st.session_state.get("modal_tab", "masuk")
+    st.markdown(_build_login_css(active_tab), unsafe_allow_html=True)
 
 
 def inject_nav_highlight_css(active_idx: int) -> None:
