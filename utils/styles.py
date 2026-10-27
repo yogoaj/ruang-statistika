@@ -1275,7 +1275,11 @@ header[data-testid="stHeader"] {{ display: none !important; }}
 [data-testid="stMain"] .stTextInput [data-baseweb="input"] {{
     background: #0B1326 !important;
     background-color: #0B1326 !important;
-    border: 1.5px solid rgba(148, 163, 184, 0.28) !important;
+    border: 1.5px solid rgba(148, 163, 184, 0.3) !important;
+    border-top-color: rgba(148, 163, 184, 0.3) !important;
+    border-right-color: rgba(148, 163, 184, 0.3) !important;
+    border-bottom-color: rgba(148, 163, 184, 0.3) !important;
+    border-left-color: rgba(148, 163, 184, 0.3) !important;
     border-radius: 10px !important;
     box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.45) !important;
     transition: border-color 180ms ease, box-shadow 180ms ease !important;
@@ -1286,15 +1290,24 @@ header[data-testid="stHeader"] {{ display: none !important; }}
 [data-testid="stMain"] [data-testid="stTextInputRootElement"]:hover,
 [data-testid="stMain"] [data-testid="stTextInput"] [data-baseweb="input"]:hover,
 [data-testid="stMain"] .stTextInput [data-baseweb="input"]:hover {{
-    border-color: rgba(148, 163, 184, 0.48) !important;
+    border-color: rgba(148, 163, 184, 0.5) !important;
+    border-top-color: rgba(148, 163, 184, 0.5) !important;
+    border-right-color: rgba(148, 163, 184, 0.5) !important;
+    border-bottom-color: rgba(148, 163, 184, 0.5) !important;
+    border-left-color: rgba(148, 163, 184, 0.5) !important;
 }}
 [data-testid="stMain"] [data-testid="stTextInputRootElement"]:focus-within,
 [data-testid="stMain"] [data-testid="stTextInput"] [data-baseweb="input"]:focus-within,
 [data-testid="stMain"] .stTextInput [data-baseweb="input"]:focus-within {{
     border-color: {BLUE3} !important;
+    border-top-color: {BLUE3} !important;
+    border-right-color: {BLUE3} !important;
+    border-bottom-color: {BLUE3} !important;
+    border-left-color: {BLUE3} !important;
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25), inset 0 1px 3px rgba(0, 0, 0, 0.45) !important;
     background: #091020 !important;
     background-color: #091020 !important;
+    outline: none !important;
 }}
 
 /* Wrapper Dalam BaseWeb (Hilangkan warna putih bawaan) */
@@ -1378,7 +1391,8 @@ header[data-testid="stHeader"] {{ display: none !important; }}
 }}
 
 /* Sembunyikan teks "Press Enter to submit form" yang menumpuk di dalam input */
-[data-testid="stMain"] [data-testid="InputInstructions"] {{
+[data-testid="stMain"] [data-testid="InputInstructions"],
+[data-testid="InputInstructions"] {{
     display: none !important;
 }}
 
